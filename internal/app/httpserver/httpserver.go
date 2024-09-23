@@ -22,5 +22,7 @@ func (s *HTTPServer) Start(config *config.Config) {
 func (s *HTTPServer) configureRouter() {
 	router := mux.NewRouter()
 	router.HandleFunc("/hello", HelloHandler).Methods("GET")
+	router.HandleFunc("/get_mails_by_user", getAllMails).Methods("GET")
 	s.server.Handler = router
 }
+
