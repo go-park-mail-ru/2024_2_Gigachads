@@ -9,7 +9,7 @@ import (
 
 func main() {
 	var srv httpserver.HTTPServer
-	configPath := flag.String("config-path", "../config/config.yaml", "path to config file")
+	configPath := flag.String("config-path", "./config/config.yaml", "path to config file")
 
 	config, err := config.GetConfig(*configPath)
 	if err != nil {
