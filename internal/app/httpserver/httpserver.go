@@ -1,14 +1,16 @@
 package httpserver
 
 import (
-	"log"
-	"net/http"
 	"github.com/gorilla/mux"
+	"log"
 	config "mail/config"
+	"net/http"
 )
+
 type HTTPServer struct {
 	server *http.Server
 }
+
 func (s *HTTPServer) Start(config *config.Config) {
 	s.server = new(http.Server)
 	log.Println(config.HTTPServer.IP + ":" + config.HTTPServer.Port)
@@ -22,7 +24,6 @@ func (s *HTTPServer) Start(config *config.Config) {
 func (s *HTTPServer) configureRouter() {
 	router := mux.NewRouter()
 	router.HandleFunc("/hello", HelloHandler).Methods("GET")
-	router.HandleFunc("/get_mails_by_user", getAllMails).Methods("GET")
+	router.HandleFunc("/mail/list", getAllMails).Methods("GET")
 	s.server.Handler = router
 }
-

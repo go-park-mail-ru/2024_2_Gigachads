@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"reflect"
 	"time"
 )
 
-// TODO: после появления ручки создания письма в базе убрать
+type errorResponse struct {
+	Status int    `json:"status"`
+	Body   string `json:"body"`
+}
+
 type mockedTableStructure struct {
 	ID       string    `json:"id"`   // UUID
 	From     string    `json:"from"` // UUID
@@ -19,30 +24,75 @@ type mockedTableStructure struct {
 	Datetime time.Time `json:"datetime"`
 }
 
-// TODO: после появления ручки создания письма в базе убрать
-var mockedDatabase = make([]mockedTableStructure, 0)
+type Mails []mockedTableStructure
 
-// TODO: после появления ручки создания письма в базе убрать
-var testMockedItem = mockedTableStructure{To: "test-uuid", Title: "test"}
+func (mails Mails) compare(otherMails Mails) bool {
+	if len(mails) != len(otherMails) {
+		return false
+	}
 
-// TODO: после появления ручки создания письма в базе убрать
-func prepareMockedDatabase() {
-	mockedDatabase = append(mockedDatabase, testMockedItem)
+	for i := range mails {
+		if reflect.DeepEqual(otherMails[i], mails[i]) && compareDatetimes(otherMails[i].Datetime, mails[i].Datetime) {
+			return false
+		}
+	}
+	return true
+}
+
+func compareDatetimes(timeOne time.Time, timeTwo time.Time) bool {
+	return timeOne.Format("2024-09-23 22:51:51.816489625 +0300") == timeTwo.Format("2024-09-23 22:51:51.816489625 +0300")
+}
+
+var mockedMails = Mails{
+	{
+		ID:       "1",
+		From:     "sender1-uuid",
+		To:       "test-uuid",
+		Body:     "Hello, this is the first email body.",
+		Title:    "First Email",
+		Status:   "sent",
+		Datetime: time.Now().Add(-48 * time.Hour),
+	},
+	{
+		ID:       "2",
+		From:     "sender2-uuid",
+		To:       "test-uuid",
+		Body:     "Hello, this is the second email body.",
+		Title:    "Follow-Up Email",
+		Status:   "sent",
+		Datetime: time.Now().Add(-24 * time.Hour),
+	},
+	{
+		ID:       "3",
+		From:     "sender3-uuid",
+		To:       "test-uuid",
+		Body:     "Hello, this is the third email body.",
+		Title:    "Meeting Reminder",
+		Status:   "sent",
+		Datetime: time.Now(),
+	},
 }
 
 func getAllMails(w http.ResponseWriter, req *http.Request) {
-	// TODO: после появления ручки создания письма в базе убрать
-	prepareMockedDatabase()
-
 	userID, ok := req.Context().Value("user-id").(string)
+	fmt.Println(userID)
 	if !ok {
 		slog.Error("cannot type assertion userID to string")
 		w.WriteHeader(http.StatusForbidden)
+		response := errorResponse{
+			Status: http.StatusForbidden,
+			Body:   "Validation_error",
+		}
+		marshaledResponse, err := json.Marshal(response)
+		if err != nil {
+			slog.Error("failed to marshal error response")
+		}
+		w.Write(marshaledResponse)
 		return
 	}
 
-	result := make([]mockedTableStructure, 0)
-	for _, message := range mockedDatabase {
+	result := make(Mails, 0)
+	for _, message := range mockedMails {
 		if message.To == userID {
 			result = append(result, message)
 		}
@@ -51,10 +101,18 @@ func getAllMails(w http.ResponseWriter, req *http.Request) {
 	resultToJson, err := json.Marshal(result)
 	if err != nil {
 		slog.Error(fmt.Sprintf("cannot convert to json: %v", err))
+		response := errorResponse{
+			Status: http.StatusInternalServerError,
+			Body:   "Internal_error",
+		}
 		w.WriteHeader(http.StatusInternalServerError)
+		marshaledResponse, err := json.Marshal(response)
+		if err != nil {
+			slog.Error("failed to marshal error response")
+		}
+		w.Write(marshaledResponse)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 	w.Write(resultToJson)
 	return
