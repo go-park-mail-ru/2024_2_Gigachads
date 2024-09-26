@@ -2,7 +2,7 @@ package config
 
 import (
 	"gopkg.in/yaml.v2"
-	"log"
+	"log/slog"
 	"os"
 )
 
@@ -13,20 +13,20 @@ type Config struct {
 	} `yaml:"httpserver"`
 }
 
-func GetConfig(path string) *Config {
+func GetConfig(path string) (*Config, error) {
 	config := new(Config)
 
 	file, err := os.Open(path)
 	if err != nil {
-		log.Fatal("Config file error: " + err.Error())
+		return nil, err
 	}
 	defer file.Close()
 
 	d := yaml.NewDecoder(file)
-	if err := d.Decode(config); err != nil {
-		log.Fatal("Decoding config file error: " + err.Error())
+	if err = d.Decode(config); err != nil {
+		return nil, err
 	}
-	log.Println("loaded config")
-	return config
+	slog.Info("loaded config")
+	return config, nil
 
 }

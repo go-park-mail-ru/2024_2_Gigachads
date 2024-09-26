@@ -2,7 +2,7 @@ package httpserver
 
 import (
 	"github.com/gorilla/mux"
-	"log"
+	"log/slog"
 	config "mail/config"
 	"net/http"
 )
@@ -11,16 +11,18 @@ type HTTPServer struct {
 	server *http.Server
 }
 
-func (s *HTTPServer) Start(config *config.Config) {
+
+func (s *HTTPServer) Start(config *config.Config) error {
 	s.server = new(http.Server)
-	log.Println(config.HTTPServer.IP + ":" + config.HTTPServer.Port)
 	s.server.Addr = config.HTTPServer.IP + ":" + config.HTTPServer.Port
 	s.configureRouter()
-	log.Println("Server is running on port 8080")
+	slog.Info("Server is running on", "port", config.HTTPServer.Port)
 	if err := s.server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
+
 func (s *HTTPServer) configureRouter() {
 	router := mux.NewRouter()
 	router.HandleFunc("/hello", HelloHandler).Methods("GET")
