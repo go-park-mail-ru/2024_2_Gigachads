@@ -8,8 +8,9 @@ import (
 
 type Config struct {
 	HTTPServer struct {
-		IP   string `yaml:"ip"`
-		Port string `yaml:"port"`
+		IP               string   `yaml:"ip"`
+		Port             string   `yaml:"port"`
+		AllowedIPsByCORS []string `yaml:"allowed_ips_by_cors"`
 	} `yaml:"httpserver"`
 }
 
