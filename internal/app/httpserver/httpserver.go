@@ -11,7 +11,6 @@ type HTTPServer struct {
 	server *http.Server
 }
 
-
 func (s *HTTPServer) Start(config *config.Config) error {
 	s.server = new(http.Server)
 	s.server.Addr = config.HTTPServer.IP + ":" + config.HTTPServer.Port
@@ -26,6 +25,6 @@ func (s *HTTPServer) Start(config *config.Config) error {
 func (s *HTTPServer) configureRouter() {
 	router := mux.NewRouter()
 	router.HandleFunc("/hello", HelloHandler).Methods("GET")
-	router.HandleFunc("/mail/list", getAllMails).Methods("GET")
+	router.HandleFunc("/mail/inbox", getAllMails).Methods("GET")
 	s.server.Handler = router
 }

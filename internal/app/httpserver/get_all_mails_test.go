@@ -13,7 +13,7 @@ var testUserID = "test-uuid"
 func TestGetAllMails(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(getAllMails)
-	req, err := http.NewRequest("GET", "/mail/list", nil)
+	req, err := http.NewRequest("GET", "/mail/inbox", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestGetAllMails(t *testing.T) {
 func TestGetAllMails_Error(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(getAllMails)
-	req, err := http.NewRequest("GET", "/mail/list", nil)
+	req, err := http.NewRequest("GET", "/mail/inbox", nil)
 	req = req.WithContext(context.Background())
 	if err != nil {
 		t.Fatal(err)
