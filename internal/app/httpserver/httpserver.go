@@ -1,10 +1,11 @@
 package httpserver
 
 import (
-	"github.com/gorilla/mux"
 	"log/slog"
 	config "mail/config"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type HTTPServer struct {
@@ -25,7 +26,8 @@ func (s *HTTPServer) Start(config *config.Config) error {
 func (s *HTTPServer) configureRouter() {
 	router := mux.NewRouter()
 	router.HandleFunc("/hello", HelloHandler).Methods("GET")
-	router.HandleFunc("/signup", SignUpHandler).Methods("POST", "GET")
-	router.HandleFunc("/login", LogInHandler).Methods("POST", "GET")
+	router.HandleFunc("/signup", SignUpHandler).Methods("POST", "OPTIONS")
+	router.HandleFunc("/login", LogInHandler).Methods("POST", "OPTIONS")
+
 	s.server.Handler = router
 }

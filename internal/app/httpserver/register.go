@@ -1,88 +1,80 @@
 package httpserver
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/mail"
 	"regexp"
 	//"fmt"
 )
 
+type UserJSON struct {
+	Name       string `json:"name"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	RePassword string `json:"repassword"`
+}
+
 type User struct {
-    login string
-    name string
-    password string
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 var UserDB = make(map[string]User)
 
-var signupFormTmpl = []byte(`
-<html>
-	<body>
-	<form action="/signup" method="post">
-		Login: <input type="text" name="login">
-		Name: <input type="text" name="name">
-		Password: <input type="password" name="password">
-		Repeat Password: <input type="password" name="repassword">
-		<input type="submit" value="Sign Up">
-	</form>
-	</body>
-</html>
-`) //TODO: убрать когда будет фронт регистрации
-
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Write(signupFormTmpl) //TODO: убрать когда будет фронт регистрации
+
+	var user UserJSON
+
+	// Декодируем JSON из тела запроса
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	r.ParseForm()
-
-	inputLogin := r.FormValue("login")
-	inputName := r.FormValue("name")
-	inputPassword := r.FormValue("password")
-	inputRePassword := r.FormValue("repassword")
-
-	if !emailIsValid(inputLogin) {
+	if !emailIsValid(user.Email) {
 		ErrorResponse(w, r, "invalid_email")
 		return
 	}
 
-	if !inputIsValid(inputName) {
+	if !inputIsValid(user.Name) {
 		ErrorResponse(w, r, "invalid_input")
 		return
 	}
 
-	if !inputIsValid(inputPassword) {
+	if !inputIsValid(user.Password) {
 		ErrorResponse(w, r, "invalid_input")
 		return
-	}// а нужно ли?
+	}
 
-	if !inputIsValid(inputRePassword) {
+	if !inputIsValid(user.RePassword) {
 		ErrorResponse(w, r, "invalid_input")
 		return
-	}// а нужно ли?
+	}
 
-	if inputPassword != inputRePassword {
+	if user.Password != user.RePassword {
 		ErrorResponse(w, r, "invalid_password")
 		return
 	}
 
-	if _, ok := UserDB[inputLogin]; ok {
+	if _, ok := UserDB[user.Email]; ok {
 		ErrorResponse(w, r, "login_taken")
 		return
 	}
 
-	UserDB[inputLogin] = User{login: inputLogin, name: inputName, password: inputPassword}
+	UserDB[user.Email] = User{Email: user.Email, Name: user.Name, Password: user.Password}
 	//w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	//w.Write([]byte(inputLogin))
 	//fmt.Fprintln(w, UserDB)
-	
+
 }
 
 func emailIsValid(email string) bool {
-    _, err := mail.ParseAddress(email)
-    return err == nil
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
 
 func inputIsValid(str string) bool {
