@@ -4,8 +4,8 @@ import (
 	"github.com/gorilla/mux"
 	"log/slog"
 	config "mail/config"
+	"mail/pkg/middleware"
 	"net/http"
-	"slices"
 )
 
 type HTTPServer struct {
@@ -26,37 +26,11 @@ func (s *HTTPServer) Start(cfg *config.Config) error {
 func (s *HTTPServer) configureRouter(cfg *config.Config) {
 	router := mux.NewRouter()
 
-	// Authorization checking
-	router.Use(authMiddleware)
-
-	// CORS checking
+	router.Use(middleware.AuthMiddleware)
 	router.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			origin := r.Header.Get("Origin")
-			if slices.Contains(cfg.HTTPServer.AllowedIPsByCORS, origin) {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
-				w.Header().Add("Vary", "Origin")
-			}
-			next.ServeHTTP(w, r)
-		})
+		return middleware.CORS(next, cfg)
 	})
 
 	router.HandleFunc("/hello", HelloHandler).Methods("GET")
 	s.server.Handler = router
-}
-
-func authMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !userIsAuthenticated(r) {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-// userIsAuthenticated пока замокала, потому что некуда идти проверять валидность - логика аутентификации не написана
-func userIsAuthenticated(r *http.Request) bool {
-	return true
 }
