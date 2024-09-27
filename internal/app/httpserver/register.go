@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"net/mail"
 	"regexp"
+	"crypto/rand"
+    "encoding/hex"
+    "time"
 	//"fmt"
 )
 
@@ -22,6 +25,8 @@ type User struct {
 }
 
 var UserDB = make(map[string]User)
+
+var UserID = make(map[string]string)
 
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -65,11 +70,17 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	UserDB[user.Email] = User{Email: user.Email, Name: user.Name, Password: user.Password}
+	UserID[user.Email] = GenerateUserID()
 	//w.Header().Set("Content-Type", "application/json")
+	expiration := time.Now().Add(24 * time.Hour)
+	cookie := http.Cookie{
+		Name:     "user_id",
+		Value:    UserID[user.Email],
+		Expires:  expiration,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &cookie)
 	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte(inputLogin))
-	//fmt.Fprintln(w, UserDB)
-
 }
 
 func emailIsValid(email string) bool {
@@ -80,4 +91,12 @@ func emailIsValid(email string) bool {
 func inputIsValid(str string) bool {
 	match, _ := regexp.MatchString("^[a-zA-Z0-9_]+$", str)
 	return match
+}
+
+func GenerateUserID() string {
+    bytes := make([]byte, 16)
+    if _, err := rand.Read(bytes); err != nil {
+        panic(err)
+    }
+    return hex.EncodeToString(bytes)
 }

@@ -19,7 +19,7 @@ type UserLogin struct {
 
 func LogInHandler(w http.ResponseWriter, r *http.Request) {
 
-	//UserDB["nick@giga-mail.ru"] = User{login: "nick@giga-mail.ru", name: "nick", password: "12345"} //убрать, когда будет бд
+	//UserDB["nick@giga-mail.ru"] = User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
 
 	var user UserLogin
 
@@ -38,12 +38,12 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 	if !emailIsValid(inputLogin) {
 		ErrorResponse(w, r, "invalid_input")
 		return
-	} // а нужно ли?
+	}
 
 	if !inputIsValid(inputPassword) {
 		ErrorResponse(w, r, "invalid_input")
 		return
-	} // а нужно ли?
+	}
 
 	if !ok {
 		ErrorResponse(w, r, "user_does_not_exist")
@@ -57,11 +57,10 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 
 	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
-		Name:     "session_id",
-		Value:    inputLogin,
+		Name:     "user_id",
+		Value:    UserID[inputLogin],
 		Expires:  expiration,
 		HttpOnly: true,
-		//Domain: "127.0.0.1",
 	}
 	http.SetCookie(w, &cookie)
 	w.WriteHeader(http.StatusOK)

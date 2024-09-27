@@ -8,18 +8,13 @@ import (
 	"testing"
 )
 
-type logintodo struct {
-	login		string	`json:"login"`
-	password	string	`json:"password"`
-}
-
 func TestLogInOK(t *testing.T) {
 
-	UserDB["nick@giga-mail.ru"] = User{login: "nick@giga-mail.ru", name: "nick", password: "12345"} //убрать, когда будет бд
+	UserDB["nick@giga-mail.ru"] = User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
 
-	todo := logintodo{
-	login: "nick@giga-mail.ru",
-	password: "12345",
+	todo := UserLogin{
+	Email: "nick@giga-mail.ru",
+	Password: "12345",
 	}
 
 	rr := httptest.NewRecorder()
@@ -37,7 +32,7 @@ func TestLogInOK(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if status := rr.Code; status == http.StatusOK {
+	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
@@ -46,9 +41,9 @@ func TestLogInOK(t *testing.T) {
 
 func TestLogInFailLogin(t *testing.T) {
 
-	todo := logintodo{
-	login: "aaaa",
-	password: "cccc",
+	todo := UserLogin{
+	Email: "vasia@giga-mail.ru",
+	Password: "12345",
 	}
 
 	rr := httptest.NewRecorder()
@@ -75,11 +70,11 @@ func TestLogInFailLogin(t *testing.T) {
 
 func TestLogInFailPassword(t *testing.T) {
 
-	//UserDB["nick@giga-mail.ru"] = User{login: "nick@giga-mail.ru", name: "nick", password: "12345"} //убрать, когда будет бд
+	UserDB["nick@giga-mail.ru"] = User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
 
-	todo := logintodo{
-	login: "nick@giga-mail.ru",
-	password: "wrong",
+	todo := UserLogin{
+	Email: "nick@giga-mail.ru",
+	Password: "12345678",
 	}
 
 	rr := httptest.NewRecorder()

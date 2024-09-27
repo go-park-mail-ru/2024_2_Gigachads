@@ -8,20 +8,13 @@ import (
 	"testing"
 )
 
-type signuptodo struct {
-	login		string	`json:"login"`
-	name		string	`json:"name"`
-	password	string	`json:"password"`
-	repassword	string	`json:"repassword"`
-}
-
 func TestSignUpOK(t *testing.T) {
 
-	todo := signuptodo{
-	login: "aaaa",
-	name: "bbbb",
-	password: "cccc",
-	repassword: "cccc",
+	todo := UserJSON{
+	Name: "aaaa",
+	Email: "petia@giga-mail.ru",
+	Password: "cccc",
+	RePassword: "cccc",
 	}
 
 	rr := httptest.NewRecorder()
@@ -48,13 +41,13 @@ func TestSignUpOK(t *testing.T) {
 
 func TestSignUpFailLogin(t *testing.T) {
 
-	UserDB["nick@giga-mail.ru"] = User{login: "nick@giga-mail.ru", name: "nick", password: "12345"} //удалить, когда будет бд
+	UserDB["nick@giga-mail.ru"] = User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
 
-	todo := signuptodo{
-	login: "nick@giga-mail.ru",
-	name: "bbbb",
-	password: "cccc",
-	repassword: "cccc",
+	todo := UserJSON{
+	Name: "aaaa",
+	Email: "nick@giga-mail.ru",
+	Password: "cccc",
+	RePassword: "cccc",
 	}
 
 	rr := httptest.NewRecorder()
@@ -81,11 +74,11 @@ func TestSignUpFailLogin(t *testing.T) {
 
 func TestSignUpFailPassword(t *testing.T) {
 
-	todo := signuptodo{
-	login: "aaaa",
-	name: "bbbb",
-	password: "cccc",
-	repassword: "xxxx",
+	todo := UserJSON{
+	Name: "aaaa",
+	Email: "nick@giga-mail.ru",
+	Password: "cccc",
+	RePassword: "dddd",
 	}
 
 	rr := httptest.NewRecorder()
