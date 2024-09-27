@@ -25,7 +25,7 @@ func (s *HTTPServer) Start(config *config.Config) error {
 func (s *HTTPServer) configureRouter() {
 	router := mux.NewRouter()
 	router.HandleFunc("/hello", HelloHandler).Methods("GET")
-	router.HandleFunc("/signup", SignUpHandler).Methods("POST", "GET", "OPTIONS")
-	router.HandleFunc("/login", LogInHandler).Methods("POST", "GET", "OPTIONS")
+	router.HandleFunc("/signup", SignUpHandler).Methods("POST", "GET")
+	router.HandleFunc("/login", LogInHandler).Methods("POST", "GET")
 	s.server.Handler = router
 }

@@ -39,16 +39,6 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 
 	elem, ok := UserDB[inputLogin]
 
-	if !ok {
-		ErrorResponse(w, r, "user_does_not_exist")
-		return
-	}
-
-	if UserDB[inputLogin].password != inputPassword {
-		ErrorResponse(w, r, "invalid_password")
-		return
-	}
-
 	if !emailIsValid(inputLogin) {
 		ErrorResponse(w, r, "invalid_input")
 		return
@@ -59,6 +49,16 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}// а нужно ли?
 
+	if !ok {
+		ErrorResponse(w, r, "user_does_not_exist")
+		return
+	}
+
+	if UserDB[inputLogin].password != inputPassword {
+		ErrorResponse(w, r, "invalid_password")
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
@@ -66,6 +66,7 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 		Value:   elem.login,
 		Expires: expiration,
 		HttpOnly: true,
+		//Domain: "127.0.0.1",
 	}
 	http.SetCookie(w, &cookie)
 }
