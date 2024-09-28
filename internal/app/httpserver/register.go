@@ -19,14 +19,15 @@ type UserJSON struct {
 }
 
 type User struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Id string
+	Name     string 
+	Email    string 
+	Password string
 }
 
-var UserDB = make(map[string]User)
+var UserDB = make(map[string]User) //найти айди по юзеру
 
-var UserID = make(map[string]string)
+var UserID = make(map[string]string) //найти юзера по айди
 
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -69,13 +70,14 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	UserDB[user.Email] = User{Email: user.Email, Name: user.Name, Password: user.Password}
-	UserID[user.Email] = GenerateUserID()
+	uuid := GenerateUserID()
+	UserDB[user.Email] = User{Id: uuid, Email: user.Email, Name: user.Name, Password: user.Password}
+	UserID[uuid] = user.Email
 	//w.Header().Set("Content-Type", "application/json")
 	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
 		Name:     "user_id",
-		Value:    UserID[user.Email],
+		Value:    UserDB[user.Email].Id,
 		Expires:  expiration,
 		HttpOnly: true,
 	}

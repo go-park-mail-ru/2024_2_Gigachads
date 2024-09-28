@@ -58,7 +58,7 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
 		Name:     "user_id",
-		Value:    UserID[inputLogin],
+		Value:    UserDB[user.Email].Id,
 		Expires:  expiration,
 		HttpOnly: true,
 	}
