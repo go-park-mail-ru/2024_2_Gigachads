@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"mail/database"
 )
 
 func TestSignUpOK(t *testing.T) {
@@ -41,7 +42,7 @@ func TestSignUpOK(t *testing.T) {
 
 func TestSignUpFailLogin(t *testing.T) {
 
-	UserDB["nick@giga-mail.ru"] = User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
+	database.UserDB["nick@giga-mail.ru"] = database.User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
 
 	todo := UserJSON{
 	Name: "aaaa",

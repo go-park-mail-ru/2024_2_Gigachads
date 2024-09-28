@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+	"mail/database"
 	//"fmt"
 )
 
@@ -19,7 +20,7 @@ type UserLogin struct {
 
 func LogInHandler(w http.ResponseWriter, r *http.Request) {
 
-	//UserDB["nick@giga-mail.ru"] = User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
+	//database.UserDB["nick@giga-mail.ru"] = User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
 
 	var user UserLogin
 
@@ -33,7 +34,7 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 	inputLogin := user.Email
 	inputPassword := user.Password
 
-	_, ok := UserDB[inputLogin]
+	_, ok := database.UserDB[inputLogin]
 
 	if !emailIsValid(inputLogin) {
 		ErrorResponse(w, r, "invalid_input")
@@ -50,7 +51,7 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if UserDB[inputLogin].Password != inputPassword {
+	if database.UserDB[inputLogin].Password != inputPassword {
 		ErrorResponse(w, r, "invalid_password")
 		return
 	}
@@ -58,7 +59,7 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
 		Name:     "user_id",
-		Value:    UserDB[user.Email].Id,
+		Value:    database.UserDB[user.Email].Id,
 		Expires:  expiration,
 		HttpOnly: true,
 	}

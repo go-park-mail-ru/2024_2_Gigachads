@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"mail/database"
 )
 
 func TestLogInOK(t *testing.T) {
 
-	UserDB["nick@giga-mail.ru"] = User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
+	database.UserDB["nick@giga-mail.ru"] = database.User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
 
 	todo := UserLogin{
 	Email: "nick@giga-mail.ru",
@@ -70,7 +71,7 @@ func TestLogInFailLogin(t *testing.T) {
 
 func TestLogInFailPassword(t *testing.T) {
 
-	UserDB["nick@giga-mail.ru"] = User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
+	database.UserDB["nick@giga-mail.ru"] = database.User{ Name: "nick", Email: "nick@giga-mail.ru", Password: "12345"} //убрать, когда будет бд
 
 	todo := UserLogin{
 	Email: "nick@giga-mail.ru",

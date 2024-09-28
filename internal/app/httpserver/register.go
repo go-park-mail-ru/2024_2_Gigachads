@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
     "encoding/hex"
     "time"
+	"mail/database"
 	//"fmt"
 )
 
@@ -18,16 +19,7 @@ type UserJSON struct {
 	RePassword string `json:"repassword"`
 }
 
-type User struct {
-	Id string
-	Name     string 
-	Email    string 
-	Password string
-}
 
-var UserDB = make(map[string]User) //найти айди по юзеру
-
-var UserID = make(map[string]string) //найти юзера по айди
 
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -65,19 +57,19 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := UserDB[user.Email]; ok {
+	if _, ok := database.UserDB[user.Email]; ok {
 		ErrorResponse(w, r, "login_taken")
 		return
 	}
 
 	uuid := GenerateUserID()
-	UserDB[user.Email] = User{Id: uuid, Email: user.Email, Name: user.Name, Password: user.Password}
-	UserID[uuid] = user.Email
+	database.UserDB[user.Email] = database.User{Id: uuid, Email: user.Email, Name: user.Name, Password: user.Password}
+	database.UserID[uuid] = user.Email
 	//w.Header().Set("Content-Type", "application/json")
 	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
 		Name:     "user_id",
-		Value:    UserDB[user.Email].Id,
+		Value:    database.UserDB[user.Email].Id,
 		Expires:  expiration,
 		HttpOnly: true,
 	}
