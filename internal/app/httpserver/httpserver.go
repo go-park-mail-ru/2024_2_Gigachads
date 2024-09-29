@@ -34,6 +34,7 @@ func (s *HTTPServer) configureRouter(cfg *config.Config) {
 
 	private := router.PathPrefix("/").Subrouter()
 	private.HandleFunc("/mail/inbox", getAllMails).Methods("GET", "OPTIONS")
+	private.HandleFunc("/logout", LogOutHandler).Methods("GET", "OPTIONS")
 	private.Use(middleware.AuthMiddleware)
 
 	router.Use(func(next http.Handler) http.Handler {

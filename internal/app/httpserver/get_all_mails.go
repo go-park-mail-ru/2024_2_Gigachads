@@ -487,7 +487,7 @@ var mockedMails = Mails{
 }
 
 func getAllMails(w http.ResponseWriter, req *http.Request) {
-	cookie, err := req.Cookie("user_id")
+	_, err := req.Cookie("user_id")
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		response := errorResponse{
@@ -501,8 +501,6 @@ func getAllMails(w http.ResponseWriter, req *http.Request) {
 		w.Write(marshaledResponse)
 		return
 	}
-	userID := cookie.Value
-	fmt.Println(userID)
 
 	result := make(Mails, 0)
 	result = append(result, mockedMails...)
