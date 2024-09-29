@@ -1,12 +1,11 @@
 package database
 
 type User struct {
-	Id string
 	Name     string 
 	Email    string 
 	Password string
 }
 
-var UserDB = make(map[string]User) //найти айди по юзеру
+var UserDB = make(map[string]User) //найти user по email
 
-var UserID = make(map[string]string) //найти юзера по айди
+var UserHash = make(map[string]string) //найти email gо хэшу

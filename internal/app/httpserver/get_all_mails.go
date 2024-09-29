@@ -487,7 +487,7 @@ var mockedMails = Mails{
 }
 
 func getAllMails(w http.ResponseWriter, req *http.Request) {
-	_, err := req.Cookie("user_id")
+	_, err := req.Cookie("session")
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		response := errorResponse{

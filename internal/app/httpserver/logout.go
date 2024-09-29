@@ -8,7 +8,7 @@ import (
 )
 
 func LogOutHandler(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("user_id")
+	cookie, err := r.Cookie("session")
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		response := errorResponse{
@@ -22,13 +22,14 @@ func LogOutHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(marshaledResponse)
 		return
 	}
-	userID := cookie.Value
+	userHash := cookie.Value
+	
 	http.SetCookie(w, &http.Cookie{
 		Name:   cookie.Name,
 		Value:  "",
 		MaxAge: -1,
 	})
 
-	delete(database.UserID, userID)
+	delete(database.UserHash, userHash)
 	w.WriteHeader(http.StatusOK)
 }
