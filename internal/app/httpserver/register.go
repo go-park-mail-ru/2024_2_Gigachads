@@ -1,14 +1,14 @@
 package httpserver
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"mail/database"
 	"net/http"
 	"net/mail"
 	"regexp"
-	"crypto/rand"
-    "encoding/hex"
-    "time"
-	"mail/database"
+	"time"
 	//"fmt"
 )
 
@@ -18,8 +18,6 @@ type UserJSON struct {
 	Password   string `json:"password"`
 	RePassword string `json:"repassword"`
 }
-
-
 
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -88,9 +86,9 @@ func inputIsValid(str string) bool {
 }
 
 func GenerateUserID() string {
-    bytes := make([]byte, 16)
-    if _, err := rand.Read(bytes); err != nil {
-        panic(err)
-    }
-    return hex.EncodeToString(bytes)
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		panic(err)
+	}
+	return hex.EncodeToString(bytes)
 }

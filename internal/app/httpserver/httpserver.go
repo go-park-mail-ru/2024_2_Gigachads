@@ -27,14 +27,18 @@ func (s *HTTPServer) Start(cfg *config.Config) error {
 func (s *HTTPServer) configureRouter(cfg *config.Config) {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/hello", HelloHandler).Methods("GET")
-	router.HandleFunc("/mail/inbox", getAllMails).Methods("GET", "OPTIONS")
-	router.HandleFunc("/signup", SignUpHandler).Methods("POST", "OPTIONS")
-	router.HandleFunc("/login", LogInHandler).Methods("POST", "OPTIONS")
-	router.HandleFunc("/check-auth", checkAuthorizationByID).Methods("GET")
-	router.Use(middleware.AuthMiddleware)
+	public := router.PathPrefix("/").Subrouter()
+	public.HandleFunc("/hello", HelloHandler).Methods("GET")
+	public.HandleFunc("/signup", SignUpHandler).Methods("POST", "OPTIONS")
+	public.HandleFunc("/login", LogInHandler).Methods("POST", "OPTIONS")
+
+	private := router.PathPrefix("/").Subrouter()
+	private.HandleFunc("/mail/inbox", getAllMails).Methods("GET", "OPTIONS")
+	private.Use(middleware.AuthMiddleware)
+
 	router.Use(func(next http.Handler) http.Handler {
 		return middleware.CORS(next, cfg)
 	})
+
 	s.server.Handler = router
 }
