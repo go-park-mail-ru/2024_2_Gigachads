@@ -28,6 +28,7 @@ func LogOutHandler(w http.ResponseWriter, r *http.Request) {
 		Value:  "",
 		MaxAge: -1,
 	})
+
 	delete(database.UserID, userID)
 	w.WriteHeader(http.StatusOK)
 }
