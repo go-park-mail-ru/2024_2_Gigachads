@@ -60,14 +60,14 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid := GenerateUserID()
-	database.UserDB[user.Email] = database.User{Id: uuid, Email: user.Email, Name: user.Name, Password: user.Password}
-	database.UserID[uuid] = user.Email
+	hash := GenerateHash()
+	database.UserDB[user.Email] = database.User{Email: user.Email, Name: user.Name, Password: user.Password}
+	database.UserHash[hash] = user.Email
 	//w.Header().Set("Content-Type", "application/json")
 	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
-		Name:     "user_id",
-		Value:    database.UserDB[user.Email].Id,
+		Name:     "session",
+		Value:    hash,
 		Expires:  expiration,
 		HttpOnly: true,
 	}
@@ -85,7 +85,7 @@ func inputIsValid(str string) bool {
 	return match
 }
 
-func GenerateUserID() string {
+func GenerateHash() string {
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
 		panic(err)

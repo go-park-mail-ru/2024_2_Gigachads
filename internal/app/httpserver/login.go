@@ -56,16 +56,15 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid := GenerateUserID()
+	hash := GenerateHash()
 	current_user := database.UserDB[user.Email]
-	current_user.Id = uuid
 	database.UserDB[user.Email] = current_user
-	database.UserID[uuid] = user.Email
+	database.UserHash[hash] = user.Email
 
 	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
-		Name:     "user_id",
-		Value:    database.UserDB[user.Email].Id,
+		Name:     "session",
+		Value:    hash,
 		Expires:  expiration,
 		HttpOnly: true,
 	}
