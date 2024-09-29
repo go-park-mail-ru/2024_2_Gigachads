@@ -1,0 +1,5 @@
+httpserver: 
+    ip: 127.0.0.1
+    port: 8080
+    allowed_ips_by_cors:
+        - http://localhost:4201
