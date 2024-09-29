@@ -23,7 +23,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		ctx := context.WithValue(r.Context(), Key, cookie.Value)
+		ctx := context.WithValue(r.Context(), Key, database.UserHash[cookie.Value])
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
