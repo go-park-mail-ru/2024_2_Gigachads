@@ -489,7 +489,6 @@ var mockedMails = Mails{
 func getAllMails(w http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie("user_id")
 	if err != nil {
-		slog.Error("cannot get user_id from cookie")
 		w.WriteHeader(http.StatusForbidden)
 		response := errorResponse{
 			Status: http.StatusForbidden,
