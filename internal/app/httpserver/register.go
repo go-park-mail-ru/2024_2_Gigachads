@@ -7,7 +7,6 @@ import (
 	"mail/database"
 	"net/http"
 	"net/mail"
-	"regexp"
 	"time"
 	//"fmt"
 )
@@ -81,8 +80,8 @@ func emailIsValid(email string) bool {
 }
 
 func inputIsValid(str string) bool {
-	match, _ := regexp.MatchString("^[a-zA-Z0-9_]+$", str)
-	return match
+	// match, _ := regexp.MatchString("^[a-zA-Z0-9_]+$", str)
+	return true
 }
 
 func GenerateUserID() string {
