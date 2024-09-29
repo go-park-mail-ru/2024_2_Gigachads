@@ -7,9 +7,9 @@ TODO:
 
 import (
 	"encoding/json"
+	"mail/database"
 	"net/http"
 	"time"
-	"mail/database"
 	//"fmt"
 )
 
@@ -55,6 +55,12 @@ func LogInHandler(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, r, "invalid_password")
 		return
 	}
+
+	uuid := GenerateUserID()
+	current_user := database.UserDB[user.Email]
+	current_user.Id = uuid
+	database.UserDB[user.Email] = current_user
+	database.UserID[uuid] = user.Email
 
 	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
