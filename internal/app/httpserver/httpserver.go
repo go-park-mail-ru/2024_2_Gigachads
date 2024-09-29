@@ -31,6 +31,7 @@ func (s *HTTPServer) configureRouter(cfg *config.Config) {
 	router.HandleFunc("/mail/inbox", getAllMails).Methods("GET", "OPTIONS")
 	router.HandleFunc("/signup", SignUpHandler).Methods("POST", "OPTIONS")
 	router.HandleFunc("/login", LogInHandler).Methods("POST", "OPTIONS")
+	router.HandleFunc("/check-auth", checkAuthorizationByID).Methods("GET")
 	router.Use(middleware.AuthMiddleware)
 	router.Use(func(next http.Handler) http.Handler {
 		return middleware.CORS(next, cfg)
