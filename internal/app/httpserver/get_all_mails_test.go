@@ -16,7 +16,7 @@ func TestGetAllMails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.AddCookie(&http.Cookie{Name: "user_id", Value: testUserID})
+	req.AddCookie(&http.Cookie{Name: "session", Value: testUserID})
 	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
