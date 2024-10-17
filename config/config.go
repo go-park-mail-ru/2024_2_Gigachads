@@ -1,12 +1,19 @@
 package config
 
 import (
-	"gopkg.in/yaml.v2"
 	"log/slog"
 	"os"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
+	SMTP struct {
+		Host     string `yaml:"host"`
+		Port     string `yaml:"port"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"smtp"`
 	HTTPServer struct {
 		IP               string   `yaml:"ip"`
 		Port             string   `yaml:"port"`
