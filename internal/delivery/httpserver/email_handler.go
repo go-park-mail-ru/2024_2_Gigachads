@@ -9,6 +9,7 @@ import (
 type EmailHandler struct {
 	EmailUseCase   *usecases.EmailUseCase
 	SessionUseCase *usecases.SessionUseCase
+	SMTPUsecase    *usecases.SMTPUsecase
 }
 
 func NewEmailHandler(eu *usecases.EmailUseCase, su *usecases.SessionUseCase) *EmailHandler {
