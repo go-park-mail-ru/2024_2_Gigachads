@@ -14,6 +14,12 @@ type Config struct {
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
 	} `yaml:"smtp"`
+	Pop3 struct {
+		Host     string `yaml:"host"`
+		Port     string `yaml:"port"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"pop3"`
 	HTTPServer struct {
 		IP               string   `yaml:"ip"`
 		Port             string   `yaml:"port"`

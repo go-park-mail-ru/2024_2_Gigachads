@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	models "mail/internal/models"
+	"mail/internal/models"
 	"time"
 )
 

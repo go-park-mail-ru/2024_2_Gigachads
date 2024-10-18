@@ -10,6 +10,7 @@ type EmailHandler struct {
 	EmailUseCase   *usecases.EmailUseCase
 	SessionUseCase *usecases.SessionUseCase
 	SMTPUsecase    *usecases.SMTPUsecase
+	POP3Usecase    *usecases.POP3Usecase
 }
 
 func NewEmailHandler(eu *usecases.EmailUseCase, su *usecases.SessionUseCase) *EmailHandler {
