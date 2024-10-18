@@ -1,3 +1,17 @@
 httpserver: 
     ip: 127.0.0.1
     port: 8080
+    allowed_ips_by_cors:
+        - http://localhost:4201
+
+smtp:
+    host: smtp.gmail.com
+    port: 587
+    username: your_username
+    password: your_password 
+
+pop3:
+    host: pop.gmail.com
+    port: 995
+    username: your_username
+    password: your_password 

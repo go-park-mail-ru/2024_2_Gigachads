@@ -1,15 +1,29 @@
 package config
 
 import (
-	"gopkg.in/yaml.v2"
 	"log/slog"
 	"os"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
+	SMTP struct {
+		Host     string `yaml:"host"`
+		Port     string `yaml:"port"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"smtp"`
+	Pop3 struct {
+		Host     string `yaml:"host"`
+		Port     string `yaml:"port"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"pop3"`
 	HTTPServer struct {
-		IP   string `yaml:"ip"`
-		Port string `yaml:"port"`
+		IP               string   `yaml:"ip"`
+		Port             string   `yaml:"port"`
+		AllowedIPsByCORS []string `yaml:"allowed_ips_by_cors"`
 	} `yaml:"httpserver"`
 }
 
