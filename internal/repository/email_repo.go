@@ -5,11 +5,15 @@ import (
 	"time"
 )
 
-type EmailRepository struct {
+type EmailRepository interface {
+	Inbox(id string) ([]models.Email, error)
+}
+
+type EmailRepositoryService struct {
 	repo []models.Email
 }
 
-func NewEmailRepository() *EmailRepository {
+func NewEmailRepositoryService() EmailRepository {
 	repo := []models.Email{
 		{
 
@@ -458,9 +462,9 @@ func NewEmailRepository() *EmailRepository {
 			Date:        time.Now().Add(-6 * time.Hour),
 		},
 	}
-	return &EmailRepository{repo: repo}
+	return &EmailRepositoryService{repo: repo}
 }
 
-func (er *EmailRepository) Inbox(id string) ([]models.Email, error) {
+func (er *EmailRepositoryService) Inbox(id string) ([]models.Email, error) {
 	return er.repo, nil
 }

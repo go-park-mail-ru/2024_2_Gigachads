@@ -7,11 +7,11 @@ import (
 )
 
 type AuthMiddleware struct {
-	SessionUseCase *usecases.SessionUseCase
+	UserUseCase usecases.UserUseCase
 }
 
-func NewAuthMW(su *usecases.SessionUseCase) *AuthMiddleware {
-	return &AuthMiddleware{SessionUseCase: su}
+func NewAuthMW(uu usecases.UserUseCase) *AuthMiddleware {
+	return &AuthMiddleware{UserUseCase: uu}
 }
 
 type contextKey string
@@ -30,7 +30,7 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 		}
 
-		session, err := m.SessionUseCase.GetSession(cookie.Value)
+		session, err := m.UserUseCase.CheckAuth(cookie.Value)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 		}

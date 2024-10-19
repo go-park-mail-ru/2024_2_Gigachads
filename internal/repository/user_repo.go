@@ -5,16 +5,21 @@ import (
 	models "mail/internal/models"
 )
 
-type UserRepository struct {
+type UserRepository interface {
+	CreateUser(signup *models.User) (*models.User, error)
+	CheckUser(login *models.User) (*models.User, error)
+}
+
+type UserRepositoryService struct {
 	repo map[string]models.User
 }
 
-func NewUserRepository() *UserRepository {
+func NewUserRepositoryService() UserRepository {
 	repo := make(map[string]models.User)
-	return &UserRepository{repo: repo}
+	return &UserRepositoryService{repo: repo}
 }
 
-func (ur *UserRepository) CreateUser(signup *models.Signup) (*models.User, error) {
+func (ur *UserRepositoryService) CreateUser(signup *models.User) (*models.User, error) {
 	_, ok := ur.repo[signup.Email]
 	if ok {
 		return &models.User{}, fmt.Errorf("login_taken")
@@ -24,7 +29,7 @@ func (ur *UserRepository) CreateUser(signup *models.Signup) (*models.User, error
 	return &user, nil
 }
 
-func (ur *UserRepository) GetUser(login *models.Login) (*models.User, error) {
+func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, error) {
 	user, ok := ur.repo[login.Email]
 	if ok {
 		if user.Password != login.Password {

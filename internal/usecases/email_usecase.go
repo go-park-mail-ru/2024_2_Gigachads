@@ -5,16 +5,26 @@ import (
 	repository "mail/internal/repository"
 )
 
-type EmailUseCase struct {
-	repo *repository.EmailRepository
+type EmailUseCase interface {
+	Inbox(id string) ([]models.Email, error)
 }
 
-func NewEmailUseCase(repo *repository.EmailRepository) *EmailUseCase {
-	return &EmailUseCase{
-		repo: repo,
+type EmailService struct {
+	EmailRepo   repository.EmailRepository
+	SessionRepo repository.SessionRepository
+}
+
+func NewEmailService(erepo repository.EmailRepository, srepo repository.SessionRepository) EmailUseCase {
+	return &EmailService{
+		EmailRepo:   erepo,
+		SessionRepo: srepo,
 	}
 }
 
-func (euc *EmailUseCase) Inbox(id string) ([]models.Email, error) {
-	return euc.repo.Inbox(id)
+func (es *EmailService) Inbox(sessionID string) ([]models.Email, error) {
+	session, err := es.SessionRepo.GetSession(sessionID)
+	if err != nil {
+		return nil, err
+	}
+	return es.EmailRepo.Inbox(session.UserLogin)
 }
