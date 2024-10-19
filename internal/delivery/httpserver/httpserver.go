@@ -4,7 +4,9 @@ import (
 	"github.com/gorilla/mux"
 	"log/slog"
 	"mail/config"
-	"mail/internal/delivery/middleware"
+	authRouter "mail/internal/delivery/httpserver/auth"
+	emailRouter "mail/internal/delivery/httpserver/email"
+	mw "mail/internal/delivery/middleware"
 	repo "mail/internal/repository"
 	"mail/internal/usecases"
 	"net/http"
@@ -38,12 +40,16 @@ func (s *HTTPServer) configureRouters(cfg *config.Config) {
 	public := router.PathPrefix("/").Subrouter()
 	private := router.PathPrefix("/").Subrouter()
 
-	ConfigureEmailRouter(private, eu)
-	ConfigureAuthRouter(public, private, uu)
-	ConfigureAuthMiddleware(private, uu)
+	authRout := authRouter.NewAuthRouter(uu)
+	emailRout := emailRouter.NewEmailRouter(eu)
+	mwAuth := mw.NewAuthMW(uu)
+
+	emailRout.ConfigureEmailRouter(private)
+	authRout.ConfigureAuthRouter(public, private)
+	mwAuth.ConfigureAuthMiddleware(private)
 
 	router.Use(func(next http.Handler) http.Handler {
-		return middleware.CORS(next, cfg)
+		return mw.CORS(next, cfg)
 	})
 
 	s.server.Handler = router

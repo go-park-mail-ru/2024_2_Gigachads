@@ -1,10 +1,9 @@
-package httpserver
+package utils
 
 import (
 	"encoding/json"
-	"net/http"
-	//"fmt"
 	"mail/internal/models"
+	"net/http"
 )
 
 func ErrorResponse(w http.ResponseWriter, r *http.Request, code int, message string) {

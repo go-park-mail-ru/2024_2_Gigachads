@@ -5,15 +5,11 @@ import (
 	"time"
 )
 
-type EmailRepository interface {
-	Inbox(id string) ([]models.Email, error)
-}
-
 type EmailRepositoryService struct {
 	repo []models.Email
 }
 
-func NewEmailRepositoryService() EmailRepository {
+func NewEmailRepositoryService() models.EmailRepository {
 	repo := []models.Email{
 		{
 

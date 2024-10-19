@@ -2,22 +2,14 @@ package usecase
 
 import (
 	models "mail/internal/models"
-	repository "mail/internal/repository"
 )
 
-type UserUseCase interface {
-	Signup(user *models.User) (*models.User, *models.Session, error)
-	Login(user *models.User) (*models.User, *models.Session, error)
-	Logout(id string) error
-	CheckAuth(sessionID string) (*models.Session, error)
-}
-
 type UserService struct {
-	UserRepo    repository.UserRepository
-	SessionRepo repository.SessionRepository
+	UserRepo    models.UserRepository
+	SessionRepo models.SessionRepository
 }
 
-func NewUserService(urepo repository.UserRepository, srepo repository.SessionRepository) UserUseCase {
+func NewUserService(urepo models.UserRepository, srepo models.SessionRepository) models.UserUseCase {
 	return &UserService{
 		UserRepo:    urepo,
 		SessionRepo: srepo,

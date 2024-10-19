@@ -5,16 +5,11 @@ import (
 	models "mail/internal/models"
 )
 
-type UserRepository interface {
-	CreateUser(signup *models.User) (*models.User, error)
-	CheckUser(login *models.User) (*models.User, error)
-}
-
 type UserRepositoryService struct {
 	repo map[string]models.User
 }
 
-func NewUserRepositoryService() UserRepository {
+func NewUserRepositoryService() models.UserRepository {
 	repo := make(map[string]models.User)
 	return &UserRepositoryService{repo: repo}
 }

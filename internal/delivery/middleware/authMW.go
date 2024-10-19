@@ -2,16 +2,21 @@ package middleware
 
 import (
 	"context"
-	usecases "mail/internal/usecases"
+	"github.com/gorilla/mux"
+	"mail/internal/models"
 	"net/http"
 )
 
 type AuthMiddleware struct {
-	UserUseCase usecases.UserUseCase
+	UserUseCase models.UserUseCase
 }
 
-func NewAuthMW(uu usecases.UserUseCase) *AuthMiddleware {
+func NewAuthMW(uu models.UserUseCase) *AuthMiddleware {
 	return &AuthMiddleware{UserUseCase: uu}
+}
+
+func (mw *AuthMiddleware) ConfigureAuthMiddleware(privateMux *mux.Router) {
+	privateMux.Use(mw.Handler)
 }
 
 type contextKey string

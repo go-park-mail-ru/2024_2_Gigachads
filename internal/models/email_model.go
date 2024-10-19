@@ -10,3 +10,11 @@ type Email struct {
 	Badge_type  string    `json:"badge_type"`
 	Date        time.Time `json:"date"`
 }
+
+type EmailUseCase interface {
+	Inbox(id string) ([]Email, error)
+}
+
+type EmailRepository interface {
+	Inbox(id string) ([]Email, error)
+}

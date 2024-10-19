@@ -7,17 +7,11 @@ import (
 	"time"
 )
 
-type SessionRepository interface {
-	CreateSession(mail string) (*models.Session, error)
-	DeleteSession(sessionID string) error
-	GetSession(sessionID string) (*models.Session, error)
-}
-
 type SessionRepositoryService struct {
 	repo map[string]*models.Session
 }
 
-func NewSessionRepositoryService() SessionRepository {
+func NewSessionRepositoryService() models.SessionRepository {
 	repo := make(map[string]*models.Session)
 	return &SessionRepositoryService{repo: repo}
 }
