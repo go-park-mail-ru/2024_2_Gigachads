@@ -6,16 +6,21 @@ import (
 )
 
 func (ar *AuthRouter) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
+	ctxEmail := r.Context().Value("email")
+	if ctxEmail == nil {
+		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	email := ctxEmail.(string)
 
-	err = ar.UserUseCase.Logout(cookie.Value)
+	err := ar.UserUseCase.Logout(email)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:   cookie.Name,
+		Name:   "session",
 		Value:  "",
 		MaxAge: -1,
 	})

@@ -1,4 +1,4 @@
-package email
+	package email
 
 import (
 	"encoding/json"
@@ -7,9 +7,14 @@ import (
 )
 
 func (er *EmailRouter) InboxHandler(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	mails, err := er.EmailUseCase.Inbox(cookie.Value)
+	ctxEmail := r.Context().Value("email")
+	if ctxEmail == nil {
+		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	email := ctxEmail.(string)
+	
+	mails, err := er.EmailUseCase.Inbox(email)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 		return

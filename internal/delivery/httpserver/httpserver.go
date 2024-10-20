@@ -37,20 +37,16 @@ func (s *HTTPServer) configureRouters(cfg *config.Config) {
 	eu := usecase.NewEmailService(er, sr)
 
 	router := mux.NewRouter()
-	public := router.PathPrefix("/").Subrouter()
-	private := router.PathPrefix("/").Subrouter()
+	router = router.PathPrefix("/").Subrouter()
 
 	authRout := authRouter.NewAuthRouter(uu)
 	emailRout := emailRouter.NewEmailRouter(eu)
 	mwAuth := mw.NewAuthMW(uu)
 
-	emailRout.ConfigureEmailRouter(private)
-	authRout.ConfigureAuthRouter(public, private)
-	mwAuth.ConfigureAuthMiddleware(private)
+	emailRout.ConfigureEmailRouter(router)
+	authRout.ConfigureAuthRouter(router)
 
-	router.Use(func(next http.Handler) http.Handler {
-		return mw.CORS(next, cfg)
-	})
+	handler := mw.ConfigureMWs(cfg, router, mwAuth)
 
-	s.server.Handler = router
+	s.server.Handler = handler
 }
