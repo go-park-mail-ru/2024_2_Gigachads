@@ -5,10 +5,12 @@ import (
 	"mail/internal/models"
 	"mail/pkg/utils"
 	"net/http"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var login models.User
+	sanitizer := bluemonday.UGCPolicy()
 
 	err := json.NewDecoder(r.Body).Decode(&login)
 	if err != nil {
@@ -16,6 +18,9 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	login.Password = sanitizer.Sanitize(login.Password)
+	login.Email = sanitizer.Sanitize(login.Email)
+	
 	if !models.EmailIsValid(login.Email) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_input")
 		return
