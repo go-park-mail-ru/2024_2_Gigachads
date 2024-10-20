@@ -9,7 +9,7 @@ type HTTPServer struct {
 	server *http.Server
 }
 
-func (s *HTTPServer) PanicMiddleware(next http.Handler) http.Handler {
+func PanicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
