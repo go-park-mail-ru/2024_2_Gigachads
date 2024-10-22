@@ -38,6 +38,7 @@ func (s *HTTPServer) configureRouters(cfg *config.Config) {
 
 	router := mux.NewRouter()
 	router = router.PathPrefix("/").Subrouter()
+	router.Use(mw.PanicMiddleware)
 
 	authRout := authRouter.NewAuthRouter(uu)
 	emailRout := emailRouter.NewEmailRouter(eu)
