@@ -2,7 +2,7 @@ package config
 
 import (
 	"gopkg.in/yaml.v2"
-	"log/slog"
+	"mail/pkg/logger"
 	"os"
 )
 
@@ -27,7 +27,7 @@ func GetConfig(path string) (*Config, error) {
 	if err = d.Decode(config); err != nil {
 		return nil, err
 	}
-	slog.Info("loaded config")
+	logger.Info("loaded config")
 	return config, nil
 
 }

@@ -2,7 +2,7 @@ package httpserver
 
 import (
 	"github.com/gorilla/mux"
-	"log/slog"
+	"mail/pkg/logger"
 	"mail/config"
 	authRouter "mail/internal/delivery/httpserver/auth"
 	emailRouter "mail/internal/delivery/httpserver/email"
@@ -20,7 +20,7 @@ func (s *HTTPServer) Start(cfg *config.Config) error {
 	s.server = new(http.Server)
 	s.server.Addr = cfg.HTTPServer.IP + ":" + cfg.HTTPServer.Port
 	s.configureRouters(cfg)
-	slog.Info("Server is running on", "port", cfg.HTTPServer.Port)
+	logger.Info("Server is running on", "port", cfg.HTTPServer.Port)
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
 	}
@@ -39,6 +39,7 @@ func (s *HTTPServer) configureRouters(cfg *config.Config) {
 	router := mux.NewRouter()
 	router = router.PathPrefix("/").Subrouter()
 	router.Use(mw.PanicMiddleware)
+	router.Use(mw.LogMiddleware)
 
 	authRout := authRouter.NewAuthRouter(uu)
 	emailRout := emailRouter.NewEmailRouter(eu)
