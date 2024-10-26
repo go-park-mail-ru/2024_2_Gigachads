@@ -5,10 +5,6 @@ import (
 	"mail/pkg/utils"
 )
 
-type HTTPServer struct {
-	server *http.Server
-}
-
 func PanicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
