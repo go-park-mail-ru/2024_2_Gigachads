@@ -1,4 +1,4 @@
--- Создание таблицы пользователей (user)
+-- Создание таблицы пользователей (profile)
 CREATE TABLE IF NOT EXISTS profile (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     email TEXT NOT NULL UNIQUE CHECK (LENGTH(email) <= 50),
@@ -11,7 +11,15 @@ CREATE TABLE IF NOT EXISTS profile (
 CREATE TABLE IF NOT EXISTS message (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title TEXT NOT NULL CHECK (LENGTH(title) <= 100),
-    description TEXT DEFAULT NULL,
+    description TEXT DEFAULT NULL
+);
+
+-- Создание таблицы папок (folder)
+CREATE TABLE IF NOT EXISTS folder (
+    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_id INTEGER,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES profile(id) ON DELETE CASCADE,
+    name TEXT NOT NULL CHECK (LENGTH(name) <= 50)
 );
 
 -- Создание таблицы писем пользователей (email_transaction)
@@ -25,20 +33,12 @@ CREATE TABLE IF NOT EXISTS email_transaction (
     isRead BOOLEAN NOT NULL DEFAULT FALSE,
     folder_id INTEGER,
     CONSTRAINT fk_sender FOREIGN KEY (sender_email) REFERENCES profile(email) ON DELETE SET NULL,
-    CONSTRAINT fk_recipient FOREIGN KEY (recipient_email) REFERENCES profile(email) ON DELETE NULL,
+    CONSTRAINT fk_recipient FOREIGN KEY (recipient_email) REFERENCES profile(email) ON DELETE SET NULL,
     CONSTRAINT fk_message FOREIGN KEY (message_id)  REFERENCES message(id),
     CONSTRAINT fk_folder FOREIGN KEY (folder_id)  REFERENCES folder(id) ON DELETE CASCADE
 );
 
--- Создание таблицы папок (folder)
-CREATE TABLE IF NOT EXISTS folder (
-    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    user_id INTEGER,
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES profile(id) ON DELETE CASCADE,
-    name TEXT NOT NULL CHECK (LENGTH(name) <= 50)
-);
-
--- Создание таблицы вложений (attachment)
+-- Создание таблицы вложений
 CREATE TABLE IF NOT EXISTS attachment (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     message_id INTEGER,
