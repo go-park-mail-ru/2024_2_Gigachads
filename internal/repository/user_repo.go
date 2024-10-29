@@ -1,37 +1,60 @@
 package repository
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	models "mail/internal/models"
 )
 
 type UserRepositoryService struct {
-	repo map[string]models.User
+	repo *sql.DB
 }
 
-func NewUserRepositoryService() models.UserRepository {
-	repo := make(map[string]models.User)
-	return &UserRepositoryService{repo: repo}
+func NewUserRepositoryService(db *sql.DB) models.UserRepository {
+	return &UserRepositoryService{repo: db}
+}
+
+func (ur *UserRepositoryService) GetByEmail(email string) (bool, error) {
+	row := ur.repo.QueryRow(
+		`SELECT email FROM "user" WHERE email = $1`, email)
+	user := models.User{}
+	err := row.Scan(&user.Email)
+
+	if !errors.Is(err, sql.ErrNoRows) {
+		return true, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
 func (ur *UserRepositoryService) CreateUser(signup *models.User) (*models.User, error) {
-	_, ok := ur.repo[signup.Email]
-	if ok {
-		return &models.User{}, fmt.Errorf("login_taken")
+	row := ur.repo.QueryRow(
+		`INSERT INTO "profile" (username, email, password) VALUES ($1, $2, $3) RETURNING email`,
+		signup.Name, signup.Email, signup.Password)
+	user := models.User{}
+	err := row.Scan(&user.Email)
+	if err != nil {
+		return nil, err
 	}
-	user := models.User{Name: signup.Name, Email: signup.Email, Password: signup.Password}
-	ur.repo[user.Email] = user
 	return &user, nil
 }
 
 func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, error) {
-	user, ok := ur.repo[login.Email]
-	if ok {
-		if user.Password != login.Password {
-			return &models.User{}, fmt.Errorf("invalid_password")
-		}
-		return &user, nil
-	} else {
-		return &models.User{}, fmt.Errorf("user_does_not_exist")
+	row := ur.repo.QueryRow(
+		`SELECT email, password FROM "user" WHERE email = $1`, login.Email)
+	user := models.User{}
+	err := row.Scan(&user.Email, &user.Password)
+	if err != nil {
+		return nil, err
 	}
+
+	if login.Password != user.Password {
+		return nil, fmt.Errorf("invalid_password")
+	}
+
+	return &user, nil
 }

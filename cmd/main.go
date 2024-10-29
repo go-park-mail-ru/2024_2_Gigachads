@@ -4,11 +4,10 @@ import (
 	"flag"
 	"log/slog"
 	config "mail/config"
-	httpserver "mail/internal/delivery/httpserver"
+	app "mail/internal/app"
 )
 
 func main() {
-	var srv httpserver.HTTPServer
 	configPath := flag.String("config-path", "./config/config.yaml", "path to config file")
 	flag.Parse()
 
@@ -16,7 +15,7 @@ func main() {
 	if err != nil {
 		slog.Error(err.Error())
 	}
-	if err := srv.Start(config); err != nil {
+	if err := app.Run(config); err != nil {
 		slog.Error(err.Error())
 	}
 }

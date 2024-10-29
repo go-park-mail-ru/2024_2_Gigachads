@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	models "mail/internal/models"
 )
 
@@ -16,11 +17,20 @@ func NewUserService(urepo models.UserRepository, srepo models.SessionRepository)
 	}
 }
 
-func (us *UserService) Signup(user *models.User) (*models.User, *models.Session, error) {
-	user, err := us.UserRepo.CreateUser(user)
+func (us *UserService) Signup(signup *models.User) (*models.User, *models.Session, error) {
+	taken, err := us.UserRepo.GetByEmail(signup.Email)
 	if err != nil {
 		return nil, nil, err
 	}
+	if taken {
+		return nil, nil, fmt.Errorf("login_taken")
+	}
+
+	user, err := us.UserRepo.CreateUser(signup)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	session, err := us.SessionRepo.CreateSession(user.Email)
 	if err != nil {
 		return nil, nil, err
@@ -29,6 +39,14 @@ func (us *UserService) Signup(user *models.User) (*models.User, *models.Session,
 }
 
 func (us *UserService) Login(login *models.User) (*models.User, *models.Session, error) {
+	taken, err := us.UserRepo.GetByEmail(login.Email)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !taken {
+		return nil, nil, fmt.Errorf("user_does_not_exist")
+	}
+
 	user, err := us.UserRepo.CheckUser(login)
 	if err != nil {
 		return nil, nil, err

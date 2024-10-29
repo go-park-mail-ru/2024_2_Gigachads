@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"database/sql"
 	"github.com/gorilla/mux"
 	"log/slog"
 	"mail/config"
@@ -16,10 +17,10 @@ type HTTPServer struct {
 	server *http.Server
 }
 
-func (s *HTTPServer) Start(cfg *config.Config) error {
+func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB) error {
 	s.server = new(http.Server)
 	s.server.Addr = cfg.HTTPServer.IP + ":" + cfg.HTTPServer.Port
-	s.configureRouters(cfg)
+	s.configureRouters(cfg, db)
 	slog.Info("Server is running on", "port", cfg.HTTPServer.Port)
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
@@ -27,13 +28,13 @@ func (s *HTTPServer) Start(cfg *config.Config) error {
 	return nil
 }
 
-func (s *HTTPServer) configureRouters(cfg *config.Config) {
+func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB) {
 	sr := repo.NewSessionRepositoryService()
 
-	ur := repo.NewUserRepositoryService()
+	ur := repo.NewUserRepositoryService(db)
 	uu := usecase.NewUserService(ur, sr)
 
-	er := repo.NewEmailRepositoryService()
+	er := repo.NewEmailRepositoryService(db)
 	eu := usecase.NewEmailService(er, sr)
 
 	router := mux.NewRouter()

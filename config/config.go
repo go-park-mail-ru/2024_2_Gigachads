@@ -12,6 +12,13 @@ type Config struct {
 		Port             string   `yaml:"port"`
 		AllowedIPsByCORS []string `yaml:"allowed_ips_by_cors"`
 	} `yaml:"httpserver"`
+	Postgres struct {
+		IP string `yaml:"ip"`
+		Port string `yaml:"port"`
+		DBname string `yaml:"dbname"`
+		User string `yaml:"user"`
+		Password string `yaml:"password"`
+	} `yaml:"postgre"`
 }
 
 func GetConfig(path string) (*Config, error) {

@@ -22,6 +22,7 @@ type UserUseCase interface {
 type UserRepository interface {
 	CreateUser(signup *User) (*User, error)
 	CheckUser(login *User) (*User, error)
+	GetByEmail(email string) (bool, error)
 }
 
 func EmailIsValid(email string) bool {
