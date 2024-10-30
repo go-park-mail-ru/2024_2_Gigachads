@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS email_transaction (
 	sender_email TEXT,
     recipient_email TEXT,
     message_id INTEGER,
-    sending_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sending_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     isRead BOOLEAN NOT NULL DEFAULT FALSE,
     folder_id INTEGER,
     CONSTRAINT fk_sender FOREIGN KEY (sender_email) REFERENCES profile(email) ON DELETE SET NULL,
