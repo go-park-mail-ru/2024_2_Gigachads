@@ -2,19 +2,30 @@ package usecase
 
 import (
 	models "mail/internal/models"
-	repository "mail/internal/repository"
 )
 
-type EmailUseCase struct {
-	repo *repository.EmailRepository
+type EmailService struct {
+	EmailRepo   models.EmailRepository
+	SessionRepo models.SessionRepository
+	SMTPRepo    models.SMTPRepository
 }
 
-func NewEmailUseCase(repo *repository.EmailRepository) *EmailUseCase {
-	return &EmailUseCase{
-		repo: repo,
+func NewEmailService(erepo models.EmailRepository, srepo models.SessionRepository, smtprepo models.SMTPRepository) *EmailService {
+	return &EmailService{
+		EmailRepo:   erepo,
+		SessionRepo: srepo,
+		SMTPRepo:    smtprepo,
 	}
 }
 
-func (euc *EmailUseCase) Inbox(id string) ([]models.Email, error) {
-	return euc.repo.Inbox(id)
+func (es *EmailService) Inbox(sessionID string) ([]models.Email, error) {
+	session, err := es.SessionRepo.GetSession(sessionID)
+	if err != nil {
+		return nil, err
+	}
+	return es.EmailRepo.Inbox(session.UserLogin)
+}
+
+func (es *EmailService) SendEmail(from string, to []string, subject string, body string) error {
+	return es.SMTPRepo.SendEmail(from, to, subject, body)
 }

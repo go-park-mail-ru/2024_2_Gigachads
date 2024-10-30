@@ -10,8 +10,8 @@ type SMTPRepository struct {
 	cfg    *config.Config
 }
 
-func NewSMTPRepository() *SMTPRepository {
-	return &SMTPRepository{}
+func NewSMTPRepository(client *smtp.SMTPClient, cfg *config.Config) *SMTPRepository {
+	return &SMTPRepository{client: client, cfg: cfg}
 }
 
 func (s *SMTPRepository) SendEmail(from string, to []string, subject string, body string) error {

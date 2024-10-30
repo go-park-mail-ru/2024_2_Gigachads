@@ -1,37 +1,60 @@
 package repository
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	models "mail/internal/models"
 )
 
-type UserRepository struct {
-	repo map[string]models.User
+type UserRepositoryService struct {
+	repo *sql.DB
 }
 
-func NewUserRepository() *UserRepository {
-	repo := make(map[string]models.User)
-	return &UserRepository{repo: repo}
+func NewUserRepositoryService(db *sql.DB) models.UserRepository {
+	return &UserRepositoryService{repo: db}
 }
 
-func (ur *UserRepository) CreateUser(signup *models.Signup) (*models.User, error) {
-	_, ok := ur.repo[signup.Email]
-	if ok {
-		return &models.User{}, fmt.Errorf("login_taken")
+func (ur *UserRepositoryService) GetByEmail(email string) (bool, error) {
+	row := ur.repo.QueryRow(
+		`SELECT email FROM "user" WHERE email = $1`, email)
+	user := models.User{}
+	err := row.Scan(&user.Email)
+
+	if !errors.Is(err, sql.ErrNoRows) {
+		return true, nil
 	}
-	user := models.User{Name: signup.Name, Email: signup.Email, Password: signup.Password}
-	ur.repo[user.Email] = user
+
+	if err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+func (ur *UserRepositoryService) CreateUser(signup *models.User) (*models.User, error) {
+	row := ur.repo.QueryRow(
+		`INSERT INTO "profile" (username, email, password) VALUES ($1, $2, $3) RETURNING email`,
+		signup.Name, signup.Email, signup.Password)
+	user := models.User{}
+	err := row.Scan(&user.Email)
+	if err != nil {
+		return nil, err
+	}
 	return &user, nil
 }
 
-func (ur *UserRepository) GetUser(login *models.Login) (*models.User, error) {
-	user, ok := ur.repo[login.Email]
-	if ok {
-		if user.Password != login.Password {
-			return &models.User{}, fmt.Errorf("invalid_password")
-		}
-		return &user, nil
-	} else {
-		return &models.User{}, fmt.Errorf("user_does_not_exist")
+func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, error) {
+	row := ur.repo.QueryRow(
+		`SELECT email, password FROM "user" WHERE email = $1`, login.Email)
+	user := models.User{}
+	err := row.Scan(&user.Email, &user.Password)
+	if err != nil {
+		return nil, err
 	}
+
+	if login.Password != user.Password {
+		return nil, fmt.Errorf("invalid_password")
+	}
+
+	return &user, nil
 }

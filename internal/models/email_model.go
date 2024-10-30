@@ -3,10 +3,22 @@ package models
 import "time"
 
 type Email struct {
-	Author      string    `json:"author"`
-	Description string    `json:"description"`
-	Text        string    `json:"text"`
-	Badge_text  string    `json:"badge_text"`
-	Badge_type  string    `json:"badge_type"`
-	Date        time.Time `json:"date"`
+	Sender_email string    `json:"author"`
+	Title        string    `json:"title"`
+	IsRead       bool      `json:"is_read"`
+	Sending_date time.Time `json:"date"`
+	Description  string    `json:"description"`
+}
+
+type EmailUseCase interface {
+	Inbox(id string) ([]Email, error)
+	SendEmail(from string, to []string, subject string, body string) error
+}
+
+type EmailRepository interface {
+	Inbox(id string) ([]Email, error)
+}
+
+type SMTPRepository interface {
+	SendEmail(from string, to []string, subject string, body string) error
 }

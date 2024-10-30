@@ -10,3 +10,9 @@ type Session struct {
 	Time      time.Time
 	UserLogin string
 }
+
+type SessionRepository interface {
+	CreateSession(mail string) (*Session, error)
+	DeleteSession(sessionID string) error
+	GetSession(sessionID string) (*Session, error)
+}

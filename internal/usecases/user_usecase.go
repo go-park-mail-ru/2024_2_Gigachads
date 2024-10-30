@@ -1,24 +1,75 @@
 package usecase
 
 import (
+	"fmt"
 	models "mail/internal/models"
-	repository "mail/internal/repository"
 )
 
-type UserUseCase struct {
-	repo *repository.UserRepository
+type UserService struct {
+	UserRepo    models.UserRepository
+	SessionRepo models.SessionRepository
 }
 
-func NewUserUseCase(repo *repository.UserRepository) *UserUseCase {
-	return &UserUseCase{
-		repo: repo,
+func NewUserService(urepo models.UserRepository, srepo models.SessionRepository) models.UserUseCase {
+	return &UserService{
+		UserRepo:    urepo,
+		SessionRepo: srepo,
 	}
 }
 
-func (uuc *UserUseCase) CreateUser(user *models.Signup) (*models.User, error) {
-	return uuc.repo.CreateUser(user)
+func (us *UserService) Signup(signup *models.User) (*models.User, *models.Session, error) {
+	taken, err := us.UserRepo.GetByEmail(signup.Email)
+	if err != nil {
+		return nil, nil, err
+	}
+	if taken {
+		return nil, nil, fmt.Errorf("login_taken")
+	}
+
+	user, err := us.UserRepo.CreateUser(signup)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	session, err := us.SessionRepo.CreateSession(user.Email)
+	if err != nil {
+		return nil, nil, err
+	}
+	return user, session, nil
 }
 
-func (uuc *UserUseCase) GetUser(login *models.Login) (*models.User, error) {
-	return uuc.repo.GetUser(login)
+func (us *UserService) Login(login *models.User) (*models.User, *models.Session, error) {
+	taken, err := us.UserRepo.GetByEmail(login.Email)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !taken {
+		return nil, nil, fmt.Errorf("user_does_not_exist")
+	}
+
+	user, err := us.UserRepo.CheckUser(login)
+	if err != nil {
+		return nil, nil, err
+	}
+	session, err := us.SessionRepo.CreateSession(user.Email)
+	if err != nil {
+		return nil, nil, err
+	}
+	return user, session, nil
+}
+
+func (us *UserService) Logout(id string) error {
+	err := us.SessionRepo.DeleteSession(id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (us *UserService) CheckAuth(id string) (*models.Session, error) {
+	session, err := us.SessionRepo.GetSession(id)
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
 }

@@ -1,9 +1,15 @@
 package httpserver
 
 import (
+	"database/sql"
 	"log/slog"
-	config "mail/config"
-	"mail/internal/delivery/middleware"
+	"mail/config"
+	authRouter "mail/internal/delivery/httpserver/auth"
+	emailRouter "mail/internal/delivery/httpserver/email"
+	mw "mail/internal/delivery/middleware"
+	repo "mail/internal/repository"
+	usecase "mail/internal/usecases"
+	"mail/pkg/smtp"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -13,10 +19,10 @@ type HTTPServer struct {
 	server *http.Server
 }
 
-func (s *HTTPServer) Start(cfg *config.Config, authHandler *AuthHandler, emailHandler *EmailHandler, authMW *middleware.AuthMiddleware) error {
+func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB) error {
 	s.server = new(http.Server)
 	s.server.Addr = cfg.HTTPServer.IP + ":" + cfg.HTTPServer.Port
-	s.configureRouter(cfg, authHandler, emailHandler, authMW)
+	s.configureRouters(cfg, db)
 	slog.Info("Server is running on", "port", cfg.HTTPServer.Port)
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
@@ -24,21 +30,35 @@ func (s *HTTPServer) Start(cfg *config.Config, authHandler *AuthHandler, emailHa
 	return nil
 }
 
-func (s *HTTPServer) configureRouter(cfg *config.Config, authHandler *AuthHandler, emailHandler *EmailHandler, authMW *middleware.AuthMiddleware) {
+func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB) {
+	sr := repo.NewSessionRepositoryService()
+
+	smtpClient := s.createAndConfigureSMTPClient(cfg)
+
+	ur := repo.NewUserRepositoryService(db)
+	smtpRepo := repo.NewSMTPRepository(smtpClient, cfg)
+	uu := usecase.NewUserService(ur, sr)
+
+	er := repo.NewEmailRepositoryService(db)
+	eu := usecase.NewEmailService(er, sr, smtpRepo)
+
 	router := mux.NewRouter()
+	router = router.PathPrefix("/").Subrouter()
 
-	public := router.PathPrefix("/").Subrouter()
-	public.HandleFunc("/signup", authHandler.SignUp).Methods("POST", "OPTIONS")
-	public.HandleFunc("/login", authHandler.Login).Methods("POST", "OPTIONS")
+	authRout := authRouter.NewAuthRouter(uu)
+	emailRout := emailRouter.NewEmailRouter(eu)
+	mwAuth := mw.NewAuthMW(uu)
 
-	private := router.PathPrefix("/").Subrouter()
-	private.HandleFunc("/mail/inbox", emailHandler.Inbox).Methods("GET", "OPTIONS")
-	private.HandleFunc("/logout", authHandler.Logout).Methods("GET", "OPTIONS")
-	private.Use(authMW.Handler)
+	emailRout.ConfigureEmailRouter(router)
+	authRout.ConfigureAuthRouter(router)
 
-	router.Use(func(next http.Handler) http.Handler {
-		return middleware.CORS(next, cfg)
-	})
+	handler := mw.ConfigureMWs(cfg, router, mwAuth)
 
-	s.server.Handler = router
+	s.server.Handler = handler
+}
+
+func (s *HTTPServer) createAndConfigureSMTPClient(cfg *config.Config) *smtp.SMTPClient {
+	return smtp.NewSMTPClient(
+		cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password,
+	)
 }

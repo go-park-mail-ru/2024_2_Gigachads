@@ -2,21 +2,21 @@ package middleware
 
 import (
 	"context"
-	usecases "mail/internal/usecases"
+	"mail/internal/models"
 	"net/http"
 )
 
 type AuthMiddleware struct {
-	SessionUseCase *usecases.SessionUseCase
+	UserUseCase models.UserUseCase
 }
 
-func NewAuthMW(su *usecases.SessionUseCase) *AuthMiddleware {
-	return &AuthMiddleware{SessionUseCase: su}
+func NewAuthMW(uu models.UserUseCase) *AuthMiddleware {
+	return &AuthMiddleware{UserUseCase: uu}
 }
 
 type contextKey string
 
-const Key = contextKey("session")
+const Key = contextKey("email")
 
 func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -27,12 +27,14 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 
 		cookie, err := r.Cookie("session")
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			next.ServeHTTP(w, r)
+			return
 		}
 
-		session, err := m.SessionUseCase.GetSession(cookie.Value)
+		session, err := m.UserUseCase.CheckAuth(cookie.Value)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			next.ServeHTTP(w, r)
+			return
 		}
 
 		ctx := context.WithValue(r.Context(), Key, session.UserLogin)
