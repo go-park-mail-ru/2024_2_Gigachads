@@ -5,6 +5,14 @@ import (
 	"strings"
 )
 
+type SMTPError struct {
+	Message string
+}
+
+func (e *SMTPError) Error() string {
+	return e.Message
+}
+
 type SMTPClient struct {
 	Host     string
 	Port     string
@@ -30,12 +38,4 @@ func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) e
 		body
 	addr := c.Host + ":" + c.Port
 	return smtp.SendMail(addr, c.Auth, from, to, []byte(msg))
-}
-
-type SMTPError struct {
-	Message string
-}
-
-func (e *SMTPError) Error() string {
-	return e.Message
 }

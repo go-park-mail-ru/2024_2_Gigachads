@@ -51,7 +51,6 @@ func TestSendEmailHandler_InvalidJSON(t *testing.T) {
 	mockUseCase := mocks.NewMockEmailUseCase(ctrl)
 	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
 
-	// Отправляем невалидный JSON
 	req, err := http.NewRequest("POST", "/send-email", bytes.NewBuffer([]byte(`{"invalid json`)))
 	assert.NoError(t, err)
 	req = req.WithContext(context.WithValue(req.Context(), "email", "sender@example.com"))
@@ -76,7 +75,6 @@ func TestSendEmailHandler_MissingEmail(t *testing.T) {
 	bodyBytes, err := json.Marshal(requestBody)
 	assert.NoError(t, err)
 
-	// Не добавляем email в контекст
 	req, err := http.NewRequest("POST", "/send-email", bytes.NewBuffer(bodyBytes))
 	assert.NoError(t, err)
 	rr := httptest.NewRecorder()
