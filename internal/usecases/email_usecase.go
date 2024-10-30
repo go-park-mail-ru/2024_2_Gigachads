@@ -1,6 +1,9 @@
 package usecase
 
 import (
+	"fmt"
+	"time"
+
 	models "mail/internal/models"
 )
 
@@ -28,4 +31,36 @@ func (es *EmailService) Inbox(sessionID string) ([]models.Email, error) {
 
 func (es *EmailService) SendEmail(from string, to []string, subject string, body string) error {
 	return es.SMTPRepo.SendEmail(from, to, subject, body)
+}
+
+func (es *EmailService) ForwardEmail(from string, to []string, originalEmail models.Email) error {
+	forwardSubject := "Fwd: " + originalEmail.Title
+	forwardBody := fmt.Sprintf(`
+---------- Forwarded message ---------
+From: %s
+Date: %s
+Subject: %s
+
+%s
+`, originalEmail.Sender_email, originalEmail.Sending_date.Format(time.RFC1123),
+		originalEmail.Title, originalEmail.Description)
+
+	return es.SMTPRepo.SendEmail(from, to, forwardSubject, forwardBody)
+}
+
+func (es *EmailService) ReplyEmail(from string, to string, originalEmail models.Email, replyText string) error {
+	replySubject := "Re: " + originalEmail.Title
+	replyBody := fmt.Sprintf(`
+%s
+
+On %s, %s wrote:
+> %s
+`, replyText, originalEmail.Sending_date.Format(time.RFC1123),
+		originalEmail.Sender_email, originalEmail.Description)
+
+	return es.SMTPRepo.SendEmail(from, []string{to}, replySubject, replyBody)
+}
+
+func (es *EmailService) GetEmailByID(id int) (models.Email, error) {
+	return es.EmailRepo.GetEmailByID(id)
 }

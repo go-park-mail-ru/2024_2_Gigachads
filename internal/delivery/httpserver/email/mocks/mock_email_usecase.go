@@ -34,6 +34,35 @@ func (m *MockEmailUseCase) EXPECT() *MockEmailUseCaseMockRecorder {
 	return m.recorder
 }
 
+// ForwardEmail mocks base method.
+func (m *MockEmailUseCase) ForwardEmail(from string, to []string, originalEmail models.Email) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ForwardEmail", from, to, originalEmail)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ForwardEmail indicates an expected call of ForwardEmail.
+func (mr *MockEmailUseCaseMockRecorder) ForwardEmail(from, to, originalEmail interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForwardEmail", reflect.TypeOf((*MockEmailUseCase)(nil).ForwardEmail), from, to, originalEmail)
+}
+
+// GetEmailByID mocks base method.
+func (m *MockEmailUseCase) GetEmailByID(id int) (models.Email, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEmailByID", id)
+	ret0, _ := ret[0].(models.Email)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEmailByID indicates an expected call of GetEmailByID.
+func (mr *MockEmailUseCaseMockRecorder) GetEmailByID(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEmailByID", reflect.TypeOf((*MockEmailUseCase)(nil).GetEmailByID), id)
+}
+
 // Inbox mocks base method.
 func (m *MockEmailUseCase) Inbox(id string) ([]models.Email, error) {
 	m.ctrl.T.Helper()
@@ -47,6 +76,20 @@ func (m *MockEmailUseCase) Inbox(id string) ([]models.Email, error) {
 func (mr *MockEmailUseCaseMockRecorder) Inbox(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Inbox", reflect.TypeOf((*MockEmailUseCase)(nil).Inbox), id)
+}
+
+// ReplyEmail mocks base method.
+func (m *MockEmailUseCase) ReplyEmail(from, to string, originalEmail models.Email, replyText string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReplyEmail", from, to, originalEmail, replyText)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReplyEmail indicates an expected call of ReplyEmail.
+func (mr *MockEmailUseCaseMockRecorder) ReplyEmail(from, to, originalEmail, replyText interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplyEmail", reflect.TypeOf((*MockEmailUseCase)(nil).ReplyEmail), from, to, originalEmail, replyText)
 }
 
 // SendEmail mocks base method.
@@ -84,6 +127,21 @@ func NewMockEmailRepository(ctrl *gomock.Controller) *MockEmailRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockEmailRepository) EXPECT() *MockEmailRepositoryMockRecorder {
 	return m.recorder
+}
+
+// GetEmailByID mocks base method.
+func (m *MockEmailRepository) GetEmailByID(id int) (models.Email, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEmailByID", id)
+	ret0, _ := ret[0].(models.Email)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEmailByID indicates an expected call of GetEmailByID.
+func (mr *MockEmailRepositoryMockRecorder) GetEmailByID(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEmailByID", reflect.TypeOf((*MockEmailRepository)(nil).GetEmailByID), id)
 }
 
 // Inbox mocks base method.
