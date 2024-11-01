@@ -24,7 +24,7 @@ func (ef *emailFetcher) Start() {
 	}
 
 	go func() {
-		ticker := newTicker(10 * time.Minute)
+		ticker := newTicker(1 * time.Minute)
 		defer ticker.Stop()
 
 		for range ticker.C {
