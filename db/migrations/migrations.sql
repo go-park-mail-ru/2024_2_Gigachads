@@ -45,3 +45,21 @@ CREATE TABLE IF NOT EXISTS attachment (
     url TEXT NOT NULL,
     CONSTRAINT fk_message FOREIGN KEY  (message_id) REFERENCES message(id) ON DELETE CASCADE
 );
+
+-- Создание таблицы сессий
+CREATE TABLE IF NOT EXISTS Session (
+    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_id INTEGER,
+    hash TEXT NOT NULL,
+    expire_date TIMESTAMPTZ NOT NULL,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES profile(id) ON DELETE CASCADE
+);
+
+-- Создание таблицы csrf токенов
+CREATE TABLE IF NOT EXISTS csrf_token (
+    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_id INTEGER,
+    hash TEXT NOT NULL,
+    expire_date TIMESTAMPTZ NOT NULL,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES profile(id) ON DELETE CASCADE
+);
