@@ -18,15 +18,15 @@ CREATE TABLE IF NOT EXISTS message (
 CREATE TABLE IF NOT EXISTS folder (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id INTEGER,
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES profile(id) ON DELETE CASCADE,
-    name TEXT NOT NULL CHECK (LENGTH(name) <= 50)
+    name TEXT NOT NULL CHECK (LENGTH(name) <= 50),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES profile(id) ON DELETE CASCADE
 );
 
 -- Создание таблицы писем пользователей (email_transaction)
 CREATE TABLE IF NOT EXISTS email_transaction (
-	id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-	parent_transaction_id INTEGER DEFAULT NULL,
-	sender_email TEXT,
+    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    parent_transaction_id INTEGER DEFAULT NULL,
+    sender_email TEXT,
     recipient_email TEXT,
     message_id INTEGER,
     sending_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
