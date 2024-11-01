@@ -43,10 +43,15 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	er.mu.RLock()
 	defer er.mu.RUnlock()
 
+	query := `
+	SELECT t.id, t.sender_email, t.recipient_email, m.title, t.isread, t.sending_date, m.description
+	FROM email_transaction AS t
+	JOIN message AS m ON t.message_id = m.id
+	WHERE t.id = $1
+	`
+
 	var email models.Email
-	err := er.repo.QueryRow(
-		`SELECT id, sender_email, recipient, title, is_read, sending_date, description 
-		FROM emails WHERE id = $1`, id).
+	err := er.repo.QueryRow(query, id).
 		Scan(&email.ID, &email.Sender_email, &email.Recipient, &email.Title, &email.IsRead, &email.Sending_date, &email.Description)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -55,4 +60,36 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 		return models.Email{}, err
 	}
 	return email, nil
+}
+
+func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
+	er.mu.Lock()
+	defer er.mu.Unlock()
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var messageID int
+	err = tx.QueryRow(
+		`INSERT INTO message (title, description) 
+		VALUES ($1, $2) RETURNING id`,
+		email.Title, email.Description,
+	).Scan(&messageID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(
+		`INSERT INTO email_transaction (sender_email, recipient_email, title, sending_date, isread, message_id)
+		VALUES ($1, $2, $3, $4, $5, $6)`,
+		email.Sender_email, email.Recipient, email.Title, email.Sending_date, email.IsRead, messageID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

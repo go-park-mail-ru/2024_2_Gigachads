@@ -20,7 +20,7 @@ smtp:
 pop3:
     host: pop.gmail.com
     port: 995
-    username: your_username
-    password: your_password 
+    username: test
+    password: test 
 
     

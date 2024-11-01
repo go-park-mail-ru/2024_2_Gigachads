@@ -3,13 +3,14 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/lib/pq"
 	"mail/config"
+
+	_ "github.com/lib/pq"
 )
 
 func Init(cfg *config.Config) (*sql.DB, error) {
 	dbConfig := cfg.Postgres
-	dataConnection := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s",
+	dataConnection := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s",
 		dbConfig.IP, dbConfig.Port, dbConfig.DBname, dbConfig.User, dbConfig.Password)
 
 	db, err := sql.Open("postgres", dataConnection)

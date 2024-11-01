@@ -11,13 +11,20 @@ type EmailService struct {
 	EmailRepo   models.EmailRepository
 	SessionRepo models.SessionRepository
 	SMTPRepo    models.SMTPRepository
+	POP3Repo    models.POP3Repository
 }
 
-func NewEmailService(erepo models.EmailRepository, srepo models.SessionRepository, smtprepo models.SMTPRepository) *EmailService {
+func NewEmailService(
+	erepo models.EmailRepository,
+	srepo models.SessionRepository,
+	smtprepo models.SMTPRepository,
+	pop3repo models.POP3Repository,
+) *EmailService {
 	return &EmailService{
 		EmailRepo:   erepo,
 		SessionRepo: srepo,
 		SMTPRepo:    smtprepo,
+		POP3Repo:    pop3repo,
 	}
 }
 
@@ -63,4 +70,17 @@ On %s, %s wrote:
 
 func (es *EmailService) GetEmailByID(id int) (models.Email, error) {
 	return es.EmailRepo.GetEmailByID(id)
+}
+
+func (es *EmailService) FetchEmailsViaPOP3() error {
+	if err := es.POP3Repo.Connect(); err != nil {
+		return err
+	}
+	defer es.POP3Repo.Quit()
+
+	if err := es.POP3Repo.FetchEmails(es.EmailRepo); err != nil {
+		return err
+	}
+
+	return nil
 }

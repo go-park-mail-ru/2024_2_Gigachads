@@ -191,7 +191,6 @@ func TestSendEmailHandler_MissingEmail(t *testing.T) {
 
 	req, err := http.NewRequest("POST", "/send-email", bytes.NewBuffer(bodyBytes))
 	assert.NoError(t, err)
-	// Email не установлен в контексте
 	rr := httptest.NewRecorder()
 
 	emailRouter.SendEmailHandler(rr, req)

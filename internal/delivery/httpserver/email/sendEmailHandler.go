@@ -20,8 +20,6 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	// Если ParentId == 0, то это новое письмо
 	if req.ParentId == 0 {
 		err := er.EmailUseCase.SendEmail(
 			senderEmail.(string),
@@ -34,7 +32,6 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	} else {
-		// Иначе определяем действием: ответ или пересылка
 		originalEmail, err := er.EmailUseCase.GetEmailByID(req.ParentId)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -42,7 +39,6 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 		}
 
 		if strings.HasPrefix(req.Title, "Re:") {
-			// Ответ
 			err = er.EmailUseCase.ReplyEmail(
 				senderEmail.(string),
 				originalEmail.Sender_email,
@@ -54,7 +50,6 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 				return
 			}
 		} else if strings.HasPrefix(req.Title, "Fwd:") {
-			// Пересылка
 			recipients := strings.Split(req.Recipient, ",")
 			err = er.EmailUseCase.ForwardEmail(
 				senderEmail.(string),

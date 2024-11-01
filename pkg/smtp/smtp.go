@@ -1,6 +1,7 @@
 package smtp
 
 import (
+	"fmt"
 	"net/smtp"
 	"strings"
 )
@@ -21,6 +22,8 @@ type SMTPClient struct {
 	Auth     smtp.Auth
 }
 
+var sendMail = smtp.SendMail
+
 func NewSMTPClient(host, port, username, password string) *SMTPClient {
 	return &SMTPClient{
 		Host:     host,
@@ -32,10 +35,25 @@ func NewSMTPClient(host, port, username, password string) *SMTPClient {
 }
 
 func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) error {
-	msg := "From: " + from + "\n" +
-		"To: " + strings.Join(to, ",") + "\n" +
-		"Subject: " + subject + "\n\n" +
-		body
-	addr := c.Host + ":" + c.Port
-	return smtp.SendMail(addr, c.Auth, from, to, []byte(msg))
+	if len(to) == 0 {
+		return fmt.Errorf("список получателей пуст")
+	}
+
+	addr := fmt.Sprintf("%s:%s", c.Host, c.Port)
+	msg := formatMessage(from, to, subject, body)
+
+	return sendMail(addr, c.Auth, from, to, []byte(msg))
+}
+
+func formatMessage(from string, to []string, subject, body string) string {
+	return fmt.Sprintf("From: %s\r\n"+
+		"To: %s\r\n"+
+		"Subject: %s\r\n"+
+		"Content-Type: text/plain; charset=UTF-8\r\n"+
+		"\r\n"+
+		"%s",
+		from,
+		strings.Join(to, ", "),
+		subject,
+		body)
 }
