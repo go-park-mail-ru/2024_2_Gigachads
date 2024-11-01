@@ -1,8 +1,8 @@
 package models
 
 import (
-	"time"
 	"context"
+	"time"
 )
 
 type Email struct {

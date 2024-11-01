@@ -1,9 +1,9 @@
 package models
 
 import (
+	"context"
 	"net/mail"
 	"regexp"
-	"context"
 )
 
 type User struct {

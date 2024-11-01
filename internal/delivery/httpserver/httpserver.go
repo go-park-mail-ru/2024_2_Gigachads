@@ -3,6 +3,7 @@ package httpserver
 import (
 	"database/sql"
 	"github.com/gorilla/mux"
+	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"mail/config"
 	authRouter "mail/internal/delivery/httpserver/auth"
@@ -11,7 +12,6 @@ import (
 	repo "mail/internal/repository"
 	"mail/internal/usecases"
 	"net/http"
-	"github.com/redis/go-redis/v9"
 )
 
 type HTTPServer struct {

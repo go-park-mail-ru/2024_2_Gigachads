@@ -13,17 +13,17 @@ type Config struct {
 		AllowedIPsByCORS []string `yaml:"allowed_ips_by_cors"`
 	} `yaml:"httpserver"`
 	Postgres struct {
-		IP string `yaml:"ip"`
-		Port string `yaml:"port"`
-		DBname string `yaml:"dbname"`
-		User string `yaml:"user"`
+		IP       string `yaml:"ip"`
+		Port     string `yaml:"port"`
+		DBname   string `yaml:"dbname"`
+		User     string `yaml:"user"`
 		Password string `yaml:"password"`
 	} `yaml:"postgres"`
 	Redis struct {
-		IP string `yaml:"ip"`
-		Port string `yaml:"port"`
-		DBnum int `yaml:"dbnum"`
-		User string `yaml:"user"`
+		IP       string `yaml:"ip"`
+		Port     string `yaml:"port"`
+		DBnum    int    `yaml:"dbnum"`
+		User     string `yaml:"user"`
 		Password string `yaml:"password"`
 	} `yaml:"redis"`
 }

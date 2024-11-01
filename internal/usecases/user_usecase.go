@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	models "mail/internal/models"
 )
 

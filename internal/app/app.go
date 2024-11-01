@@ -5,7 +5,6 @@ import (
 	"mail/internal/delivery/httpserver"
 	"mail/service/postgres"
 	"mail/service/redis"
-	
 )
 
 func Run(cfg *config.Config) error {
@@ -15,12 +14,12 @@ func Run(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	
+
 	redisClient, err := redis.Init(cfg)
 	if err != nil {
 		return err
 	}
-	
+
 	if err := srv.Start(cfg, dbPostgres, redisClient); err != nil {
 		return err
 	}

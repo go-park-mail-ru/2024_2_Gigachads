@@ -1,4 +1,4 @@
-	package email
+package email
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ func (er *EmailRouter) InboxHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := ctxEmail.(string)
-	
+
 	mails, err := er.EmailUseCase.Inbox(r.Context(), email)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())

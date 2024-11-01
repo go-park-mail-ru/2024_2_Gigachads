@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	models "mail/internal/models"
 	"context"
+	models "mail/internal/models"
 )
 
 type EmailService struct {

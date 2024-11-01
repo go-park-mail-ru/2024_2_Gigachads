@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
+	"github.com/redis/go-redis/v9"
 	models "mail/internal/models"
 	"mail/pkg/utils"
 	"time"
-	"github.com/redis/go-redis/v9"
 )
 
 type SessionRepositoryService struct {
@@ -22,13 +22,13 @@ func (sr *SessionRepositoryService) CreateSession(ctx context.Context, mail stri
 		return &models.Session{}, err
 	}
 	expiration := time.Now().Add(24 * time.Hour)
-	
-	err = sr.repo.Set(ctx, string(hash), mail, 24 * time.Hour).Err()
+
+	err = sr.repo.Set(ctx, string(hash), mail, 24*time.Hour).Err()
 	if err != nil {
 		return nil, err
 	}
 	session := models.Session{Name: "email", ID: hash, Time: expiration, UserLogin: mail}
-	
+
 	return &session, nil
 }
 

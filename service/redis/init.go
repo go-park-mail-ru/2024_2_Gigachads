@@ -1,11 +1,11 @@
 package redis
 
 import (
-	"fmt"
-	"time"
 	"context"
-	"mail/config"
+	"fmt"
 	"github.com/redis/go-redis/v9"
+	"mail/config"
+	"time"
 )
 
 func Init(cfg *config.Config) (*redis.Client, error) {
