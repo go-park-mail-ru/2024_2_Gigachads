@@ -4,6 +4,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"mail/pkg/logger"
 	"os"
+	//"fmt"
 )
 
 type Config struct {
@@ -14,7 +15,7 @@ type Config struct {
 	} `yaml:"httpserver"`
 }
 
-func GetConfig(path string) (*Config, error) {
+func GetConfig(path string, l logger.Logable) (*Config, error) {
 	config := new(Config)
 
 	file, err := os.Open(path)
@@ -27,7 +28,8 @@ func GetConfig(path string) (*Config, error) {
 	if err = d.Decode(config); err != nil {
 		return nil, err
 	}
-	logger.Info("loaded config")
+	//l := logger.NewLogger()
+	l.Info("loaded config")
 	return config, nil
 
 }

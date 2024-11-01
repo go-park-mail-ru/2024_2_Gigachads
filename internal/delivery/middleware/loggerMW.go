@@ -17,7 +17,15 @@ func (w *LogResponseWriter) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-func LogMiddleware(next http.Handler) http.Handler {
+type LogMiddleWare struct{
+	logger logger.Logable
+}
+
+func NewLogMW(l logger.Logable) LogMiddleWare{
+	return LogMiddleWare{logger: l}
+}
+
+func (l LogMiddleWare) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		method := r.Method
 		path := r.RequestURI
@@ -25,8 +33,8 @@ func LogMiddleware(next http.Handler) http.Handler {
 		if !ok {
 			id, _ = utils.GenerateHash()
 		}
-		
-		logger.Info("User entered", "url", path, "method", method, "requestID", id)
+		//l := logger.NewLogger()
+		l.logger.Info("User entered", "url", path, "method", method, "requestID", id)
 
 		logRW := &LogResponseWriter{w, http.StatusOK}
 		ctx := context.WithValue(r.Context(), "requestID", id)
@@ -34,6 +42,6 @@ func LogMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(logRW, r.WithContext(ctx))
 
 		statusCode := logRW.statusCode
-		logger.Info("User left", "url", path, "status code", statusCode, "requestID", id)
+		l.logger.Info("User left", "url", path, "status code", statusCode, "requestID", id)
 	})
 }

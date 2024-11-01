@@ -5,31 +5,34 @@ import(
 	"os"
 )
 
-// type Logger struct{
+type Logable interface {
+	Info(string, ...any)
+	Debug(string, ...any)
+	Warn(string, ...any)
+	Error(string, ...any)
+}
 
-// }
+type Logger struct{
+	Logger Logable
+}
 
-func NewLogger(){
+func NewLogger() Logger{
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-    slog.SetDefault(logger)
+    return Logger{logger}
 }
 
-// func Info(str string){
-// 	slog.Info(str)
-// }
-
-func Info(msg string, args ...any){
-	slog.Info(msg, args...)
+func (l Logger) Info(msg string, args ...any){
+	l.Logger.Info(msg, args...)
 }
 
-func Debug(msg string, args ...any){
-	slog.Debug(msg, args...)
+func (l Logger) Debug(msg string, args ...any){
+	l.Logger.Debug(msg, args...)
 }
 
-func Warn(msg string, args ...any){
-	slog.Warn(msg, args...)
+func (l Logger) Warn(msg string, args ...any){
+	l.Logger.Warn(msg, args...)
 }
 
-func Error(msg string, args ...any){
-	slog.Error(msg, args...)
+func (l Logger) Error(msg string, args ...any){
+	l.Logger.Error(msg, args...)
 }

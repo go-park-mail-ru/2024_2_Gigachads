@@ -16,18 +16,19 @@ type HTTPServer struct {
 	server *http.Server
 }
 
-func (s *HTTPServer) Start(cfg *config.Config) error {
+func (s *HTTPServer) Start(cfg *config.Config, l logger.Logable) error {
 	s.server = new(http.Server)
 	s.server.Addr = cfg.HTTPServer.IP + ":" + cfg.HTTPServer.Port
-	s.configureRouters(cfg)
-	logger.Info("Server is running on", "port", cfg.HTTPServer.Port)
+	//l := logger.NewLogger()
+	s.configureRouters(cfg, l)
+	l.Info("Server is running on", "port", cfg.HTTPServer.Port)
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *HTTPServer) configureRouters(cfg *config.Config) {
+func (s *HTTPServer) configureRouters(cfg *config.Config, l logger.Logable) {
 	sr := repo.NewSessionRepositoryService()
 
 	ur := repo.NewUserRepositoryService()
@@ -39,7 +40,7 @@ func (s *HTTPServer) configureRouters(cfg *config.Config) {
 	router := mux.NewRouter()
 	router = router.PathPrefix("/").Subrouter()
 	router.Use(mw.PanicMiddleware)
-	router.Use(mw.LogMiddleware)
+	router.Use(mw.NewLogMW(l).Handler)
 
 	authRout := authRouter.NewAuthRouter(uu)
 	emailRout := emailRouter.NewEmailRouter(eu)
