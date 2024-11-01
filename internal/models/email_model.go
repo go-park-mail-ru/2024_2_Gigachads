@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"time"
+	"context"
+)
 
 type Email struct {
 	Sender_email string    `json:"author"`
@@ -11,7 +14,7 @@ type Email struct {
 }
 
 type EmailUseCase interface {
-	Inbox(id string) ([]Email, error)
+	Inbox(ctx context.Context, id string) ([]Email, error)
 }
 
 type EmailRepository interface {

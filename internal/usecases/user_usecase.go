@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"fmt"
+	"context"
 	models "mail/internal/models"
 )
 
@@ -17,7 +18,7 @@ func NewUserService(urepo models.UserRepository, srepo models.SessionRepository)
 	}
 }
 
-func (us *UserService) Signup(signup *models.User) (*models.User, *models.Session, error) {
+func (us *UserService) Signup(ctx context.Context, signup *models.User) (*models.User, *models.Session, error) {
 	taken, err := us.UserRepo.GetByEmail(signup.Email)
 	if err != nil {
 		return nil, nil, err
@@ -31,14 +32,14 @@ func (us *UserService) Signup(signup *models.User) (*models.User, *models.Sessio
 		return nil, nil, err
 	}
 
-	session, err := us.SessionRepo.CreateSession(user.Email)
+	session, err := us.SessionRepo.CreateSession(ctx, user.Email)
 	if err != nil {
 		return nil, nil, err
 	}
 	return user, session, nil
 }
 
-func (us *UserService) Login(login *models.User) (*models.User, *models.Session, error) {
+func (us *UserService) Login(ctx context.Context, login *models.User) (*models.User, *models.Session, error) {
 	taken, err := us.UserRepo.GetByEmail(login.Email)
 	if err != nil {
 		return nil, nil, err
@@ -51,25 +52,25 @@ func (us *UserService) Login(login *models.User) (*models.User, *models.Session,
 	if err != nil {
 		return nil, nil, err
 	}
-	session, err := us.SessionRepo.CreateSession(user.Email)
+	session, err := us.SessionRepo.CreateSession(ctx, user.Email)
 	if err != nil {
 		return nil, nil, err
 	}
 	return user, session, nil
 }
 
-func (us *UserService) Logout(id string) error {
-	err := us.SessionRepo.DeleteSession(id)
+func (us *UserService) Logout(ctx context.Context, id string) error {
+	err := us.SessionRepo.DeleteSession(ctx, id)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (us *UserService) CheckAuth(id string) (*models.Session, error) {
-	session, err := us.SessionRepo.GetSession(id)
+func (us *UserService) CheckAuth(ctx context.Context, id string) (string, error) {
+	session, err := us.SessionRepo.GetSession(ctx, id)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	return session, nil
 }

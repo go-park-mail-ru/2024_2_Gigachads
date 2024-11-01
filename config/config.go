@@ -18,7 +18,14 @@ type Config struct {
 		DBname string `yaml:"dbname"`
 		User string `yaml:"user"`
 		Password string `yaml:"password"`
-	} `yaml:"postgre"`
+	} `yaml:"postgres"`
+	Redis struct {
+		IP string `yaml:"ip"`
+		Port string `yaml:"port"`
+		DBnum int `yaml:"dbnum"`
+		User string `yaml:"user"`
+		Password string `yaml:"password"`
+	} `yaml:"redis"`
 }
 
 func GetConfig(path string) (*Config, error) {

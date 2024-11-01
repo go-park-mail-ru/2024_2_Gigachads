@@ -26,7 +26,7 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, session, err := ar.UserUseCase.Login(&login)
+	_, session, err := ar.UserUseCase.Login(r.Context(), &login)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusForbidden, err.Error())
 		return

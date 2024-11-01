@@ -14,7 +14,7 @@ func (er *EmailRouter) InboxHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	email := ctxEmail.(string)
 	
-	mails, err := er.EmailUseCase.Inbox(email)
+	mails, err := er.EmailUseCase.Inbox(r.Context(), email)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 		return

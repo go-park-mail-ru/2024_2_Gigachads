@@ -3,6 +3,7 @@ package models
 import (
 	"net/mail"
 	"regexp"
+	"context"
 )
 
 type User struct {
@@ -13,10 +14,10 @@ type User struct {
 }
 
 type UserUseCase interface {
-	Signup(user *User) (*User, *Session, error)
-	Login(user *User) (*User, *Session, error)
-	Logout(id string) error
-	CheckAuth(sessionID string) (*Session, error)
+	Signup(ctx context.Context, user *User) (*User, *Session, error)
+	Login(ctx context.Context, user *User) (*User, *Session, error)
+	Logout(ctx context.Context, id string) error
+	CheckAuth(ctx context.Context, sessionID string) (string, error)
 }
 
 type UserRepository interface {
