@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS attachment (
 );
 
 -- Создание таблицы сессий
-CREATE TABLE IF NOT EXISTS Session (
+CREATE TABLE IF NOT EXISTS session (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id INTEGER,
     hash TEXT NOT NULL,
