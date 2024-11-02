@@ -22,7 +22,7 @@ func (er *EmailRouter) InboxHandler(w http.ResponseWriter, r *http.Request) {
 
 	result, err := json.Marshal(mails)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, "json error")
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "invalid_json")
 		return
 	}
 

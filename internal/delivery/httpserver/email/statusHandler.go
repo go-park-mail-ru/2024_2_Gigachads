@@ -3,9 +3,9 @@ package email
 import (
 	"encoding/json"
 	"mail/pkg/utils"
-	//"mail/internal/models"
 	"net/http"
 	"strconv"
+	"github.com/gorilla/mux"
 )
 
 type Status struct{
@@ -19,11 +19,12 @@ func (er *EmailRouter) EmailStatusHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if !r.URL.Query().Has("id") {
-		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_query")
+	vars := mux.Vars(r)
+	strid, ok := vars["id"]
+	if !ok {
+		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_path")
 		return
 	}
-	strid := r.URL.Query().Get("id")
 	id, _ := strconv.Atoi(strid)
 
 	var reqStatus Status

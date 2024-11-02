@@ -6,6 +6,7 @@ import (
 	"mail/internal/models"
 	"net/http"
 	"strconv"
+	"github.com/gorilla/mux"
 )
 
 func (er *EmailRouter) SingleEmailHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,14 +16,15 @@ func (er *EmailRouter) SingleEmailHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if !r.URL.Query().Has("id") {
-		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_query")
+	vars := mux.Vars(r)
+	strid, ok := vars["id"]
+	if !ok {
+		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_path")
 		return
 	}
-	strid := r.URL.Query().Get("id")
+
 	id, _ := strconv.Atoi(strid)
 	mail, _ := er.EmailUseCase.GetEmailByID(id)
-
 	mails := make([]models.Email, 0)
 	mails = append(mails, mail)
 	for mail.ParentID != 0 {
@@ -33,7 +35,7 @@ func (er *EmailRouter) SingleEmailHandler(w http.ResponseWriter, r *http.Request
 
 	result, err := json.Marshal(mails)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, "json error")
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "json_error")
 		return
 	}
 
