@@ -13,11 +13,11 @@ type Status struct{
 }
 
 func (er *EmailRouter) EmailStatusHandler(w http.ResponseWriter, r *http.Request) {
-	// ctxEmail := r.Context().Value("email")
-	// if ctxEmail == nil {
-	// 	utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
-	// 	return
-	// }
+	ctxEmail := r.Context().Value("email")
+	if ctxEmail == nil {
+		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 
 	if !r.URL.Query().Has("id") {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_query")
