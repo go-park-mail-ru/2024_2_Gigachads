@@ -93,3 +93,35 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 
 	return tx.Commit()
 }
+
+func (er *EmailRepositoryService) ChangeStatus(id int, status string) error {
+	er.mu.Lock()
+	defer er.mu.Unlock()
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if status == "true"{
+		_, err = tx.Exec(
+			`UPDATE email_transaction
+			SET isread = TRUE
+			WHERE id = $1`,
+			id,
+		)
+	} else {
+		_, err = tx.Exec(
+			`UPDATE email_transaction
+			SET isread = FALSE
+			WHERE id = $1`,
+			id,
+		)
+	}
+	
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}

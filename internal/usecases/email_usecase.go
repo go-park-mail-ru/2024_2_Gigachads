@@ -72,6 +72,10 @@ func (es *EmailService) GetEmailByID(id int) (models.Email, error) {
 	return es.EmailRepo.GetEmailByID(id)
 }
 
+func (es *EmailService) ChangeStatus(id int, status string) error {
+	return es.EmailRepo.ChangeStatus(id, status)
+}
+
 func (es *EmailService) FetchEmailsViaPOP3() error {
 	if err := es.POP3Repo.Connect(); err != nil {
 		return err

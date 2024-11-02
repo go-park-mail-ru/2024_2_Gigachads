@@ -19,6 +19,7 @@ type EmailUseCase interface {
 	ForwardEmail(from string, to []string, originalEmail Email) error
 	ReplyEmail(from string, to string, originalEmail Email, replyText string) error
 	GetEmailByID(id int) (Email, error)
+	ChangeStatus(id int, status string) error
 	FetchEmailsViaPOP3() error
 }
 
@@ -26,6 +27,7 @@ type EmailRepository interface {
 	Inbox(id string) ([]Email, error)
 	GetEmailByID(id int) (Email, error)
 	SaveEmail(email Email) error
+	ChangeStatus(id int, status string) error
 }
 
 type SMTPRepository interface {
