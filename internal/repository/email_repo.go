@@ -44,7 +44,7 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	defer er.mu.RUnlock()
 
 	query := `
-	SELECT t.id, t.sender_email, t.recipient_email, m.title, t.isread, t.sending_date, m.description
+	SELECT t.id, t.parent_transaction_id, t.sender_email, t.recipient_email, m.title, t.isread, t.sending_date, m.description
 	FROM email_transaction AS t
 	JOIN message AS m ON t.message_id = m.id
 	WHERE t.id = $1
@@ -52,7 +52,7 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 
 	var email models.Email
 	err := er.repo.QueryRow(query, id).
-		Scan(&email.ID, &email.Sender_email, &email.Recipient, &email.Title, &email.IsRead, &email.Sending_date, &email.Description)
+		Scan(&email.ID, &email.ParentID, &email.Sender_email, &email.Recipient, &email.Title, &email.IsRead, &email.Sending_date, &email.Description)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return models.Email{}, errors.New("email not found")

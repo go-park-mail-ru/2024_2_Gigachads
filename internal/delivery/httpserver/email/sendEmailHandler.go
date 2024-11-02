@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-
+	"mail/pkg/utils"
 	"mail/internal/delivery/converters"
 )
 
 func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) {
 	senderEmail := r.Context().Value("email")
 	if senderEmail == nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 

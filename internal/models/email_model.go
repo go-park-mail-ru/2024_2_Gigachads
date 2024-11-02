@@ -4,6 +4,7 @@ import "time"
 
 type Email struct {
 	ID           int       `json:"id"`
+	ParentID     int       `json:"parentID"`
 	Sender_email string    `json:"author"`
 	Recipient    string    `json:"recipient"`
 	Title        string    `json:"title"`
