@@ -2,7 +2,6 @@ package httpserver
 
 import (
 	"database/sql"
-	"log/slog"
 	"mail/config"
 	authRouter "mail/internal/delivery/httpserver/auth"
 	"mail/internal/delivery/httpserver/email"
@@ -26,7 +25,7 @@ type HTTPServer struct {
 	server *http.Server
 }
 
-func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redis *redis.Client) error {
+func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redis *redis.Client, l logger.Logable) error {
 	s.server = new(http.Server)
 	s.server.Addr = cfg.HTTPServer.IP + ":" + cfg.HTTPServer.Port
 	s.configureRouters(cfg, db, redis, l)

@@ -8,7 +8,7 @@ import (
 	"mail/service/redis"
 )
 
-func Run(cfg *config.Config, l *logger.Logger) error {
+func Run(cfg *config.Config, l logger.Logger) error {
 	var srv httpserver.HTTPServer
 
 	dbPostgres, err := postgres.Init(cfg)
