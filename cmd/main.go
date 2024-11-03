@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	l := logger.NewLogger()
 
 	configPath := flag.String("config-path", "./config/config.yaml", "path to config file")

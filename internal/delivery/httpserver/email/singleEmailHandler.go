@@ -32,16 +32,16 @@ func (er *EmailRouter) SingleEmailHandler(w http.ResponseWriter, r *http.Request
 
 	mail, err := er.EmailUseCase.GetEmailByID(id)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusNotFound, "email_not_found")
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "email_not_found")
 		return
 	}
 
 	mails := []models.Email{mail}
 
-	if mail.ParentID != 0 {
-		parentMail, err := er.EmailUseCase.GetEmailByID(mail.ParentID)
+	for mail.ParentID != 0 {
+		mail, err = er.EmailUseCase.GetEmailByID(mail.ParentID)
 		if err == nil {
-			mails = append(mails, parentMail)
+			mails = append(mails, mail)
 		}
 	}
 

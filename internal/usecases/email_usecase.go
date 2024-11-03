@@ -3,8 +3,6 @@ package usecase
 import (
 	"fmt"
 	"time"
-
-	"context"
 	models "mail/internal/models"
 )
 
@@ -29,11 +27,7 @@ func NewEmailService(
 	}
 }
 
-func (es *EmailService) Inbox(ctx context.Context, sessionID string) ([]models.Email, error) {
-	email, err := es.SessionRepo.GetSession(ctx, sessionID)
-	if err != nil {
-		return nil, err
-	}
+func (es *EmailService) Inbox(email string) ([]models.Email, error) {
 	return es.EmailRepo.Inbox(email)
 }
 

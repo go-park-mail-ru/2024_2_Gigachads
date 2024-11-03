@@ -16,14 +16,14 @@ func NewEmailRepositoryService(db *sql.DB) *EmailRepositoryService {
 	return &EmailRepositoryService{repo: db}
 }
 
-func (er *EmailRepositoryService) Inbox(uEmail string) ([]models.Email, error) {
+func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
 	rows, err := er.repo.Query(
 		`SELECT t.id, t.sender_email, t.recipient_email, m.title, 
 		 t.sending_date, t.isread, m.description
 		 FROM email_transaction AS t
 		 JOIN message AS m ON t.message_id = m.id
 		 WHERE t.recipient_email = $1
-		 ORDER BY t.sending_date DESC`, uEmail)
+		 ORDER BY t.sending_date DESC`, email)
 	if err != nil {
 		return nil, err
 	}

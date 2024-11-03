@@ -14,9 +14,6 @@ import (
 	"mail/pkg/pop3"
 	"mail/pkg/smtp"
 	"net/http"
-
-	"github.com/gorilla/mux"
-
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
 )
