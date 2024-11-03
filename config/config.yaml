@@ -23,4 +23,10 @@ pop3:
     username: test
     password: test 
 
+redis:
+    ip: 127.0.0.1
+    port: 6379
+    dbnum: 0
+    user: test
+    password: test
     

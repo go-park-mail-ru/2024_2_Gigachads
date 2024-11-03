@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"context"
 	models "mail/internal/models"
 )
 
@@ -28,12 +29,12 @@ func NewEmailService(
 	}
 }
 
-func (es *EmailService) Inbox(sessionID string) ([]models.Email, error) {
-	session, err := es.SessionRepo.GetSession(sessionID)
+func (es *EmailService) Inbox(ctx context.Context, sessionID string) ([]models.Email, error) {
+	email, err := es.SessionRepo.GetSession(ctx, sessionID)
 	if err != nil {
 		return nil, err
 	}
-	return es.EmailRepo.Inbox(session.UserLogin)
+	return es.EmailRepo.Inbox(email)
 }
 
 func (es *EmailService) SendEmail(from string, to []string, subject string, body string) error {

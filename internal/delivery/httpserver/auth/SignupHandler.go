@@ -31,7 +31,7 @@ func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, session, err := ar.UserUseCase.Signup(&signup)
+	_, session, err := ar.UserUseCase.Signup(r.Context(), &signup)
 
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())

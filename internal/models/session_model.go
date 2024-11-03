@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"time"
 )
 
@@ -12,7 +13,7 @@ type Session struct {
 }
 
 type SessionRepository interface {
-	CreateSession(mail string) (*Session, error)
-	DeleteSession(sessionID string) error
-	GetSession(sessionID string) (*Session, error)
+	CreateSession(ctx context.Context, mail string) (*Session, error)
+	DeleteSession(ctx context.Context, sessionID string) error
+	GetSession(ctx context.Context, sessionID string) (string, error)
 }

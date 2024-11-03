@@ -13,7 +13,7 @@ func (ar *AuthRouter) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	email := ctxEmail.(string)
 
-	err := ar.UserUseCase.Logout(email)
+	err := ar.UserUseCase.Logout(r.Context(), email)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 		return

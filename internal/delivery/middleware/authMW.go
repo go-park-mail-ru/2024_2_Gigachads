@@ -31,13 +31,13 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			return
 		}
 
-		session, err := m.UserUseCase.CheckAuth(cookie.Value)
+		email, err := m.UserUseCase.CheckAuth(r.Context(), cookie.Value)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), Key, session.UserLogin)
+		ctx := context.WithValue(r.Context(), Key, email)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
