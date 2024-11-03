@@ -16,6 +16,11 @@ func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	signup.Email = utils.Sanitize(signup.Email)
+	signup.Name = utils.Sanitize(signup.Name)
+	signup.Password = utils.Sanitize(signup.Password)
+	signup.RePassword = utils.Sanitize(signup.RePassword)
+	
 	if !models.EmailIsValid(signup.Email) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_email")
 		return

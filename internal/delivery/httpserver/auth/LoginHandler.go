@@ -16,6 +16,9 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	login.Password = utils.Sanitize(login.Password)
+	login.Email = utils.Sanitize(login.Email)
+	
 	if !models.EmailIsValid(login.Email) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_input")
 		return
