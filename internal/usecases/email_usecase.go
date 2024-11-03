@@ -84,3 +84,15 @@ func (es *EmailService) FetchEmailsViaPOP3() error {
 
 	return nil
 }
+
+func (es *EmailService) GetSentEmails(senderEmail string) ([]models.Email, error) {
+	return es.EmailRepo.GetSentEmails(senderEmail)
+}
+
+func (s *EmailService) SaveEmail(email models.Email) error {
+	return s.EmailRepo.SaveEmail(email)
+}
+
+func (es *EmailService) ChangeStatus(id int, status string) error {
+	return es.EmailRepo.ChangeStatus(id, status)
+}

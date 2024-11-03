@@ -15,6 +15,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestInboxHandler_NilInboxResponse(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockUseCase := mocks.NewMockEmailUseCase(ctrl)
+	mockUseCase.EXPECT().
+		Inbox("user@example.com").
+		Return(nil, nil)
+
+	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
+
+	req := httptest.NewRequest("GET", "/inbox", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "email", "user@example.com"))
+	rr := httptest.NewRecorder()
+
+	emailRouter.InboxHandler(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+
+	var response []models.Email
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Empty(t, response)
+}
+
 func TestInboxHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

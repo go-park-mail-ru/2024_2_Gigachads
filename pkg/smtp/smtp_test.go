@@ -7,6 +7,13 @@ import (
 	"testing"
 )
 
+func TestSMTPError(t *testing.T) {
+	err := &SMTPError{Message: "test error"}
+	if err.Error() != "test error" {
+		t.Errorf("SMTPError.Error() = %v, want %v", err.Error(), "test error")
+	}
+}
+
 func TestNewSMTPClient(t *testing.T) {
 	tests := []struct {
 		name     string

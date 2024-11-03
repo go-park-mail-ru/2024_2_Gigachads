@@ -48,6 +48,69 @@ func TestSaveEmail(t *testing.T) {
 	}
 }
 
+func TestGetSentEmails(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Не удалось создать sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewEmailRepositoryService(db)
+
+	senderEmail := "sender@example.com"
+	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+			  t.sending_date, t.isread, m.description
+			  FROM email_transaction AS t
+			  JOIN message AS m ON t.message_id = m.id
+			  WHERE t.sender_email = $1
+			  ORDER BY t.sending_date DESC`
+
+	rows := sqlmock.NewRows([]string{"id", "sender_email", "recipient_email", "title", "sending_date", "isread", "description"}).
+		AddRow(1, senderEmail, "recipient@example.com", "Тестовое письмо", time.Now(), false, "Описание письма")
+
+	mock.ExpectQuery(regexp.QuoteMeta(query)).
+		WithArgs(senderEmail).
+		WillReturnRows(rows)
+
+	emails, err := repo.GetSentEmails(senderEmail)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(emails))
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Не все ожидания были выполнены: %v", err)
+	}
+}
+
+func TestGetSentEmails_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Не удалось создать sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewEmailRepositoryService(db)
+
+	senderEmail := "sender@example.com"
+	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+			  t.sending_date, t.isread, m.description
+			  FROM email_transaction AS t
+			  JOIN message AS m ON t.message_id = m.id
+			  WHERE t.sender_email = $1
+			  ORDER BY t.sending_date DESC`
+
+	mock.ExpectQuery(regexp.QuoteMeta(query)).
+		WithArgs(senderEmail).
+		WillReturnError(errors.New("ошибка получения отправленных писем"))
+
+	_, err = repo.GetSentEmails(senderEmail)
+	assert.Error(t, err)
+	assert.Equal(t, "ошибка получения отправленных писем", err.Error())
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Не все ожидания были выполнены: %v", err)
+	}
+}
+
 func TestSaveEmail_InsertMessageError(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -190,30 +253,26 @@ func TestInbox(t *testing.T) {
 	defer db.Close()
 
 	repo := NewEmailRepositoryService(db)
-
 	userEmail := "user@example.com"
 
-	query := `SELECT email_transaction.sender_email, email_transaction.sending_date, email_transaction.isread, message.title, message.description 
-	FROM email_transaction AS t
-	JOIN message AS m ON t.message_id = m.id
-	WHERE t.recipient_email = $1`
+	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+			  t.sending_date, t.isread, m.description
+			  FROM email_transaction AS t
+			  JOIN message AS m ON t.message_id = m.id
+			  WHERE t.recipient_email = $1
+			  ORDER BY t.sending_date DESC`
 
-	rows := sqlmock.NewRows([]string{"sender_email", "sending_date", "isread", "title", "description"}).
-		AddRow("sender1@example.com", time.Now(), false, "Письмо 1", "Описание письма 1").
-		AddRow("sender2@example.com", time.Now(), true, "Письмо 2", "Описание письма 2")
+	rows := sqlmock.NewRows([]string{"id", "sender_email", "recipient_email", "title", "sending_date", "isread", "description"}).
+		AddRow(1, "sender1@example.com", userEmail, "Письмо 1", time.Now(), false, "Описание письма 1").
+		AddRow(2, "sender2@example.com", userEmail, "Письмо 2", time.Now(), true, "Описание письма 2")
 
 	mock.ExpectQuery(regexp.QuoteMeta(query)).
 		WithArgs(userEmail).
 		WillReturnRows(rows)
 
 	emails, err := repo.Inbox(userEmail)
-	if err != nil {
-		t.Errorf("Неожиданная ошибка: %v", err)
-	}
-
-	if len(emails) != 2 {
-		t.Errorf("Ожидалось 2 письма, получено %d", len(emails))
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(emails))
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Не все ожидания были выполнены: %v", err)
@@ -228,26 +287,22 @@ func TestInbox_NoEmails(t *testing.T) {
 	defer db.Close()
 
 	repo := NewEmailRepositoryService(db)
-
 	userEmail := "empty@example.com"
 
-	query := `SELECT email_transaction.sender_email, email_transaction.sending_date, email_transaction.isread, message.title, message.description 
-	FROM email_transaction AS t
-	JOIN message AS m ON t.message_id = m.id
-	WHERE t.recipient_email = $1`
+	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+			  t.sending_date, t.isread, m.description
+			  FROM email_transaction AS t
+			  JOIN message AS m ON t.message_id = m.id
+			  WHERE t.recipient_email = $1
+			  ORDER BY t.sending_date DESC`
 
 	mock.ExpectQuery(regexp.QuoteMeta(query)).
 		WithArgs(userEmail).
-		WillReturnRows(sqlmock.NewRows([]string{"sender_email", "sending_date", "isread", "title", "description"}))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_email", "recipient_email", "title", "sending_date", "isread", "description"}))
 
 	emails, err := repo.Inbox(userEmail)
-	if err != nil {
-		t.Errorf("Неожиданная ошибка: %v", err)
-	}
-
-	if len(emails) != 0 {
-		t.Errorf("Ожидалось 0 писем, получено %d", len(emails))
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(emails))
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Не все ожидания были выполнены: %v", err)
@@ -262,26 +317,22 @@ func TestInbox_QueryError(t *testing.T) {
 	defer db.Close()
 
 	repo := NewEmailRepositoryService(db)
-
 	userEmail := "user@example.com"
 
-	query := `SELECT email_transaction.sender_email, email_transaction.sending_date, email_transaction.isread, message.title, message.description 
-	FROM email_transaction AS t
-	JOIN message AS m ON t.message_id = m.id
-	WHERE t.recipient_email = $1`
+	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+			  t.sending_date, t.isread, m.description
+			  FROM email_transaction AS t
+			  JOIN message AS m ON t.message_id = m.id
+			  WHERE t.recipient_email = $1
+			  ORDER BY t.sending_date DESC`
 
 	mock.ExpectQuery(regexp.QuoteMeta(query)).
 		WithArgs(userEmail).
 		WillReturnError(errors.New("ошибка запроса"))
 
 	_, err = repo.Inbox(userEmail)
-	if err == nil {
-		t.Errorf("Ожидалась ошибка, но её не было")
-	}
-
-	if err.Error() != "ошибка запроса" {
-		t.Errorf("Ожидалась ошибка 'ошибка запроса', получили %v", err)
-	}
+	assert.Error(t, err)
+	assert.Equal(t, "ошибка запроса", err.Error())
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Не все ожидания были выполнены: %v", err)
@@ -404,10 +455,12 @@ func TestInbox_EmptyEmail(t *testing.T) {
 	repo := NewEmailRepositoryService(db)
 	userEmail := ""
 
-	query := `SELECT email_transaction.sender_email, email_transaction.sending_date, email_transaction.isread, message.title, message.description 
-	FROM email_transaction AS t
-	JOIN message AS m ON t.message_id = m.id
-	WHERE t.recipient_email = $1`
+	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+			  t.sending_date, t.isread, m.description
+			  FROM email_transaction AS t
+			  JOIN message AS m ON t.message_id = m.id
+			  WHERE t.recipient_email = $1
+			  ORDER BY t.sending_date DESC`
 
 	mock.ExpectQuery(regexp.QuoteMeta(query)).
 		WithArgs(userEmail).
@@ -415,7 +468,7 @@ func TestInbox_EmptyEmail(t *testing.T) {
 
 	_, err = repo.Inbox(userEmail)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "email cannot be empty")
+	assert.Equal(t, "email cannot be empty", err.Error())
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Остались невыполненные ожидания: %v", err)
@@ -446,5 +499,157 @@ func TestGetEmailByID_InvalidIDZero(t *testing.T) {
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Остались невыполненные ожидания: %v", err)
+	}
+}
+
+func TestEmailRepository_ChangeStatus(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := NewEmailRepositoryService(db)
+
+	testCases := []struct {
+		name       string
+		id         int
+		status     string
+		mockSetup  func()
+		wantError  bool
+		errorMatch string
+	}{
+		{
+			name:   "Success - Mark as true",
+			id:     1,
+			status: "true",
+			mockSetup: func() {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE email_transaction").
+					WithArgs(1).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			wantError: false,
+		},
+		{
+			name:   "Success - Mark as false",
+			id:     2,
+			status: "false",
+			mockSetup: func() {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE email_transaction").
+					WithArgs(2).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			wantError: false,
+		},
+		{
+			name:   "Error - Database Error",
+			id:     3,
+			status: "true",
+			mockSetup: func() {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE email_transaction").
+					WithArgs(3).
+					WillReturnError(errors.New("database error"))
+				mock.ExpectRollback()
+			},
+			wantError:  true,
+			errorMatch: "database error",
+		},
+		{
+			name:   "Error - No Rows Affected",
+			id:     4,
+			status: "true",
+			mockSetup: func() {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE email_transaction").
+					WithArgs(4).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectCommit()
+			},
+			wantError: false,
+		},
+		{
+			name:   "Error - Invalid Status",
+			id:     5,
+			status: "invalid",
+			mockSetup: func() {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE email_transaction").
+					WithArgs(5).
+					WillReturnError(errors.New("invalid status"))
+				mock.ExpectRollback()
+			},
+			wantError:  true,
+			errorMatch: "invalid status",
+		},
+		{
+			name:   "Error - Begin Transaction",
+			id:     6,
+			status: "true",
+			mockSetup: func() {
+				mock.ExpectBegin().WillReturnError(errors.New("begin transaction error"))
+			},
+			wantError:  true,
+			errorMatch: "begin transaction error",
+		},
+		{
+			name:   "Error - Commit Transaction",
+			id:     7,
+			status: "true",
+			mockSetup: func() {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE email_transaction").
+					WithArgs(7).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit().WillReturnError(errors.New("commit error"))
+			},
+			wantError:  true,
+			errorMatch: "commit error",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+
+			err := repo.ChangeStatus(tc.id, tc.status)
+
+			if tc.wantError {
+				assert.Error(t, err)
+				if tc.errorMatch != "" {
+					assert.Contains(t, err.Error(), tc.errorMatch)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestEmailRepository_ChangeStatus_TransactionError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := NewEmailRepositoryService(db)
+
+	mock.ExpectBegin().WillReturnError(errors.New("transaction error"))
+
+	err = repo.ChangeStatus(1, "read")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "transaction error")
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
