@@ -11,9 +11,12 @@ import (
 	"mail/internal/models"
 	repo "mail/internal/repository"
 	usecase "mail/internal/usecases"
+	"mail/pkg/logger"
 	"mail/pkg/pop3"
 	"mail/pkg/smtp"
 	"net/http"
+
+	"github.com/gorilla/mux"
 
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
@@ -26,17 +29,16 @@ type HTTPServer struct {
 func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redis *redis.Client) error {
 	s.server = new(http.Server)
 	s.server.Addr = cfg.HTTPServer.IP + ":" + cfg.HTTPServer.Port
-	s.configureRouters(cfg, db, redis)
-	slog.Info("Server is running on", "port", cfg.HTTPServer.Port)
+	s.configureRouters(cfg, db, redis, l)
+	l.Info("Server is running on", "port", cfg.HTTPServer.Port)
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redis *redis.Client) {
+func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redis *redis.Client, l logger.Logable) {
 	sr := repo.NewSessionRepositoryService(redis)
-
 	smtpClient := s.createAndConfigureSMTPClient(cfg)
 
 	ur := repo.NewUserRepositoryService(db)
@@ -51,6 +53,8 @@ func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redis *red
 
 	router := mux.NewRouter()
 	router = router.PathPrefix("/").Subrouter()
+	router.Use(mw.PanicMiddleware)
+	router.Use(mw.NewLogMW(l).Handler)
 
 	authRout := authRouter.NewAuthRouter(uu)
 	emailRout := emailRouter.NewEmailRouter(eu)

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log/slog"
+	"mail/pkg/logger"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -41,7 +41,7 @@ type Config struct {
 	} `yaml:"redis"`
 }
 
-func GetConfig(path string) (*Config, error) {
+func GetConfig(path string, l logger.Logable) (*Config, error) {
 	config := new(Config)
 
 	file, err := os.Open(path)
@@ -54,7 +54,7 @@ func GetConfig(path string) (*Config, error) {
 	if err = d.Decode(config); err != nil {
 		return nil, err
 	}
-	slog.Info("loaded config")
+	l.Info("loaded config")
 	return config, nil
 
 }

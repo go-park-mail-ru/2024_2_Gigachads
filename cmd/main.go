@@ -2,20 +2,23 @@ package main
 
 import (
 	"flag"
-	"log/slog"
 	config "mail/config"
 	app "mail/internal/app"
+	"mail/pkg/logger"
 )
 
 func main() {
+
+	l := logger.NewLogger()
+
 	configPath := flag.String("config-path", "./config/config.yaml", "path to config file")
 	flag.Parse()
 
-	config, err := config.GetConfig(*configPath)
+	config, err := config.GetConfig(*configPath, l)
 	if err != nil {
-		slog.Error(err.Error())
+		l.Error(err.Error())
 	}
-	if err := app.Run(config); err != nil {
-		slog.Error(err.Error())
+	if err := app.Run(config, l); err != nil {
+		l.Error(err.Error())
 	}
 }

@@ -9,7 +9,7 @@ import (
 
 func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 	var signup models.User
-
+	
 	err := json.NewDecoder(r.Body).Decode(&signup)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
