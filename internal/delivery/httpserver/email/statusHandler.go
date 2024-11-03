@@ -10,7 +10,7 @@ import (
 )
 
 type Status struct {
-	Status string `json:"status"`
+	Status bool `json:"status"`
 }
 
 func (er *EmailRouter) EmailStatusHandler(w http.ResponseWriter, r *http.Request) {

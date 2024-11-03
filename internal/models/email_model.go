@@ -20,7 +20,7 @@ type EmailUseCase interface {
 	ReplyEmail(from string, to string, originalEmail Email, replyText string) error
 	GetEmailByID(id int) (Email, error)
 	FetchEmailsViaPOP3() error
-	ChangeStatus(id int, status string) error
+	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
 	SaveEmail(email Email) error
 }
@@ -29,7 +29,7 @@ type EmailRepository interface {
 	Inbox(id string) ([]Email, error)
 	GetEmailByID(id int) (Email, error)
 	SaveEmail(email Email) error
-	ChangeStatus(id int, status string) error
+	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
 }
 

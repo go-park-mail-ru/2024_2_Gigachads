@@ -93,6 +93,6 @@ func (s *EmailService) SaveEmail(email models.Email) error {
 	return s.EmailRepo.SaveEmail(email)
 }
 
-func (es *EmailService) ChangeStatus(id int, status string) error {
+func (es *EmailService) ChangeStatus(id int, status bool) error {
 	return es.EmailRepo.ChangeStatus(id, status)
 }

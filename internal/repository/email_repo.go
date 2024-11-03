@@ -142,7 +142,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	return tx.Commit()
 }
 
-func (er *EmailRepositoryService) ChangeStatus(id int, status string) error {
+func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 	er.mu.Lock()
 	defer er.mu.Unlock()
 
@@ -152,7 +152,7 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status string) error {
 	}
 	defer tx.Rollback()
 
-	if status == "true" {
+	if status {
 		_, err = tx.Exec(
 			`UPDATE email_transaction
 			SET isread = TRUE
