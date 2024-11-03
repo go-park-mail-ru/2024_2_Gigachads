@@ -25,7 +25,7 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			return
 		}
 
-		cookie, err := r.Cookie("session")
+		cookie, err := r.Cookie("email")
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
