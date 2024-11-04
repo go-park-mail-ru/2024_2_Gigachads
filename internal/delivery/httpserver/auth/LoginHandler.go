@@ -36,6 +36,9 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userLogin := models.UserLogin{Email: user.Email, Name: user.Name, AvatarURL: user.AvatarURL}
+	if userLogin.AvatarURL == "" {
+		userLogin.AvatarURL = "/icons/default.png"
+	}
 
 	result, err := json.Marshal(userLogin)
 	if err != nil {
