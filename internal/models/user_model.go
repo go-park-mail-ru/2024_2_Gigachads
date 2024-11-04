@@ -11,6 +11,13 @@ type User struct {
 	Name       string `json:"name"`
 	Password   string `json:"password"`
 	RePassword string `json:"repassword"`
+	AvatarURL  string `json:"avatarPath"`
+}
+
+type UserLogin struct{
+	Email      string `json:"email"`
+	Name       string `json:"name"`
+	AvatarURL  string `json:"avatarPath"`
 }
 
 type UserUseCase interface {
