@@ -34,14 +34,14 @@ func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redis *redis.Client, 
 }
 
 func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redis *redis.Client, l logger.Logable) {
-	sr := repo.NewSessionRepositoryService(redis)
+	sr := repo.NewSessionRepositoryService(redis, l)
 	smtpClient := s.createAndConfigureSMTPClient(cfg)
 
-	ur := repo.NewUserRepositoryService(db)
+	ur := repo.NewUserRepositoryService(db, l)
 	smtpRepo := repo.NewSMTPRepository(smtpClient, cfg)
 	uu := usecase.NewUserService(ur, sr)
 
-	er := repo.NewEmailRepositoryService(db)
+	er := repo.NewEmailRepositoryService(db, l)
 
 	pop3Client := s.createAndConfigurePOP3Client(cfg)
 

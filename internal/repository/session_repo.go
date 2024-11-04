@@ -6,14 +6,16 @@ import (
 	models "mail/internal/models"
 	"mail/pkg/utils"
 	"time"
+	"mail/pkg/logger"
 )
 
 type SessionRepositoryService struct {
 	repo *redis.Client
+	logger logger.Logable
 }
 
-func NewSessionRepositoryService(client *redis.Client) models.SessionRepository {
-	return &SessionRepositoryService{repo: client}
+func NewSessionRepositoryService(client *redis.Client, l logger.Logable) models.SessionRepository {
+	return &SessionRepositoryService{repo: client, logger: l}
 }
 
 func (sr *SessionRepositoryService) CreateSession(ctx context.Context, mail string) (*models.Session, error) {
@@ -28,6 +30,7 @@ func (sr *SessionRepositoryService) CreateSession(ctx context.Context, mail stri
 
 	err = sr.repo.Set(ctx, string(hash), mail, 24*time.Hour).Err()
 	if err != nil {
+		sr.logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -44,6 +47,7 @@ func (sr *SessionRepositoryService) DeleteSession(ctx context.Context, sessionID
 
 	err := sr.repo.Del(ctx, sessionID).Err()
 	if err != nil {
+		sr.logger.Error(err.Error())
 		return err
 	}
 	return nil
@@ -55,10 +59,11 @@ func (sr *SessionRepositoryService) GetSession(ctx context.Context, sessionID st
 
 	email, err := sr.repo.Get(ctx, sessionID).Result()
 	if err != nil {
+		sr.logger.Error(err.Error())
 		return "", err
 	}
 
 	email = utils.Sanitize(email)
-	
+
 	return email, nil
 }

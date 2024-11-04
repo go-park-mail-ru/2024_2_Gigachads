@@ -6,15 +6,17 @@ import (
 	"mail/internal/models"
 	"sync"
 	"mail/pkg/utils"
+	"mail/pkg/logger"
 )
 
 type EmailRepositoryService struct {
 	repo *sql.DB
 	mu   sync.RWMutex
+	logger logger.Logable
 }
 
-func NewEmailRepositoryService(db *sql.DB) *EmailRepositoryService {
-	return &EmailRepositoryService{repo: db}
+func NewEmailRepositoryService(db *sql.DB, l logger.Logable) *EmailRepositoryService {
+	return &EmailRepositoryService{repo: db, logger: l}
 }
 
 func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
@@ -29,6 +31,7 @@ func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
 		 WHERE t.recipient_email = $1
 		 ORDER BY t.sending_date DESC`, email)
 	if err != nil {
+		er.logger.Error(err.Error())
 		return nil, err
 	}
 	defer rows.Close()
@@ -50,6 +53,7 @@ func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
 		email.Title = utils.Sanitize(email.Title)
 		email.Description = utils.Sanitize(email.Description)
 		if err != nil {
+			er.logger.Error(err.Error())
 			return nil, err
 		}
 		res = append(res, email)
@@ -69,6 +73,7 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 		 WHERE t.sender_email = $1
 		 ORDER BY t.sending_date DESC`, senderEmail)
 	if err != nil {
+		er.logger.Error(err.Error())
 		return nil, err
 	}
 	defer rows.Close()
@@ -90,6 +95,7 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 		email.Title = utils.Sanitize(email.Title)
 		email.Description = utils.Sanitize(email.Description)
 		if err != nil {
+			er.logger.Error(err.Error())
 			return nil, err
 		}
 		res = append(res, email)
@@ -121,6 +127,7 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	email.Description = utils.Sanitize(email.Description)
 
 	if err != nil {
+		er.logger.Error(err.Error())
 		if err == sql.ErrNoRows {
 			return models.Email{}, errors.New("email not found")
 		}
@@ -140,6 +147,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 
 	tx, err := er.repo.Begin()
 	if err != nil {
+		er.logger.Error(err.Error())
 		return err
 	}
 	defer tx.Rollback()
@@ -151,6 +159,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		email.Title, email.Description,
 	).Scan(&messageID)
 	if err != nil {
+		er.logger.Error(err.Error())
 		return err
 	}
 
@@ -162,6 +171,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		email.Sending_date, email.IsRead, messageID,
 	)
 	if err != nil {
+		er.logger.Error(err.Error())
 		return err
 	}
 
@@ -174,6 +184,7 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 
 	tx, err := er.repo.Begin()
 	if err != nil {
+		er.logger.Error(err.Error())
 		return err
 	}
 	defer tx.Rollback()
@@ -195,6 +206,7 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 	}
 
 	if err != nil {
+		er.logger.Error(err.Error())
 		return err
 	}
 	return tx.Commit()

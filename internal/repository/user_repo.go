@@ -5,15 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"mail/pkg/utils"
+	"mail/pkg/logger"
 	models "mail/internal/models"
 )
 
 type UserRepositoryService struct {
 	repo *sql.DB
+	logger logger.Logable
 }
 
-func NewUserRepositoryService(db *sql.DB) models.UserRepository {
-	return &UserRepositoryService{repo: db}
+func NewUserRepositoryService(db *sql.DB, l logger.Logable) models.UserRepository {
+	return &UserRepositoryService{repo: db, logger: l}
 }
 
 func (ur *UserRepositoryService) GetByEmail(email string) (bool, error) {
@@ -34,6 +36,7 @@ func (ur *UserRepositoryService) GetByEmail(email string) (bool, error) {
 	}
 
 	if err != nil {
+		ur.logger.Error(err.Error())
 		return false, err
 	}
 	return false, nil
@@ -51,6 +54,7 @@ func (ur *UserRepositoryService) CreateUser(signup *models.User) (*models.User, 
 	user := models.User{}
 	err := row.Scan(&user.Email)
 	if err != nil {
+		ur.logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -72,6 +76,7 @@ func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, er
 	user := models.User{}
 	err := row.Scan(&user.Email, &user.Password)
 	if err != nil {
+		ur.logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -82,6 +87,6 @@ func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, er
 	user.Name = utils.Sanitize(user.Name)
 	user.Email = utils.Sanitize(user.Email)
 	user.Password = utils.Sanitize(user.Password)
-	
+
 	return &user, nil
 }
