@@ -119,11 +119,16 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 			&email.Title, &email.IsRead, &email.Sending_date,
 			&email.Description)
 
-	email.ParentID, err = strconv.Atoi(parentIdNullString.String)
-	if err != nil {
-		er.logger.Error(err.Error())
-		return models.Email{}, err
+	if parentIdNullString.String == ""{
+		email.ParentID = 0
+	} else {
+		email.ParentID, err = strconv.Atoi(parentIdNullString.String)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return models.Email{}, err
+		}
 	}
+	
 
 	email.Sender_email = utils.Sanitize(email.Sender_email)
 	email.Recipient = utils.Sanitize(email.Recipient)
