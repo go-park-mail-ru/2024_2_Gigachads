@@ -29,7 +29,7 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, session, err := ar.UserUseCase.Login(r.Context(), &login)
+	user, session, csrf, err := ar.UserUseCase.Login(r.Context(), &login)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusForbidden, err.Error())
 		return
@@ -46,14 +46,23 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie := http.Cookie{
+	sessionCookie := http.Cookie{
 		Name:     session.Name,
 		Value:    session.ID,
 		Expires:  session.Time,
 		HttpOnly: true,
 	}
+
+	csrfCookie := http.Cookie{
+		Name:     csrf.Name,
+		Value:    csrf.ID,
+		Expires:  csrf.Time,
+		HttpOnly: true,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	http.SetCookie(w, &cookie)
+	http.SetCookie(w, &sessionCookie)
+	http.SetCookie(w, &csrfCookie)
 	w.WriteHeader(http.StatusOK)
 	w.Write(result)
 }

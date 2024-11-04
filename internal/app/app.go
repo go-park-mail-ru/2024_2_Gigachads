@@ -16,12 +16,17 @@ func Run(cfg *config.Config, l logger.Logger) error {
 		return err
 	}
 
-	redisClient, err := redis.Init(cfg)
+	redisSessionClient, err := redis.Init(cfg, 0)
 	if err != nil {
 		return err
 	}
 
-	if err := srv.Start(cfg, dbPostgres, redisClient, l); err != nil {
+	redisCSRFClient, err := redis.Init(cfg, 1)
+	if err != nil {
+		return err
+	}
+
+	if err := srv.Start(cfg, dbPostgres, redisSessionClient, redisCSRFClient, l); err != nil {
 		return err
 	}
 	return nil

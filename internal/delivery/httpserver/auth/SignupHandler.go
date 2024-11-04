@@ -36,20 +36,28 @@ func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, session, err := ar.UserUseCase.Signup(r.Context(), &signup)
+	_, session, csrf, err := ar.UserUseCase.Signup(r.Context(), &signup)
 
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	cookie := http.Cookie{
+	sessionCookie := http.Cookie{
 		Name:     session.Name,
 		Value:    session.ID,
 		Expires:  session.Time,
 		HttpOnly: true,
 	}
+
+	csrfCookie := http.Cookie{
+		Name:     csrf.Name,
+		Value:    csrf.ID,
+		Expires:  csrf.Time,
+		HttpOnly: true,
+	}
 	w.Header().Set("Content-Type", "application/json")
-	http.SetCookie(w, &cookie)
+	http.SetCookie(w, &sessionCookie)
+	http.SetCookie(w, &csrfCookie)
 	w.WriteHeader(http.StatusOK)
 }

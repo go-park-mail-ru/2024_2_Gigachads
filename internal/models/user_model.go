@@ -21,10 +21,11 @@ type UserLogin struct{
 }
 
 type UserUseCase interface {
-	Signup(ctx context.Context, user *User) (*User, *Session, error)
-	Login(ctx context.Context, user *User) (*User, *Session, error)
+	Signup(ctx context.Context, user *User) (*User, *Session, *Csrf, error)
+	Login(ctx context.Context, user *User) (*User, *Session, *Csrf, error)
 	Logout(ctx context.Context, id string) error
 	CheckAuth(ctx context.Context, sessionID string) (string, error)
+	CheckCsrf(ctx context.Context, sessionID string) (string, error)
 }
 
 type UserRepository interface {

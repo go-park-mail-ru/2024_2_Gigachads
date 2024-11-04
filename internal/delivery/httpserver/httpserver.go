@@ -22,10 +22,10 @@ type HTTPServer struct {
 	server *http.Server
 }
 
-func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redis *redis.Client, l logger.Logable) error {
+func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redisSession *redis.Client, redisCSRF *redis.Client, l logger.Logable) error {
 	s.server = new(http.Server)
 	s.server.Addr = cfg.HTTPServer.IP + ":" + cfg.HTTPServer.Port
-	s.configureRouters(cfg, db, redis, l)
+	s.configureRouters(cfg, db, redisSession, redisCSRF, l)
 	l.Info("Server is running on", "port", cfg.HTTPServer.Port)
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
@@ -33,13 +33,14 @@ func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redis *redis.Client, 
 	return nil
 }
 
-func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redis *redis.Client, l logger.Logable) {
-	sr := repo.NewSessionRepositoryService(redis, l)
+func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSession *redis.Client, redisCSRF *redis.Client, l logger.Logable) {
+	sr := repo.NewSessionRepositoryService(redisSession, l)
+	cr := repo.NewCsrfRepositoryService(redisCSRF, l)
 	smtpClient := s.createAndConfigureSMTPClient(cfg)
 
 	ur := repo.NewUserRepositoryService(db, l)
 	smtpRepo := repo.NewSMTPRepository(smtpClient, cfg)
-	uu := usecase.NewUserService(ur, sr)
+	uu := usecase.NewUserService(ur, sr, cr)
 
 	er := repo.NewEmailRepositoryService(db, l)
 
