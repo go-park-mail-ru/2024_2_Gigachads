@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS test;
+-- CREATE DATABASE IF NOT EXISTS test;
 
 -- Создание таблицы пользователей (profile)
 CREATE TABLE IF NOT EXISTS profile (
