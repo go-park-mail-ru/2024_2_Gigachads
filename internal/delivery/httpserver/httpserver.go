@@ -6,6 +6,7 @@ import (
 	authRouter "mail/internal/delivery/httpserver/auth"
 	"mail/internal/delivery/httpserver/email"
 	emailRouter "mail/internal/delivery/httpserver/email"
+	userRouter "mail/internal/delivery/httpserver/user"
 	mw "mail/internal/delivery/middleware"
 	"mail/internal/models"
 	repo "mail/internal/repository"
@@ -38,7 +39,7 @@ func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSessi
 	cr := repo.NewCsrfRepositoryService(redisCSRF, l)
 	smtpClient := s.createAndConfigureSMTPClient(cfg)
 
-	ur := repo.NewUserRepositoryService(db, l)
+	ur := repo.NewUserRepositoryService(db)
 	smtpRepo := repo.NewSMTPRepository(smtpClient, cfg)
 	uu := usecase.NewUserService(ur, sr, cr)
 
@@ -55,10 +56,12 @@ func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSessi
 
 	authRout := authRouter.NewAuthRouter(uu)
 	emailRout := emailRouter.NewEmailRouter(eu)
+	userRout := userRouter.NewUserRouter(uu)
 	mwAuth := mw.NewAuthMW(uu)
 
 	emailRout.ConfigureEmailRouter(router)
 	authRout.ConfigureAuthRouter(router)
+	userRout.ConfigureUserRouter(router)
 
 	handler := mw.ConfigureMWs(cfg, router, mwAuth)
 

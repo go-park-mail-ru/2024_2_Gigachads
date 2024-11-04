@@ -4,14 +4,20 @@ import (
 	"context"
 	"net/mail"
 	"regexp"
+	"bytes"
+	"mime/multipart"
 )
 
 type User struct {
+	ID int
 	Email      string `json:"email"`
 	Name       string `json:"name"`
 	Password   string `json:"password"`
 	RePassword string `json:"repassword"`
 	AvatarURL  string `json:"avatarPath"`
+}
+type ChangeName struct {
+	Name string `json:"name"`
 }
 
 type UserLogin struct{
@@ -20,18 +26,30 @@ type UserLogin struct{
 	AvatarURL  string `json:"avatarPath"`
 }
 
+type ChangePassword struct{
+	Password string `json:"password"`
+	OldPassword string `json:"oldpassword"`
+	RePassword string `json:"repassword"`
+}
+
 type UserUseCase interface {
 	Signup(ctx context.Context, user *User) (*User, *Session, *Csrf, error)
 	Login(ctx context.Context, user *User) (*User, *Session, *Csrf, error)
 	Logout(ctx context.Context, id string) error
 	CheckAuth(ctx context.Context, sessionID string) (string, error)
 	CheckCsrf(ctx context.Context, sessionID string, scrf string) error
+	ChangePassword(email string, password string) (error)
+	ChangeName(email string, name string) (error)
+	GetAvatar(email string) (*bytes.Buffer, error)
+	ChangeAvatar(file multipart.File, header multipart.FileHeader, email string) (error)
 }
 
 type UserRepository interface {
 	CreateUser(signup *User) (*User, error)
 	CheckUser(login *User) (*User, error)
-	GetByEmail(email string) (bool, error)
+	IsExist(email string) (bool, error)
+	UpdateInfo(user *User) (error)
+	GetUserByEmail(email string) (*User, error)
 }
 
 func EmailIsValid(email string) bool {

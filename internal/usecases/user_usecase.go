@@ -1,9 +1,15 @@
 package usecase
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	models "mail/internal/models"
+	"mime/multipart"
+	"os"
+	"path/filepath"
+	"strconv"
 )
 
 type UserService struct {
@@ -16,12 +22,12 @@ func NewUserService(urepo models.UserRepository, srepo models.SessionRepository,
 	return &UserService{
 		UserRepo:    urepo,
 		SessionRepo: srepo,
-		CsrfRepo:	 crepo,
+		CsrfRepo:    crepo,
 	}
 }
 
 func (us *UserService) Signup(ctx context.Context, signup *models.User) (*models.User, *models.Session, *models.Csrf, error) {
-	taken, err := us.UserRepo.GetByEmail(signup.Email)
+	taken, err := us.UserRepo.IsExist(signup.Email)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -46,7 +52,7 @@ func (us *UserService) Signup(ctx context.Context, signup *models.User) (*models
 }
 
 func (us *UserService) Login(ctx context.Context, login *models.User) (*models.User, *models.Session, *models.Csrf, error) {
-	taken, err := us.UserRepo.GetByEmail(login.Email)
+	taken, err := us.UserRepo.IsExist(login.Email)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -100,6 +106,106 @@ func (us *UserService) CheckCsrf(ctx context.Context, session string, csrf strin
 	}
 	if email1 != email2 {
 		return fmt.Errorf("invalid_csrf")
+	}
+	return nil
+}
+
+func (us *UserService) ChangeAvatar(file multipart.File, header multipart.FileHeader, email string) error {
+	if header.Size > (5 * 1024 * 1024) {
+		return fmt.Errorf("too_big_file")
+	}
+
+	ext := filepath.Ext(header.Filename)
+	user, err := us.UserRepo.GetUserByEmail(email)
+	if err != nil {
+		return nil
+	}
+	fileName := strconv.Itoa(user.ID) + "." + ext
+	filePath := "./avatars/" + fileName
+
+	_, err = os.Stat(filePath)
+	if os.IsNotExist(err) {
+		outFile, err := os.Create(filePath)
+		if err != nil {
+			return err
+		}
+		defer outFile.Close()
+		_, err = io.Copy(outFile, file)
+		if err != nil {
+			return err
+		}
+	} else {
+		outFile, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			return err
+		}
+		defer outFile.Close()
+		_, err = io.Copy(outFile, file)
+		if err != nil {
+			return err
+		}
+	}
+
+	user.AvatarURL = fileName
+	err = us.UserRepo.UpdateInfo(user)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (us *UserService) GetAvatar(email string) (*bytes.Buffer, error) {
+	user, err := us.UserRepo.GetUserByEmail(email)
+	if err != nil {
+		return nil, nil
+	}
+
+	filePath := "./avatars/" + user.AvatarURL
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	part, err := writer.CreateFormFile("file", filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		return nil, err
+	}
+
+	writer.Close()
+	return &buf, nil
+}
+
+func (us *UserService) ChangePassword(email string, password string) error {
+	user, err := us.UserRepo.GetUserByEmail(email)
+	if err != nil {
+		return err
+	}
+	user.Password = password
+	err = us.UserRepo.UpdateInfo(user)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (us *UserService) ChangeName(email string, name string) error {
+	user, err := us.UserRepo.GetUserByEmail(email)
+	if err != nil {
+		return err
+	}
+	user.Name = name
+	err = us.UserRepo.UpdateInfo(user)
+	if err != nil {
+		return err
 	}
 	return nil
 }
