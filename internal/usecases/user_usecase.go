@@ -89,10 +89,17 @@ func (us *UserService) CheckAuth(ctx context.Context, id string) (string, error)
 	return session, nil
 }
 
-func (us *UserService) CheckCsrf(ctx context.Context, id string) (string, error) {
-	csrf, err := us.CsrfRepo.GetCsrf(ctx, id)
+func (us *UserService) CheckCsrf(ctx context.Context, session string, csrf string) error {
+	email1, err := us.CsrfRepo.GetCsrf(ctx, csrf)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return csrf, nil
+	email2, err := us.SessionRepo.GetSession(ctx, session)
+	if err != nil {
+		return err
+	}
+	if email1 != email2 {
+		return fmt.Errorf("invalid_csrf")
+	}
+	return nil
 }
