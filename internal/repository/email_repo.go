@@ -175,25 +175,36 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		return err
 	}
 
-	_, err = tx.Exec(
-		`INSERT INTO email_transaction 
-		(sender_email, recipient_email, sending_date, isread, message_id)
-		VALUES ($1, $2, $3, $4, $5)`,
-		email.Sender_email, email.Recipient,
-		email.Sending_date, email.IsRead, messageID,
-	)
-	if err != nil {
-		er.logger.Error(err.Error())
-		return err
+	if email.Sender_email == email.Recipient {
+		_, err = tx.Exec(
+			`INSERT INTO email_transaction 
+			(sender_email, recipient_email, sending_date, isread, message_id)
+			VALUES ($1, $2, $3, $4, $5)`,
+			email.Sender_email, email.Recipient,
+			email.Sending_date, email.IsRead, messageID,
+		)
+	} else {
+		_, err = tx.Exec(
+			`INSERT INTO email_transaction 
+			(sender_email, recipient_email, sending_date, isread, message_id)
+			VALUES ($1, $2, $3, $4, $5)`,
+			email.Sender_email, email.Recipient,
+			email.Sending_date, email.IsRead, messageID,
+		)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return err
+		}
+
+		_, err = tx.Exec(
+			`INSERT INTO email_transaction 
+			(sender_email, recipient_email, sending_date, isread, message_id)
+			VALUES ($1, $2, $3, $4, $5)`,
+			email.Recipient, email.Sender_email,
+			email.Sending_date, email.IsRead, messageID,
+		)
 	}
 
-	_, err = tx.Exec(
-		`INSERT INTO email_transaction 
-		(sender_email, recipient_email, sending_date, isread, message_id)
-		VALUES ($1, $2, $3, $4, $5)`,
-		email.Recipient, email.Sender_email,
-		email.Sending_date, email.IsRead, messageID,
-	)
 	if err != nil {
 		er.logger.Error(err.Error())
 		return err
