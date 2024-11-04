@@ -3,7 +3,6 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"github.com/microcosm-cc/bluemonday"
 )
 
 func GenerateHash() (string, error) {
@@ -12,9 +11,4 @@ func GenerateHash() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
-}
-
-func Sanitize(str string) string {
-	sanitizer := bluemonday.UGCPolicy()
-	return sanitizer.Sanitize(str)
 }
