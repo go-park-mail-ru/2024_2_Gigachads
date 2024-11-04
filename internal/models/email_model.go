@@ -7,10 +7,10 @@ import (
 type Email struct {
 	ID           int       `json:"id"`
 	ParentID     int       `json:"parentID"`
-	Sender_email string    `json:"author"`
+	Sender_email string    `json:"sender"`
 	Recipient    string    `json:"recipient"`
 	Title        string    `json:"title"`
-	IsRead       bool      `json:"is_read"`
+	IsRead       bool      `json:"isRead"`
 	Sending_date time.Time `json:"date"`
 	Description  string    `json:"description"`
 }
