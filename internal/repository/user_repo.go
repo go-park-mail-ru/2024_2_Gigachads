@@ -26,15 +26,13 @@ func (ur *UserRepositoryService) GetByEmail(email string) (bool, error) {
 		`SELECT email FROM "profile" WHERE email = $1`, email)
 	user := models.User{}
 	err := row.Scan(&user.Email)
-
-	if !errors.Is(err, sql.ErrNoRows) {
-		return true, nil
-	}
-
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
-
+	if !errors.Is(err, sql.ErrNoRows) {
+		return true, nil
+	}
+	
 	if err != nil {
 		ur.logger.Error(err.Error())
 		return false, err
@@ -72,7 +70,7 @@ func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, er
 	login.Password = utils.Sanitize(login.Password)
 
 	row := ur.repo.QueryRow(
-		`SELECT email, password FROM "user" WHERE email = $1`, login.Email)
+		`SELECT email, password FROM "profile" WHERE email = $1`, login.Email)
 	user := models.User{}
 	err := row.Scan(&user.Email, &user.Password)
 	if err != nil {
@@ -90,3 +88,8 @@ func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, er
 
 	return &user, nil
 }
+
+
+
+
+

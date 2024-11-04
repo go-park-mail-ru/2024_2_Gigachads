@@ -66,7 +66,7 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 	senderEmail = utils.Sanitize(senderEmail)
 
 	rows, err := er.repo.Query(
-		`SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+		`SELECT t.id, t.sender_email, m.title, 
 		 t.sending_date, t.isread, m.description
 		 FROM email_transaction AS t
 		 JOIN message AS m ON t.message_id = m.id
@@ -84,7 +84,6 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 		err := rows.Scan(
 			&email.ID,
 			&email.Sender_email,
-			&email.Recipient,
 			&email.Title,
 			&email.Sending_date,
 			&email.IsRead,
@@ -104,9 +103,6 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 }
 
 func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
-	er.mu.RLock()
-	defer er.mu.RUnlock()
-
 	query := `
 	SELECT t.id, parent_transaction_id, t.sender_email, t.recipient_email, m.title, 
 	t.isread, t.sending_date, m.description
@@ -137,8 +133,6 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 }
 
 func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
-	er.mu.Lock()
-	defer er.mu.Unlock()
 
 	email.Sender_email = utils.Sanitize(email.Sender_email)
 	email.Recipient = utils.Sanitize(email.Recipient)
@@ -165,9 +159,9 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 
 	_, err = tx.Exec(
 		`INSERT INTO email_transaction 
-		(sender_email, recipient_email, title, sending_date, isread, message_id)
-		VALUES ($1, $2, $3, $4, $5, $6)`,
-		email.Sender_email, email.Recipient, email.Title,
+		(sender_email, recipient_email, sending_date, isread, message_id)
+		VALUES ($1, $2, $3, $4, $5)`,
+		email.Sender_email, email.Recipient,
 		email.Sending_date, email.IsRead, messageID,
 	)
 	if err != nil {
@@ -179,9 +173,6 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 }
 
 func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
-	er.mu.Lock()
-	defer er.mu.Unlock()
-
 	tx, err := er.repo.Begin()
 	if err != nil {
 		er.logger.Error(err.Error())

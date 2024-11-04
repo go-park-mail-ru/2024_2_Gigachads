@@ -36,7 +36,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 
 		err := er.EmailUseCase.SaveEmail(email)
 		if err != nil {
-			utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_save_email")
+			utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 			return
 		}
 
