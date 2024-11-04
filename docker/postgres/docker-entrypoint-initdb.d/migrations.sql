@@ -1,5 +1,3 @@
-CREATE DATABASE IF NOT EXISTS test;
-
 -- Создание таблицы пользователей (profile)
 CREATE TABLE IF NOT EXISTS profile (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,

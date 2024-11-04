@@ -111,6 +111,10 @@ func (us *UserService) CheckCsrf(ctx context.Context, session string, csrf strin
 }
 
 func (us *UserService) ChangeAvatar(file multipart.File, header multipart.FileHeader, email string) error {
+	if err := os.MkdirAll("./avatars", os.ModePerm); err != nil {
+		return err
+	}
+
 	if header.Size > (5 * 1024 * 1024) {
 		return fmt.Errorf("too_big_file")
 	}
@@ -118,33 +122,32 @@ func (us *UserService) ChangeAvatar(file multipart.File, header multipart.FileHe
 	ext := filepath.Ext(header.Filename)
 	user, err := us.UserRepo.GetUserByEmail(email)
 	if err != nil {
-		return nil
+		return err
 	}
-	fileName := strconv.Itoa(user.ID) + "." + ext
+	fileName := strconv.Itoa(user.ID) + ext
 	filePath := "./avatars/" + fileName
-
 	_, err = os.Stat(filePath)
-	if os.IsNotExist(err) {
-		outFile, err := os.Create(filePath)
-		if err != nil {
-			return err
-		}
-		defer outFile.Close()
-		_, err = io.Copy(outFile, file)
-		if err != nil {
-			return err
-		}
-	} else {
-		outFile, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
-		if err != nil {
-			return err
-		}
-		defer outFile.Close()
-		_, err = io.Copy(outFile, file)
-		if err != nil {
-			return err
-		}
+	// if os.IsNotExist(err) {
+	outFile, err := os.Create(filePath)
+	if err != nil {
+		return err
 	}
+	defer outFile.Close()
+	_, err = io.Copy(outFile, file)
+	if err != nil {
+		return err
+	}
+	// } else {
+	// 	outFile, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	defer outFile.Close()
+	// 	_, err = io.Copy(outFile, file)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	user.AvatarURL = fileName
 	err = us.UserRepo.UpdateInfo(user)
@@ -154,34 +157,45 @@ func (us *UserService) ChangeAvatar(file multipart.File, header multipart.FileHe
 	return nil
 }
 
-func (us *UserService) GetAvatar(email string) (*bytes.Buffer, error) {
+func (us *UserService) GetAvatar(email string) (*bytes.Buffer, string, error) {
 	user, err := us.UserRepo.GetUserByEmail(email)
 	if err != nil {
-		return nil, nil
+		return nil, "", err
 	}
 
 	filePath := "./avatars/" + user.AvatarURL
-
+	ext := filepath.Ext(filePath)
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer file.Close()
 
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
 
-	part, err := writer.CreateFormFile("file", filePath)
+	part, err := writer.CreateFormFile("avatar", filePath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if _, err := io.Copy(part, file); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	writer.Close()
-	return &buf, nil
+
+	var contentType string
+	switch ext {
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".png":
+		contentType = "image/png"
+	default:
+		contentType = "application/octet-stream"
+	}
+	fmt.Println(contentType, "    alskdjoipuashjfiohaiosfdhbiyob")
+	return &buf, contentType, nil
 }
 
 func (us *UserService) ChangePassword(email string, password string) error {

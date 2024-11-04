@@ -1,15 +1,15 @@
 package models
 
 import (
+	"bytes"
 	"context"
+	"mime/multipart"
 	"net/mail"
 	"regexp"
-	"bytes"
-	"mime/multipart"
 )
 
 type User struct {
-	ID int
+	ID         int
 	Email      string `json:"email"`
 	Name       string `json:"name"`
 	Password   string `json:"password"`
@@ -20,16 +20,16 @@ type ChangeName struct {
 	Name string `json:"name"`
 }
 
-type UserLogin struct{
-	Email      string `json:"email"`
-	Name       string `json:"name"`
-	AvatarURL  string `json:"avatarPath"`
+type UserLogin struct {
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatarPath"`
 }
 
-type ChangePassword struct{
-	Password string `json:"password"`
+type ChangePassword struct {
+	Password    string `json:"password"`
 	OldPassword string `json:"oldpassword"`
-	RePassword string `json:"repassword"`
+	RePassword  string `json:"repassword"`
 }
 
 type UserUseCase interface {
@@ -38,17 +38,17 @@ type UserUseCase interface {
 	Logout(ctx context.Context, id string) error
 	CheckAuth(ctx context.Context, sessionID string) (string, error)
 	CheckCsrf(ctx context.Context, sessionID string, scrf string) error
-	ChangePassword(email string, password string) (error)
-	ChangeName(email string, name string) (error)
-	GetAvatar(email string) (*bytes.Buffer, error)
-	ChangeAvatar(file multipart.File, header multipart.FileHeader, email string) (error)
+	ChangePassword(email string, password string) error
+	ChangeName(email string, name string) error
+	GetAvatar(email string) (*bytes.Buffer, string, error)
+	ChangeAvatar(file multipart.File, header multipart.FileHeader, email string) error
 }
 
 type UserRepository interface {
 	CreateUser(signup *User) (*User, error)
 	CheckUser(login *User) (*User, error)
 	IsExist(email string) (bool, error)
-	UpdateInfo(user *User) (error)
+	UpdateInfo(user *User) error
 	GetUserByEmail(email string) (*User, error)
 }
 

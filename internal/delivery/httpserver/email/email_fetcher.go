@@ -29,7 +29,7 @@ func (ef *emailFetcher) Start() {
 
 		for range ticker.C {
 			if err := ef.emailService.FetchEmailsViaPOP3(); err != nil {
-				slog.Error("Ошибка при получении писем через POP3", "error", err)
+				// slog.Error("Ошибка при получении писем через POP3", "error", err)
 			} else {
 				slog.Info("Письма успешно получены через POP3")
 			}

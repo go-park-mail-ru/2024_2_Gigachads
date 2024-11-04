@@ -26,7 +26,7 @@ func (ur *UserRepositoryService) IsExist(email string) (bool, error) {
 	if !errors.Is(err, sql.ErrNoRows) {
 		return true, nil
 	}
-	
+
 	if err != nil {
 		return false, err
 	}
@@ -72,8 +72,8 @@ func (ur *UserRepositoryService) GetUserByEmail(email string) (*models.User, err
 	return &user, nil
 }
 
-func (ur *UserRepositoryService) UpdateInfo(user *models.User) (error) {
-	query := 
+func (ur *UserRepositoryService) UpdateInfo(user *models.User) error {
+	query :=
 		`UPDATE "profile"
 		SET username = $1, avatar_url = $2, password = $3
 		WHERE email = $4`
@@ -83,8 +83,3 @@ func (ur *UserRepositoryService) UpdateInfo(user *models.User) (error) {
 	}
 	return nil
 }
-	
-
-
-
-
