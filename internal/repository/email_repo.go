@@ -4,15 +4,15 @@ import (
 	"database/sql"
 	"errors"
 	"mail/internal/models"
-	"sync"
-	"mail/pkg/utils"
 	"mail/pkg/logger"
+	"mail/pkg/utils"
 	"strconv"
+	"sync"
 )
 
 type EmailRepositoryService struct {
-	repo *sql.DB
-	mu   sync.RWMutex
+	repo   *sql.DB
+	mu     sync.RWMutex
 	logger logger.Logable
 }
 
@@ -109,7 +109,7 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	t.isread, t.sending_date, m.description
 	FROM email_transaction AS t
 	JOIN message AS m ON t.message_id = m.id
-	WHERE t.id = $1
+	WHERE m.id = $1
 	`
 
 	var email models.Email
@@ -118,7 +118,10 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 		Scan(&email.ID, &parentIdNullString, &email.Sender_email, &email.Recipient,
 			&email.Title, &email.IsRead, &email.Sending_date,
 			&email.Description)
-
+	if err != nil {
+		er.logger.Error(err.Error())
+		return models.Email{}, err
+	}
 	email.ParentID, err = strconv.Atoi(parentIdNullString.String)
 	if err != nil {
 		er.logger.Error(err.Error())
