@@ -92,6 +92,6 @@ func (es *EmailService) ChangeStatus(id int, status bool) error {
 	return es.EmailRepo.ChangeStatus(id, status)
 }
 
-func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int) error {
-	return es.EmailRepo.DeleteEmails(userEmail, messageIDs)
+func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
+	return es.EmailRepo.DeleteEmails(userEmail, messageIDs, folder)
 }

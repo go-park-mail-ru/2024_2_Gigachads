@@ -221,7 +221,7 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 	return tx.Commit()
 }
 
-func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []int) error {
+func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
 	tx, err := er.repo.Begin()
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -229,9 +229,19 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 	}
 	defer tx.Rollback()
 
-	query := `DELETE FROM email_transaction 
-              WHERE message_id = ANY($1) 
-              AND (sender_email = $2 OR recipient_email = $2)`
+	var query string
+	switch folder {
+	case "inbox":
+		query = `DELETE FROM email_transaction 
+				 WHERE message_id = ANY($1) 
+				 AND recipient_email = $2`
+	case "sent":
+		query = `DELETE FROM email_transaction 
+				 WHERE message_id = ANY($1) 
+				 AND sender_email = $2`
+	default:
+		return errors.New("неизвестная папка")
+	}
 
 	_, err = tx.Exec(query, pq.Array(messageIDs), userEmail)
 	if err != nil {
