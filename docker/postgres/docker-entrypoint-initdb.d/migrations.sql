@@ -1,4 +1,4 @@
--- CREATE DATABASE IF NOT EXISTS test;
+CREATE DATABASE IF NOT EXISTS test;
 
 -- Создание таблицы пользователей (profile)
 CREATE TABLE IF NOT EXISTS profile (
@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS profile (
     email TEXT NOT NULL UNIQUE CHECK (LENGTH(email) <= 50),
     username TEXT NOT NULL CHECK (LENGTH(username) >= 5 AND LENGTH(username) <= 50),
     password TEXT NOT NULL CHECK (LENGTH(password) >= 5 AND LENGTH(password) <= 50),
-    avatar_url TEXT DEFAULT NULL
+    avatar_url TEXT DEFAULT 'default.png'
 );
 
 -- Создание таблицы писем (message)
