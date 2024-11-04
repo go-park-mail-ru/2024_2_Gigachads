@@ -70,9 +70,9 @@ func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, er
 	login.Password = utils.Sanitize(login.Password)
 
 	row := ur.repo.QueryRow(
-		`SELECT email, password FROM "profile" WHERE email = $1`, login.Email)
+		`SELECT email, username, password FROM "profile" WHERE email = $1`, login.Email)
 	user := models.User{}
-	err := row.Scan(&user.Email, &user.Password)
+	err := row.Scan(&user.Email, &user.Name, &user.Password)
 	if err != nil {
 		ur.logger.Error(err.Error())
 		return nil, err
