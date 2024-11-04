@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"mail/pkg/utils"
 	models "mail/internal/models"
 )
 
@@ -16,6 +17,9 @@ func NewUserRepositoryService(db *sql.DB) models.UserRepository {
 }
 
 func (ur *UserRepositoryService) GetByEmail(email string) (bool, error) {
+
+	email = utils.Sanitize(email)
+
 	row := ur.repo.QueryRow(
 		`SELECT email FROM "profile" WHERE email = $1`, email)
 	user := models.User{}
@@ -36,6 +40,11 @@ func (ur *UserRepositoryService) GetByEmail(email string) (bool, error) {
 }
 
 func (ur *UserRepositoryService) CreateUser(signup *models.User) (*models.User, error) {
+
+	signup.Name = utils.Sanitize(signup.Name)
+	signup.Email = utils.Sanitize(signup.Email)
+	signup.Password = utils.Sanitize(signup.Password)
+
 	row := ur.repo.QueryRow(
 		`INSERT INTO "profile" (username, email, password) VALUES ($1, $2, $3) RETURNING email`,
 		signup.Name, signup.Email, signup.Password)
@@ -44,10 +53,20 @@ func (ur *UserRepositoryService) CreateUser(signup *models.User) (*models.User, 
 	if err != nil {
 		return nil, err
 	}
+
+	user.Name = utils.Sanitize(user.Name)
+	user.Email = utils.Sanitize(user.Email)
+	user.Password = utils.Sanitize(user.Password)
+
 	return &user, nil
 }
 
 func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, error) {
+
+	login.Name = utils.Sanitize(login.Name)
+	login.Email = utils.Sanitize(login.Email)
+	login.Password = utils.Sanitize(login.Password)
+
 	row := ur.repo.QueryRow(
 		`SELECT email, password FROM "user" WHERE email = $1`, login.Email)
 	user := models.User{}
@@ -60,5 +79,9 @@ func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, er
 		return nil, fmt.Errorf("invalid_password")
 	}
 
+	user.Name = utils.Sanitize(user.Name)
+	user.Email = utils.Sanitize(user.Email)
+	user.Password = utils.Sanitize(user.Password)
+	
 	return &user, nil
 }

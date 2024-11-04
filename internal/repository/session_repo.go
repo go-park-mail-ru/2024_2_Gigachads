@@ -17,6 +17,9 @@ func NewSessionRepositoryService(client *redis.Client) models.SessionRepository 
 }
 
 func (sr *SessionRepositoryService) CreateSession(ctx context.Context, mail string) (*models.Session, error) {
+
+	mail = utils.Sanitize(mail)
+
 	hash, err := utils.GenerateHash()
 	if err != nil {
 		return &models.Session{}, err
@@ -27,12 +30,18 @@ func (sr *SessionRepositoryService) CreateSession(ctx context.Context, mail stri
 	if err != nil {
 		return nil, err
 	}
+
+	hash = utils.Sanitize(hash)
+
 	session := models.Session{Name: "email", ID: hash, Time: expiration, UserLogin: mail}
 
 	return &session, nil
 }
 
 func (sr *SessionRepositoryService) DeleteSession(ctx context.Context, sessionID string) error {
+
+	sessionID = utils.Sanitize(sessionID)
+
 	err := sr.repo.Del(ctx, sessionID).Err()
 	if err != nil {
 		return err
@@ -41,9 +50,15 @@ func (sr *SessionRepositoryService) DeleteSession(ctx context.Context, sessionID
 }
 
 func (sr *SessionRepositoryService) GetSession(ctx context.Context, sessionID string) (string, error) {
+
+	sessionID = utils.Sanitize(sessionID)
+
 	email, err := sr.repo.Get(ctx, sessionID).Result()
 	if err != nil {
 		return "", err
 	}
+
+	email = utils.Sanitize(email)
+	
 	return email, nil
 }

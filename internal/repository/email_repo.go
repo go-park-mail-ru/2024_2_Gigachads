@@ -5,6 +5,7 @@ import (
 	"errors"
 	"mail/internal/models"
 	"sync"
+	"mail/pkg/utils"
 )
 
 type EmailRepositoryService struct {
@@ -17,6 +18,9 @@ func NewEmailRepositoryService(db *sql.DB) *EmailRepositoryService {
 }
 
 func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
+
+	email = utils.Sanitize(email)
+
 	rows, err := er.repo.Query(
 		`SELECT t.id, t.sender_email, t.recipient_email, m.title, 
 		 t.sending_date, t.isread, m.description
@@ -41,6 +45,10 @@ func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
 			&email.IsRead,
 			&email.Description,
 		)
+		email.Sender_email = utils.Sanitize(email.Sender_email)
+		email.Recipient = utils.Sanitize(email.Recipient)
+		email.Title = utils.Sanitize(email.Title)
+		email.Description = utils.Sanitize(email.Description)
 		if err != nil {
 			return nil, err
 		}
@@ -50,6 +58,9 @@ func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
 }
 
 func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Email, error) {
+
+	senderEmail = utils.Sanitize(senderEmail)
+
 	rows, err := er.repo.Query(
 		`SELECT t.id, t.sender_email, t.recipient_email, m.title, 
 		 t.sending_date, t.isread, m.description
@@ -74,6 +85,10 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 			&email.IsRead,
 			&email.Description,
 		)
+		email.Sender_email = utils.Sanitize(email.Sender_email)
+		email.Recipient = utils.Sanitize(email.Recipient)
+		email.Title = utils.Sanitize(email.Title)
+		email.Description = utils.Sanitize(email.Description)
 		if err != nil {
 			return nil, err
 		}
@@ -87,7 +102,7 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	defer er.mu.RUnlock()
 
 	query := `
-	SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+	SELECT t.id, parent_transaction_id, t.sender_email, t.recipient_email, m.title, 
 	t.isread, t.sending_date, m.description
 	FROM email_transaction AS t
 	JOIN message AS m ON t.message_id = m.id
@@ -96,9 +111,15 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 
 	var email models.Email
 	err := er.repo.QueryRow(query, id).
-		Scan(&email.ID, &email.Sender_email, &email.Recipient,
+		Scan(&email.ID, &email.ParentID, &email.Sender_email, &email.Recipient,
 			&email.Title, &email.IsRead, &email.Sending_date,
 			&email.Description)
+
+	email.Sender_email = utils.Sanitize(email.Sender_email)
+	email.Recipient = utils.Sanitize(email.Recipient)
+	email.Title = utils.Sanitize(email.Title)
+	email.Description = utils.Sanitize(email.Description)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return models.Email{}, errors.New("email not found")
@@ -111,6 +132,11 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	er.mu.Lock()
 	defer er.mu.Unlock()
+
+	email.Sender_email = utils.Sanitize(email.Sender_email)
+	email.Recipient = utils.Sanitize(email.Recipient)
+	email.Title = utils.Sanitize(email.Title)
+	email.Description = utils.Sanitize(email.Description)
 
 	tx, err := er.repo.Begin()
 	if err != nil {
