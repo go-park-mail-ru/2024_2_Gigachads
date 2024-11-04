@@ -151,7 +151,6 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 }
 
 func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
-
 	email.Sender_email = utils.Sanitize(email.Sender_email)
 	email.Recipient = utils.Sanitize(email.Recipient)
 	email.Title = utils.Sanitize(email.Title)
@@ -175,12 +174,20 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		return err
 	}
 
+	var parentID interface{}
+	if email.ParentID == 0 {
+		parentID = nil
+	} else {
+		parentID = email.ParentID
+	}
+
 	_, err = tx.Exec(
 		`INSERT INTO email_transaction 
-		(sender_email, recipient_email, sending_date, isread, message_id)
-		VALUES ($1, $2, $3, $4, $5)`,
+		(sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id)
+		VALUES ($1, $2, $3, $4, $5, $6)`,
 		email.Sender_email, email.Recipient,
 		email.Sending_date, email.IsRead, messageID,
+		parentID,
 	)
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -201,15 +208,15 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 	if status {
 		_, err = tx.Exec(
 			`UPDATE email_transaction
-			SET isread = TRUE
-			WHERE message_id = $1`,
+				SET isread = TRUE
+				WHERE message_id = $1`,
 			id,
 		)
 	} else {
 		_, err = tx.Exec(
 			`UPDATE email_transaction
-			SET isread = FALSE
-			WHERE message_id = $1`,
+				SET isread = FALSE
+				WHERE message_id = $1`,
 			id,
 		)
 	}

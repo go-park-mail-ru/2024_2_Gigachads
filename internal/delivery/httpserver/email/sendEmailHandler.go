@@ -32,6 +32,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 			Description:  req.Description,
 			Sending_date: time.Now(),
 			IsRead:       false,
+			ParentID:     0,
 		}
 
 		err := er.EmailUseCase.SaveEmail(email)
@@ -61,6 +62,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 				Description:  req.Description,
 				Sending_date: time.Now(),
 				IsRead:       false,
+				ParentID:     req.ParentId,
 			}
 
 			err = er.EmailUseCase.SaveEmail(email)
@@ -83,6 +85,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 				Description:  originalEmail.Description,
 				Sending_date: time.Now(),
 				IsRead:       false,
+				ParentID:     req.ParentId,
 			}
 
 			err = er.EmailUseCase.SaveEmail(email)
