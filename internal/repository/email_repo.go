@@ -8,6 +8,8 @@ import (
 	"mail/pkg/utils"
 	"strconv"
 	"sync"
+
+	"github.com/lib/pq"
 )
 
 type EmailRepositoryService struct {
@@ -216,5 +218,24 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 		er.logger.Error(err.Error())
 		return err
 	}
+	return tx.Commit()
+}
+
+func (er *EmailRepositoryService) DeleteEmails(ids []int) error {
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
+
+	query := `DELETE FROM email_transaction WHERE id = ANY($1)`
+
+	_, err = tx.Exec(query, pq.Array(ids))
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
 	return tx.Commit()
 }

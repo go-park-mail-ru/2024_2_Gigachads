@@ -20,4 +20,5 @@ func (er *EmailRouter) ConfigureEmailRouter(mux *mux.Router) {
 	mux.HandleFunc("/email", er.SendEmailHandler).Methods("POST", "OPTIONS")
 	mux.HandleFunc("/email/{id}", er.SingleEmailHandler).Methods("GET", "OPTIONS")
 	mux.HandleFunc("/email/{id}/status", er.EmailStatusHandler).Methods("PUT", "OPTIONS")
+	mux.HandleFunc("/email", er.DeleteEmailsHandler).Methods("DELETE", "OPTIONS")
 }

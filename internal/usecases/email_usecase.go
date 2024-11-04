@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"fmt"
-	"time"
 	models "mail/internal/models"
+	"time"
 )
 
 type EmailService struct {
@@ -90,4 +90,8 @@ func (s *EmailService) SaveEmail(email models.Email) error {
 
 func (es *EmailService) ChangeStatus(id int, status bool) error {
 	return es.EmailRepo.ChangeStatus(id, status)
+}
+
+func (es *EmailService) DeleteEmails(ids []int) error {
+	return es.EmailRepo.DeleteEmails(ids)
 }

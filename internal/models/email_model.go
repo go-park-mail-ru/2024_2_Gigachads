@@ -25,6 +25,7 @@ type EmailUseCase interface {
 	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
 	SaveEmail(email Email) error
+	DeleteEmails(ids []int) error
 }
 
 type EmailRepository interface {
@@ -33,6 +34,7 @@ type EmailRepository interface {
 	SaveEmail(email Email) error
 	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
+	DeleteEmails(ids []int) error
 }
 
 type SMTPRepository interface {
