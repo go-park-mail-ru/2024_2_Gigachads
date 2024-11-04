@@ -10,7 +10,7 @@ import (
 
 func Init(cfg *config.Config) (*sql.DB, error) {
 	dbConfig := cfg.Postgres
-	dataConnection := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s",
+	dataConnection := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable",
 		dbConfig.IP, dbConfig.Port, dbConfig.DBname, dbConfig.User, dbConfig.Password)
 
 	db, err := sql.Open("postgres", dataConnection)

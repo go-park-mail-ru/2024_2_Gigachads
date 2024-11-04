@@ -17,12 +17,16 @@ func NewUserRepositoryService(db *sql.DB) models.UserRepository {
 
 func (ur *UserRepositoryService) GetByEmail(email string) (bool, error) {
 	row := ur.repo.QueryRow(
-		`SELECT email FROM "user" WHERE email = $1`, email)
+		`SELECT email FROM "profile" WHERE email = $1`, email)
 	user := models.User{}
 	err := row.Scan(&user.Email)
 
 	if !errors.Is(err, sql.ErrNoRows) {
 		return true, nil
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
 	}
 
 	if err != nil {
