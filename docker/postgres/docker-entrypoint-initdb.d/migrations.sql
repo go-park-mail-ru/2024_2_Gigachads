@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS email_transaction (
     sender_email TEXT,
     recipient_email TEXT,
     message_id INTEGER,
+    user_id INTEGER,
     sending_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     isRead BOOLEAN NOT NULL DEFAULT FALSE,
     folder_id INTEGER,

@@ -23,7 +23,6 @@ func NewEmailRepositoryService(db *sql.DB, l logger.Logable) *EmailRepositorySer
 }
 
 func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
-
 	email = utils.Sanitize(email)
 
 	rows, err := er.repo.Query(
@@ -31,7 +30,7 @@ func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
 		 t.sending_date, t.isread, m.description
 		 FROM email_transaction AS t
 		 JOIN message AS m ON t.message_id = m.id
-		 WHERE t.recipient_email = $1
+		 WHERE t.recipient_email = $1 AND t.user_id = (SELECT id FROM profile WHERE email = $1)
 		 ORDER BY t.sending_date DESC`, email)
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -65,7 +64,6 @@ func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
 }
 
 func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Email, error) {
-
 	senderEmail = utils.Sanitize(senderEmail)
 
 	rows, err := er.repo.Query(
@@ -73,7 +71,7 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 		 t.sending_date, t.isread, m.description
 		 FROM email_transaction AS t
 		 JOIN message AS m ON t.message_id = m.id
-		 WHERE t.sender_email = $1
+		 WHERE t.sender_email = $1 AND t.user_id = (SELECT id FROM profile WHERE email = $1)
 		 ORDER BY t.sending_date DESC`, senderEmail)
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -111,8 +109,7 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	t.isread, t.sending_date, m.description
 	FROM email_transaction AS t
 	JOIN message AS m ON t.message_id = m.id
-	WHERE m.id = $1
-	`
+	WHERE m.id = $1 AND t.user_id = (SELECT id FROM profile WHERE email = (SELECT sender_email FROM email_transaction WHERE id = $1))`
 
 	var email models.Email
 	var parentIdNullString sql.NullString
@@ -151,7 +148,6 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 }
 
 func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
-
 	email.Sender_email = utils.Sanitize(email.Sender_email)
 	email.Recipient = utils.Sanitize(email.Recipient)
 	email.Title = utils.Sanitize(email.Title)
@@ -177,8 +173,8 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 
 	_, err = tx.Exec(
 		`INSERT INTO email_transaction 
-		(sender_email, recipient_email, sending_date, isread, message_id)
-		VALUES ($1, $2, $3, $4, $5)`,
+		(sender_email, recipient_email, sending_date, isread, message_id, user_id)
+		VALUES ($1, $2, $3, $4, $5, (SELECT id FROM profile WHERE email = $2))`,
 		email.Sender_email, email.Recipient,
 		email.Sending_date, email.IsRead, messageID,
 	)
@@ -202,14 +198,14 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 		_, err = tx.Exec(
 			`UPDATE email_transaction
 			SET isread = TRUE
-			WHERE message_id = $1`,
+			WHERE message_id = $1 AND user_id = (SELECT id FROM profile WHERE email = (SELECT sender_email FROM email_transaction WHERE id = $1))`,
 			id,
 		)
 	} else {
 		_, err = tx.Exec(
 			`UPDATE email_transaction
 			SET isread = FALSE
-			WHERE message_id = $1`,
+			WHERE message_id = $1 AND user_id = (SELECT id FROM profile WHERE email = (SELECT sender_email FROM email_transaction WHERE id = $1))`,
 			id,
 		)
 	}
@@ -234,11 +230,13 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 	case "inbox":
 		query = `DELETE FROM email_transaction 
 				 WHERE message_id = ANY($1) 
-				 AND recipient_email = $2`
+				 AND recipient_email = $2 
+				 AND user_id = (SELECT id FROM profile WHERE email = $2)`
 	case "sent":
 		query = `DELETE FROM email_transaction 
 				 WHERE message_id = ANY($1) 
-				 AND sender_email = $2`
+				 AND sender_email = $2 
+				 AND user_id = (SELECT id FROM profile WHERE email = $2)`
 	default:
 		return errors.New("неизвестная папка")
 	}
