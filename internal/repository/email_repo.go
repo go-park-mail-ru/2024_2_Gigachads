@@ -175,36 +175,13 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		return err
 	}
 
-	if email.Sender_email == email.Recipient {
-		_, err = tx.Exec(
-			`INSERT INTO email_transaction 
-			(sender_email, recipient_email, sending_date, isread, message_id)
-			VALUES ($1, $2, $3, $4, $5)`,
-			email.Sender_email, email.Recipient,
-			email.Sending_date, email.IsRead, messageID,
-		)
-	} else {
-		_, err = tx.Exec(
-			`INSERT INTO email_transaction 
-			(sender_email, recipient_email, sending_date, isread, message_id)
-			VALUES ($1, $2, $3, $4, $5)`,
-			email.Sender_email, email.Recipient,
-			email.Sending_date, email.IsRead, messageID,
-		)
-		if err != nil {
-			er.logger.Error(err.Error())
-			return err
-		}
-
-		_, err = tx.Exec(
-			`INSERT INTO email_transaction 
-			(sender_email, recipient_email, sending_date, isread, message_id)
-			VALUES ($1, $2, $3, $4, $5)`,
-			email.Recipient, email.Sender_email,
-			email.Sending_date, email.IsRead, messageID,
-		)
-	}
-
+	_, err = tx.Exec(
+		`INSERT INTO email_transaction 
+		(sender_email, recipient_email, sending_date, isread, message_id)
+		VALUES ($1, $2, $3, $4, $5)`,
+		email.Sender_email, email.Recipient,
+		email.Sending_date, email.IsRead, messageID,
+	)
 	if err != nil {
 		er.logger.Error(err.Error())
 		return err
@@ -244,7 +221,7 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 	return tx.Commit()
 }
 
-func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
+func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []int) error {
 	tx, err := er.repo.Begin()
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -252,19 +229,9 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 	}
 	defer tx.Rollback()
 
-	var query string
-	switch folder {
-	case "inbox":
-		query = `DELETE FROM email_transaction 
-				 WHERE message_id = ANY($1) 
-				 AND recipient_email = $2`
-	case "sent":
-		query = `DELETE FROM email_transaction 
-				 WHERE message_id = ANY($1) 
-				 AND sender_email = $2`
-	default:
-		return errors.New("неизвестная папка")
-	}
+	query := `DELETE FROM email_transaction 
+              WHERE message_id = ANY($1) 
+              AND (sender_email = $2 OR recipient_email = $2)`
 
 	_, err = tx.Exec(query, pq.Array(messageIDs), userEmail)
 	if err != nil {
