@@ -40,16 +40,12 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		err = er.EmailUseCase.SendEmail(
+		er.EmailUseCase.SendEmail(
 			senderEmail,
 			[]string{req.Recipient},
 			req.Title,
 			req.Description,
 		)
-		if err != nil {
-			utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_send_email")
-			return
-		}
 	} else {
 		originalEmail, err := er.EmailUseCase.GetEmailByID(req.ParentId)
 		if err != nil {
@@ -73,16 +69,12 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 				return
 			}
 
-			err = er.EmailUseCase.ReplyEmail(
+			er.EmailUseCase.ReplyEmail(
 				senderEmail,
 				originalEmail.Sender_email,
 				originalEmail,
 				req.Description,
 			)
-			if err != nil {
-				utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_reply")
-				return
-			}
 		} else if strings.HasPrefix(req.Title, "Fwd:") {
 			email := models.Email{
 				Sender_email: senderEmail,
@@ -100,15 +92,11 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 			}
 
 			recipients := strings.Split(req.Recipient, ",")
-			err = er.EmailUseCase.ForwardEmail(
+			er.EmailUseCase.ForwardEmail(
 				senderEmail,
 				recipients,
 				originalEmail,
 			)
-			if err != nil {
-				utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_forward")
-				return
-			}
 		} else {
 			utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_operation")
 			return
