@@ -7,6 +7,7 @@ import (
 	"sync"
 	"mail/pkg/utils"
 	"mail/pkg/logger"
+	"strconv"
 )
 
 type EmailRepositoryService struct {
@@ -112,10 +113,17 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	`
 
 	var email models.Email
+	var parentIdNullString sql.NullString
 	err := er.repo.QueryRow(query, id).
-		Scan(&email.ID, &email.ParentID, &email.Sender_email, &email.Recipient,
+		Scan(&email.ID, &parentIdNullString, &email.Sender_email, &email.Recipient,
 			&email.Title, &email.IsRead, &email.Sending_date,
 			&email.Description)
+
+	email.ParentID, err = strconv.Atoi(parentIdNullString.String)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return models.Email{}, err
+	}
 
 	email.Sender_email = utils.Sanitize(email.Sender_email)
 	email.Recipient = utils.Sanitize(email.Recipient)
