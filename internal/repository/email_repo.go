@@ -221,7 +221,7 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 	return tx.Commit()
 }
 
-func (er *EmailRepositoryService) DeleteEmails(ids []int) error {
+func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []int) error {
 	tx, err := er.repo.Begin()
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -229,9 +229,11 @@ func (er *EmailRepositoryService) DeleteEmails(ids []int) error {
 	}
 	defer tx.Rollback()
 
-	query := `DELETE FROM email_transaction WHERE id = ANY($1)`
+	query := `DELETE FROM email_transaction 
+              WHERE message_id = ANY($1) 
+              AND (sender_email = $2 OR recipient_email = $2)`
 
-	_, err = tx.Exec(query, pq.Array(ids))
+	_, err = tx.Exec(query, pq.Array(messageIDs), userEmail)
 	if err != nil {
 		er.logger.Error(err.Error())
 		return err

@@ -8,6 +8,13 @@ import (
 )
 
 func (er *EmailRouter) DeleteEmailsHandler(w http.ResponseWriter, r *http.Request) {
+	ctxEmail := r.Context().Value("email")
+	if ctxEmail == nil {
+		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	userEmail := ctxEmail.(string)
+
 	var strIDs []string
 	if err := json.NewDecoder(r.Body).Decode(&strIDs); err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "неверный формат данных")
@@ -29,7 +36,7 @@ func (er *EmailRouter) DeleteEmailsHandler(w http.ResponseWriter, r *http.Reques
 		ids = append(ids, id)
 	}
 
-	if err := er.EmailUseCase.DeleteEmails(ids); err != nil {
+	if err := er.EmailUseCase.DeleteEmails(userEmail, ids); err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "ошибка при удалении писем")
 		return
 	}
