@@ -7,24 +7,20 @@ import (
 	"strconv"
 )
 
-type DeleteEmailsRequest struct {
-	IDs []string `json:"ids"`
-}
-
 func (er *EmailRouter) DeleteEmailsHandler(w http.ResponseWriter, r *http.Request) {
-	var req DeleteEmailsRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var strIDs []string
+	if err := json.NewDecoder(r.Body).Decode(&strIDs); err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "неверный формат данных")
 		return
 	}
 
-	if len(req.IDs) == 0 {
+	if len(strIDs) == 0 {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "список ID пуст")
 		return
 	}
 
-	ids := make([]int, 0, len(req.IDs))
-	for _, strID := range req.IDs {
+	ids := make([]int, 0, len(strIDs))
+	for _, strID := range strIDs {
 		id, err := strconv.Atoi(strID)
 		if err != nil {
 			utils.ErrorResponse(w, r, http.StatusBadRequest, "неверный формат ID")
