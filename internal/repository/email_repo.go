@@ -69,7 +69,7 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 	senderEmail = utils.Sanitize(senderEmail)
 
 	rows, err := er.repo.Query(
-		`SELECT t.id, t.sender_email, m.title, 
+		`SELECT t.id, t.sender_email, t.recipient_email, m.title, 
 		 t.sending_date, t.isread, m.description
 		 FROM email_transaction AS t
 		 JOIN message AS m ON t.message_id = m.id
@@ -87,6 +87,7 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 		err := rows.Scan(
 			&email.ID,
 			&email.Sender_email,
+			&email.Recipient,
 			&email.Title,
 			&email.Sending_date,
 			&email.IsRead,
