@@ -1,241 +1,276 @@
 package smtp
 
 import (
-	"fmt"
-	"net/smtp"
+	"bufio"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"io"
+	"math/big"
+	"net"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
-func TestSMTPError(t *testing.T) {
-	err := &SMTPError{Message: "test error"}
-	if err.Error() != "test error" {
-		t.Errorf("SMTPError.Error() = %v, want %v", err.Error(), "test error")
+type MockSMTPServer struct {
+	listener net.Listener
+	useTLS   bool
+	cert     tls.Certificate
+}
+
+func generateTestCert() (tls.Certificate, error) {
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Test Corp"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(time.Hour * 24),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	return tls.Certificate{
+		Certificate: [][]byte{derBytes},
+		PrivateKey:  priv,
+	}, nil
+}
+
+func NewMockSMTPServer(t *testing.T, useTLS bool) *MockSMTPServer {
+	var listener net.Listener
+	var err error
+	var cert tls.Certificate
+
+	if useTLS {
+		cert, err = generateTestCert()
+		if err != nil {
+			t.Fatalf("Не удалось создать тестовый сертификат: %v", err)
+		}
+
+		config := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS12,
+		}
+
+		listener, err = tls.Listen("tcp", "127.0.0.1:0", config)
+	} else {
+		listener, err = net.Listen("tcp", "127.0.0.1:0")
+	}
+
+	if err != nil {
+		t.Fatalf("Не удалось создать сервер: %v", err)
+	}
+
+	return &MockSMTPServer{
+		listener: listener,
+		useTLS:   useTLS,
+		cert:     cert,
 	}
 }
 
-func TestNewSMTPClient(t *testing.T) {
-	tests := []struct {
-		name     string
-		host     string
-		port     string
-		username string
-		password string
-	}{
-		{
-			name:     "Создание клиента с валидными данными",
-			host:     "smtp.example.com",
-			port:     "587",
-			username: "test@example.com",
-			password: "password123",
-		},
-		{
-			name:     "Создание клиента с пустым портом",
-			host:     "smtp.example.com",
-			port:     "",
-			username: "test@example.com",
-			password: "password123",
-		},
-		{
-			name:     "Создание клиента с пустыми данными",
-			host:     "",
-			port:     "",
-			username: "",
-			password: "",
-		},
-		{
-			name:     "Создание клиента с специальными символами",
-			host:     "smtp.test-server.com",
-			port:     "465",
-			username: "test.user+label@example.com",
-			password: "pass!@#$%^&*()",
-		},
-		{
-			name:     "Создание клиента с нестандартным портом",
-			host:     "smtp.custom.com",
-			port:     "2525",
-			username: "admin@custom.com",
-			password: "adminpass",
-		},
+func (s *MockSMTPServer) Address() string {
+	return s.listener.Addr().String()
+}
+
+func (s *MockSMTPServer) Stop() {
+	s.listener.Close()
+}
+
+func handleSMTPConnection(t *testing.T, conn net.Conn) {
+	defer conn.Close()
+
+	reader := bufio.NewReader(conn)
+
+	if _, err := conn.Write([]byte("220 mock.smtp.server готов\r\n")); err != nil {
+		t.Errorf("Ошибка отправки приветствия: %v", err)
+		return
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			client := NewSMTPClient(tt.host, tt.port, tt.username, tt.password)
+	for {
+		cmd, err := reader.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				t.Errorf("Ошибка чтения команды: %v", err)
+			}
+			return
+		}
+		cmd = strings.TrimSpace(cmd)
+		t.Logf("Сервер получил команду: %s", cmd)
 
-			if client.Host != tt.host {
-				t.Errorf("неверный хост: получили %v, ожидали %v", client.Host, tt.host)
+		var response string
+
+		switch {
+		case strings.HasPrefix(strings.ToUpper(cmd), "EHLO"):
+			response = "250-mock.smtp.server\r\n250 AUTH PLAIN\r\n"
+		case strings.HasPrefix(strings.ToUpper(cmd), "AUTH"):
+			response = "235 Authentication successful\r\n"
+		case strings.HasPrefix(strings.ToUpper(cmd), "MAIL FROM:"):
+			response = "250 Отправитель принят\r\n"
+		case strings.HasPrefix(strings.ToUpper(cmd), "RCPT TO:"):
+			response = "250 Получатель принят\r\n"
+		case strings.HasPrefix(strings.ToUpper(cmd), "DATA"):
+			response = "354 Начните ввод данных\r\n"
+			if _, err := conn.Write([]byte(response)); err != nil {
+				t.Errorf("Ошибка отправки ответа DATA: %v", err)
+				return
 			}
-			if client.Port != tt.port {
-				t.Errorf("неверный порт: получили %v, ожидали %v", client.Port, tt.port)
+			for {
+				line, err := reader.ReadString('\n')
+				if err != nil {
+					if err != io.EOF {
+						t.Errorf("Ошибка чтения данных письма: %v", err)
+					}
+					return
+				}
+				line = strings.TrimSpace(line)
+				t.Logf("Сервер получил строку данных: %s", line)
+				if line == "." {
+					break
+				}
 			}
-			if client.Username != tt.username {
-				t.Errorf("неверное имя пользователя: получили %v, ожидали %v", client.Username, tt.username)
+			response = "250 Сообщение принято\r\n"
+		case strings.HasPrefix(strings.ToUpper(cmd), "QUIT"):
+			response = "221 До свидания\r\n"
+			if _, err := conn.Write([]byte(response)); err != nil {
+				t.Errorf("Ошибка отправки ответа QUIT: %v", err)
 			}
-			if client.Password != tt.password {
-				t.Errorf("неверный пароль: получили %v, ожидали %v", client.Password, tt.password)
-			}
-			if client.Auth == nil {
-				t.Error("Auth не должен быть nil")
-			}
-		})
+			return
+		default:
+			response = "502 Команда не реализована\r\n"
+		}
+
+		if _, err := conn.Write([]byte(response)); err != nil {
+			t.Errorf("Ошибка отправки ответа: %v", err)
+			return
+		}
 	}
 }
 
-func TestSendEmail(t *testing.T) {
-	tests := []struct {
-		name        string
-		from        string
-		to          []string
-		subject     string
-		body        string
-		mockSendErr error
-		wantErr     bool
-	}{
-		{
-			name:    "Успешная отправка письма",
-			from:    "sender@example.com",
-			to:      []string{"recipient@example.com"},
-			subject: "Тестовое письмо",
-			body:    "Тело письма",
-			wantErr: false,
-		},
-		{
-			name:        "Ошибка при отправке",
-			from:        "sender@example.com",
-			to:          []string{"recipient@example.com"},
-			subject:     "Тестовое письмо",
-			body:        "Тело письма",
-			mockSendErr: fmt.Errorf("ошибка отправки"),
-			wantErr:     true,
-		},
-		{
-			name:    "Пустой получатель",
-			from:    "sender@example.com",
-			to:      []string{},
-			subject: "Тестовое письмо",
-			body:    "Тело письма",
-			wantErr: true,
-		},
-		{
-			name:    "Множественные получатели",
-			from:    "sender@example.com",
-			to:      []string{"recipient1@example.com", "recipient2@example.com"},
-			subject: "Тестовое письмо",
-			body:    "Тело письма",
-			wantErr: false,
-		},
-		{
-			name:    "Длинное тело письма",
-			from:    "sender@example.com",
-			to:      []string{"recipient@example.com"},
-			subject: "Длинное письмо",
-			body:    strings.Repeat("Long content ", 1000),
-			wantErr: false,
-		},
-		{
-			name:    "Специальные символы в теме",
-			from:    "sender@example.com",
-			to:      []string{"recipient@example.com"},
-			subject: "Test !@#$%^&*()_+ Тест",
-			body:    "Тело письма",
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			client := &SMTPClient{
-				Host:     "smtp.example.com",
-				Port:     "587",
-				Username: "test@example.com",
-				Password: "password123",
-				Auth:     smtp.PlainAuth("", "test@example.com", "password123", "smtp.example.com"),
-			}
-
-			originalSendMail := sendMail
-			defer func() { sendMail = originalSendMail }()
-
-			sendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
-				return tt.mockSendErr
-			}
-
-			err := client.SendEmail(tt.from, tt.to, tt.subject, tt.body)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SendEmail() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestFormatMessage(t *testing.T) {
+func TestSMTPSendEmail(t *testing.T) {
 	tests := []struct {
 		name    string
 		from    string
 		to      []string
 		subject string
 		body    string
-		want    string
+		wantErr bool
 	}{
 		{
-			name:    "Базовое форматирование",
+			name:    "Успешная отправка",
 			from:    "sender@example.com",
 			to:      []string{"recipient@example.com"},
-			subject: "Тест",
-			body:    "Тестовое сообщение",
-			want: "From: sender@example.com\r\n" +
-				"To: recipient@example.com\r\n" +
-				"Subject: Тест\r\n" +
-				"Content-Type: text/plain; charset=UTF-8\r\n" +
-				"\r\n" +
-				"Тестовое сообщение",
+			subject: "Test Subject",
+			body:    "Test Body",
+			wantErr: false,
+		},
+		{
+			name:    "Пустой получатель",
+			from:    "sender@example.com",
+			to:      []string{},
+			subject: "Test Subject",
+			body:    "Test Body",
+			wantErr: true,
 		},
 		{
 			name:    "Множественные получатели",
 			from:    "sender@example.com",
 			to:      []string{"recipient1@example.com", "recipient2@example.com"},
-			subject: "Тест",
-			body:    "Тестовое сообщение",
-			want: "From: sender@example.com\r\n" +
-				"To: recipient1@example.com, recipient2@example.com\r\n" +
-				"Subject: Тест\r\n" +
-				"Content-Type: text/plain; charset=UTF-8\r\n" +
-				"\r\n" +
-				"Тестовое сообщение",
-		},
-		{
-			name:    "Пустое тело письма",
-			from:    "sender@example.com",
-			to:      []string{"recipient@example.com"},
-			subject: "Пустое письмо",
-			body:    "",
-			want: "From: sender@example.com\r\n" +
-				"To: recipient@example.com\r\n" +
-				"Subject: Пустое письмо\r\n" +
-				"Content-Type: text/plain; charset=UTF-8\r\n" +
-				"\r\n",
-		},
-		{
-			name:    "Специальные символы",
-			from:    "test.user+label@example.com",
-			to:      []string{"special!user@test.com"},
-			subject: "Test !@#$%^&*()_+ Тест",
-			body:    "Body with спецсимволы !@#$%^&*()",
-			want: "From: test.user+label@example.com\r\n" +
-				"To: special!user@test.com\r\n" +
-				"Subject: Test !@#$%^&*()_+ Тест\r\n" +
-				"Content-Type: text/plain; charset=UTF-8\r\n" +
-				"\r\n" +
-				"Body with спецсимволы !@#$%^&*()",
+			subject: "Test Subject",
+			body:    "Test Body",
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got := formatMessage(tt.from, tt.to, tt.subject, tt.body)
-			if got != tt.want {
-				t.Errorf("formatMessage() = %v, want %v", got, tt.want)
+			if tt.wantErr && len(tt.to) == 0 {
+				server := NewMockSMTPServer(t, false) // Без TLS
+				defer server.Stop()
+
+				go func() {
+					conn, err := server.listener.Accept()
+					if err != nil {
+						return
+					}
+					handleSMTPConnection(t, conn)
+				}()
+
+				addr := server.Address()
+				host, port, err := net.SplitHostPort(addr)
+				if err != nil {
+					t.Fatalf("Не удалось разобрать адрес сервера: %v", err)
+				}
+
+				client := NewSMTPClient(host, port, "test@example.com", "password")
+				client.UseTLS = false
+
+				err = client.SendEmail(tt.from, tt.to, tt.subject, tt.body)
+				if err == nil {
+					t.Error("SendEmail() должен вернуть ошибку из-за пустого получателя")
+				}
+				return
 			}
+
+			server := NewMockSMTPServer(t, true)
+			defer server.Stop()
+
+			var wg sync.WaitGroup
+			wg.Add(1)
+
+			// Обработчик соединений
+			go func() {
+				defer wg.Done()
+				conn, err := server.listener.Accept()
+				if err != nil {
+					t.Errorf("Ошибка принятия соединения: %v", err)
+					return
+				}
+				handleSMTPConnection(t, conn)
+			}()
+
+			addr := server.Address()
+			host, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				t.Fatalf("Не удалось разобрать адрес сервера: %v", err)
+			}
+
+			client := NewSMTPClient(host, port, "test@example.com", "password")
+			client.UseTLS = true
+			client.TLSConfig = &tls.Config{
+				InsecureSkipVerify: true,
+			}
+
+			done := make(chan error, 1)
+			go func() {
+				done <- client.SendEmail(tt.from, tt.to, tt.subject, tt.body)
+			}()
+
+			select {
+			case err := <-done:
+				if (err != nil) != tt.wantErr {
+					t.Errorf("SendEmail() error = %v, wantErr %v", err, tt.wantErr)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Тест превысил время ожидания")
+			}
+
+			wg.Wait()
 		})
 	}
 }

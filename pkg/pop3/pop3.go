@@ -2,6 +2,7 @@ package pop3
 
 import (
 	"bufio"
+	"crypto/tls"
 	"fmt"
 	"mail/internal/models"
 	"net"
@@ -10,13 +11,15 @@ import (
 )
 
 type Pop3Client struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	conn     net.Conn
-	reader   *bufio.Reader
-	writer   *bufio.Writer
+	Host      string
+	Port      string
+	Username  string
+	Password  string
+	conn      net.Conn
+	reader    *bufio.Reader
+	writer    *bufio.Writer
+	UseTLS    bool
+	TLSConfig *tls.Config
 }
 
 func NewPop3Client(host, port, username, password string) *Pop3Client {
@@ -42,14 +45,30 @@ func (c *Pop3Client) Connect() error {
 
 func (c *Pop3Client) dial() error {
 	address := fmt.Sprintf("%s:%s", c.Host, c.Port)
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		return fmt.Errorf("не удалось подключиться к POP3 серверу: %v", err)
+
+	if c.UseTLS {
+		tlsConfig := c.TLSConfig
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{
+				ServerName: c.Host,
+			}
+		}
+
+		conn, err := tls.Dial("tcp", address, tlsConfig)
+		if err != nil {
+			return fmt.Errorf("не удалось установить TLS соединение: %v", err)
+		}
+		c.conn = conn
+	} else {
+		conn, err := net.Dial("tcp", address)
+		if err != nil {
+			return fmt.Errorf("не удалось подключиться к POP3 серверу: %v", err)
+		}
+		c.conn = conn
 	}
 
-	c.conn = conn
-	c.reader = bufio.NewReader(conn)
-	c.writer = bufio.NewWriter(conn)
+	c.reader = bufio.NewReader(c.conn)
+	c.writer = bufio.NewWriter(c.conn)
 
 	return c.checkResponse("подключение")
 }
