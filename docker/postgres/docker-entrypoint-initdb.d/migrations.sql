@@ -44,11 +44,6 @@ CREATE TABLE IF NOT EXISTS attachment (
     CONSTRAINT fk_message FOREIGN KEY  (message_id) REFERENCES message(id) ON DELETE CASCADE
 );
 
--- Обновление таблицы email_transaction
-ALTER TABLE email_transaction 
-DROP CONSTRAINT IF EXISTS fk_sender,
-DROP CONSTRAINT IF EXISTS fk_recipient;
-
 -- Пересоздание таблицы email_transaction с правильными ограничениями
 CREATE TABLE IF NOT EXISTS email_transaction (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
