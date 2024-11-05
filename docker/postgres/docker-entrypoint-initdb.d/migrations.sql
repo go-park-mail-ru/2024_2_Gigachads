@@ -32,8 +32,6 @@ CREATE TABLE IF NOT EXISTS email_transaction (
     sending_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     isRead BOOLEAN NOT NULL DEFAULT FALSE,
     folder_id INTEGER,
-    CONSTRAINT fk_sender FOREIGN KEY (sender_email) REFERENCES profile(email) ON DELETE SET NULL,
-    CONSTRAINT fk_recipient FOREIGN KEY (recipient_email) REFERENCES profile(email) ON DELETE SET NULL,
     CONSTRAINT fk_message FOREIGN KEY (message_id)  REFERENCES message(id),
     CONSTRAINT fk_folder FOREIGN KEY (folder_id)  REFERENCES folder(id) ON DELETE CASCADE
 );
