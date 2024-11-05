@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS email_transaction (
     sending_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     isRead BOOLEAN NOT NULL DEFAULT FALSE,
     folder_id INTEGER,
-    CONSTRAINT fk_message FOREIGN KEY (message_id)  REFERENCES message(id),
-    CONSTRAINT fk_folder FOREIGN KEY (folder_id)  REFERENCES folder(id) ON DELETE CASCADE
+    CONSTRAINT fk_message FOREIGN KEY (message_id) REFERENCES message(id),
+    CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES folder(id) ON DELETE CASCADE
 );
 
 -- Создание таблицы вложений
@@ -42,4 +42,23 @@ CREATE TABLE IF NOT EXISTS attachment (
     message_id INTEGER,
     url TEXT NOT NULL,
     CONSTRAINT fk_message FOREIGN KEY  (message_id) REFERENCES message(id) ON DELETE CASCADE
+);
+
+-- Обновление таблицы email_transaction
+ALTER TABLE email_transaction 
+DROP CONSTRAINT IF EXISTS fk_sender,
+DROP CONSTRAINT IF EXISTS fk_recipient;
+
+-- Пересоздание таблицы email_transaction с правильными ограничениями
+CREATE TABLE IF NOT EXISTS email_transaction (
+    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    parent_transaction_id INTEGER DEFAULT NULL,
+    sender_email TEXT,
+    recipient_email TEXT,
+    message_id INTEGER,
+    sending_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    isRead BOOLEAN NOT NULL DEFAULT FALSE,
+    folder_id INTEGER,
+    CONSTRAINT fk_message FOREIGN KEY (message_id) REFERENCES message(id),
+    CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES folder(id) ON DELETE CASCADE
 );
