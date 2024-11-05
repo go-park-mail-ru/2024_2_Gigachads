@@ -3,6 +3,9 @@ package user
 import (
 	"mail/pkg/utils"
 	"net/http"
+	"strings"
+	"bytes"
+	"time"
 )
 
 func (uh *UserRouter) GetAvatarHandler(w http.ResponseWriter, r *http.Request) {
@@ -13,15 +16,18 @@ func (uh *UserRouter) GetAvatarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	email := ctxEmail.(string)
 
-	buf, contType, err := uh.UserUseCase.GetAvatar(email)
+	data, name, err := uh.UserUseCase.GetAvatar(email)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if strings.HasSuffix(name, ".png") {
+		w.Header().Set("Content-Type", "image/png")
+	} else {
+		w.Header().Set("Content-Type", "image/jpeg")
+	}
 
-	w.Header().Set("Content-Type", contType)
-	w.Header().Set("Content-Disposition", "inline; filename=\""+"/avatars/1.jpg"+"\"")
-
+	
 	w.WriteHeader(http.StatusOK)
-	w.Write(buf.Bytes())
+	http.ServeContent(w, r, name, time.Now(), bytes.NewReader(data))
 }

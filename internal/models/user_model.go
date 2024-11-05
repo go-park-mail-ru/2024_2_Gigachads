@@ -1,11 +1,11 @@
 package models
 
 import (
-	"bytes"
 	"context"
 	"mime/multipart"
 	"net/mail"
 	"regexp"
+	
 )
 
 type User struct {
@@ -40,7 +40,7 @@ type UserUseCase interface {
 	CheckCsrf(ctx context.Context, sessionID string, scrf string) error
 	ChangePassword(email string, password string) error
 	ChangeName(email string, name string) error
-	GetAvatar(email string) (*bytes.Buffer, string, error)
+	GetAvatar(email string) ([]byte, string, error)
 	ChangeAvatar(file multipart.File, header multipart.FileHeader, email string) error
 }
 

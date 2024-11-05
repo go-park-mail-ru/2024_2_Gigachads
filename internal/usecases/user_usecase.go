@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"bytes"
+
 	"context"
 	"fmt"
 	"io"
@@ -157,45 +157,19 @@ func (us *UserService) ChangeAvatar(file multipart.File, header multipart.FileHe
 	return nil
 }
 
-func (us *UserService) GetAvatar(email string) (*bytes.Buffer, string, error) {
+func (us *UserService) GetAvatar(email string) ([]byte, string, error) {
 	user, err := us.UserRepo.GetUserByEmail(email)
 	if err != nil {
 		return nil, "", err
 	}
-
+	
 	filePath := "./avatars/" + user.AvatarURL
-	ext := filepath.Ext(filePath)
-	file, err := os.Open(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, "", err
 	}
-	defer file.Close()
-
-	var buf bytes.Buffer
-	writer := multipart.NewWriter(&buf)
-
-	part, err := writer.CreateFormFile("avatar", filePath)
-	if err != nil {
-		return nil, "", err
-	}
-
-	if _, err := io.Copy(part, file); err != nil {
-		return nil, "", err
-	}
-
-	writer.Close()
-
-	var contentType string
-	switch ext {
-	case ".jpg", ".jpeg":
-		contentType = "image/jpeg"
-	case ".png":
-		contentType = "image/png"
-	default:
-		contentType = "application/octet-stream"
-	}
-	fmt.Println(contentType, "    alskdjoipuashjfiohaiosfdhbiyob")
-	return &buf, contentType, nil
+	return data, user.AvatarURL, nil
+	
 }
 
 func (us *UserService) ChangePassword(email string, password string) error {
