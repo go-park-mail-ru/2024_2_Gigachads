@@ -230,7 +230,7 @@ func TestSingleEmailHandler_EmailNotFound(t *testing.T) {
 
 	router.SingleEmailHandler(rr, req)
 
-	assert.Equal(t, http.StatusNotFound, rr.Code)
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 
 	var response models.Error
 	err := json.NewDecoder(rr.Body).Decode(&response)

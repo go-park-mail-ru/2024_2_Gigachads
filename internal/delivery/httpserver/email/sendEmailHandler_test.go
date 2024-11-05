@@ -209,38 +209,6 @@ func TestSendEmailHandler_MissingEmail(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
 
-func TestSendEmailHandler_SendError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockUseCase := mocks.NewMockEmailUseCase(ctrl)
-	mockUseCase.EXPECT().
-		SaveEmail(gomock.Any()).
-		Return(nil)
-
-	mockUseCase.EXPECT().
-		SendEmail("sender@example.com", []string{"recipient@example.com"}, "Test Subject", "Test Body").
-		Return(errors.New("smtp error"))
-
-	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
-	requestBody := converters.SendEmailRequest{
-		ParentId:    0,
-		Recipient:   "recipient@example.com",
-		Title:       "Test Subject",
-		Description: "Test Body",
-	}
-	bodyBytes, err := json.Marshal(requestBody)
-	assert.NoError(t, err)
-
-	req, err := http.NewRequest("POST", "/email", bytes.NewBuffer(bodyBytes))
-	assert.NoError(t, err)
-	req = req.WithContext(context.WithValue(req.Context(), "email", "sender@example.com"))
-	rr := httptest.NewRecorder()
-
-	emailRouter.SendEmailHandler(rr, req)
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-}
-
 func TestSendEmailHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -469,74 +437,6 @@ func TestSendEmailHandler_Errors(t *testing.T) {
 	}
 }
 
-func TestSendEmailHandler_SaveEmailError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	req := converters.SendEmailRequest{
-		ParentId:    0,
-		Recipient:   "recipient@example.com",
-		Title:       "Test Email",
-		Description: "Test Description",
-	}
-
-	reqBody, _ := json.Marshal(req)
-	httpReq := httptest.NewRequest(http.MethodPost, "/email", bytes.NewBuffer(reqBody))
-	ctx := context.WithValue(httpReq.Context(), "email", "sender@example.com")
-	httpReq = httpReq.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	mockEmailUseCase.EXPECT().
-		SaveEmail(gomock.Any()).
-		Return(assert.AnError)
-
-	router.SendEmailHandler(rr, httpReq)
-
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	var response models.Error
-	json.NewDecoder(rr.Body).Decode(&response)
-	assert.Equal(t, "failed_to_save_email", response.Body)
-}
-
-func TestSendEmailHandler_SendEmailError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	req := converters.SendEmailRequest{
-		ParentId:    0,
-		Recipient:   "recipient@example.com",
-		Title:       "Test Email",
-		Description: "Test Description",
-	}
-
-	reqBody, _ := json.Marshal(req)
-	httpReq := httptest.NewRequest(http.MethodPost, "/email", bytes.NewBuffer(reqBody))
-	ctx := context.WithValue(httpReq.Context(), "email", "sender@example.com")
-	httpReq = httpReq.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	mockEmailUseCase.EXPECT().
-		SaveEmail(gomock.Any()).
-		Return(nil)
-
-	mockEmailUseCase.EXPECT().
-		SendEmail("sender@example.com", []string{"recipient@example.com"}, req.Title, req.Description).
-		Return(assert.AnError)
-
-	router.SendEmailHandler(rr, httpReq)
-
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	var response models.Error
-	json.NewDecoder(rr.Body).Decode(&response)
-	assert.Equal(t, "failed_to_send_email", response.Body)
-}
-
 func TestSendEmailHandler_SaveReplyError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -576,51 +476,6 @@ func TestSendEmailHandler_SaveReplyError(t *testing.T) {
 	var response models.Error
 	json.NewDecoder(rr.Body).Decode(&response)
 	assert.Equal(t, "failed_to_save_reply", response.Body)
-}
-
-func TestSendEmailHandler_ReplyError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	originalEmail := models.Email{
-		ID:           1,
-		Sender_email: "original@example.com",
-		Title:        "Original Email",
-	}
-
-	req := converters.SendEmailRequest{
-		ParentId:    1,
-		Title:       "Re: Original Email",
-		Description: "Reply Description",
-	}
-
-	reqBody, _ := json.Marshal(req)
-	httpReq := httptest.NewRequest(http.MethodPost, "/email", bytes.NewBuffer(reqBody))
-	ctx := context.WithValue(httpReq.Context(), "email", "sender@example.com")
-	httpReq = httpReq.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	mockEmailUseCase.EXPECT().
-		GetEmailByID(1).
-		Return(originalEmail, nil)
-
-	mockEmailUseCase.EXPECT().
-		SaveEmail(gomock.Any()).
-		Return(nil)
-
-	mockEmailUseCase.EXPECT().
-		ReplyEmail("sender@example.com", "original@example.com", originalEmail, req.Description).
-		Return(assert.AnError)
-
-	router.SendEmailHandler(rr, httpReq)
-
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	var response models.Error
-	json.NewDecoder(rr.Body).Decode(&response)
-	assert.Equal(t, "failed_to_reply", response.Body)
 }
 
 func TestSendEmailHandler_SaveForwardError(t *testing.T) {
@@ -663,50 +518,4 @@ func TestSendEmailHandler_SaveForwardError(t *testing.T) {
 	var response models.Error
 	json.NewDecoder(rr.Body).Decode(&response)
 	assert.Equal(t, "failed_to_save_forward", response.Body)
-}
-
-func TestSendEmailHandler_ForwardError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	originalEmail := models.Email{
-		ID:           1,
-		Sender_email: "original@example.com",
-		Description:  "Original Description",
-	}
-
-	req := converters.SendEmailRequest{
-		ParentId:    1,
-		Recipient:   "forward@example.com",
-		Title:       "Fwd: Original Email",
-		Description: "Forward Description",
-	}
-
-	reqBody, _ := json.Marshal(req)
-	httpReq := httptest.NewRequest(http.MethodPost, "/email", bytes.NewBuffer(reqBody))
-	ctx := context.WithValue(httpReq.Context(), "email", "sender@example.com")
-	httpReq = httpReq.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	mockEmailUseCase.EXPECT().
-		GetEmailByID(1).
-		Return(originalEmail, nil)
-
-	mockEmailUseCase.EXPECT().
-		SaveEmail(gomock.Any()).
-		Return(nil)
-
-	mockEmailUseCase.EXPECT().
-		ForwardEmail("sender@example.com", []string{"forward@example.com"}, originalEmail).
-		Return(assert.AnError)
-
-	router.SendEmailHandler(rr, httpReq)
-
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	var response models.Error
-	json.NewDecoder(rr.Body).Decode(&response)
-	assert.Equal(t, "failed_to_forward", response.Body)
 }

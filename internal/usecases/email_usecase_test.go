@@ -172,10 +172,10 @@ func TestEmailService_ChangeStatus(t *testing.T) {
 	service := NewEmailService(mockEmailRepo, nil, mockSMTPRepo, mockPOP3Repo)
 
 	mockEmailRepo.EXPECT().
-		ChangeStatus(1, "read").
+		ChangeStatus(1, true).
 		Return(nil)
 
-	err := service.ChangeStatus(1, "read")
+	err := service.ChangeStatus(1, true)
 	assert.NoError(t, err)
 }
 
@@ -381,28 +381,28 @@ func TestEmailService_ChangeStatus_WithValidation(t *testing.T) {
 	testCases := []struct {
 		name     string
 		id       int
-		status   string
+		status   bool
 		mockResp error
 		wantErr  bool
 	}{
 		{
 			name:     "Valid Status Change",
 			id:       1,
-			status:   "read",
+			status:   true,
 			mockResp: nil,
 			wantErr:  false,
 		},
 		{
 			name:     "Invalid ID",
 			id:       -1,
-			status:   "read",
+			status:   true,
 			mockResp: errors.New("invalid id"),
 			wantErr:  true,
 		},
 		{
 			name:     "Database Error",
 			id:       1,
-			status:   "read",
+			status:   true,
 			mockResp: errors.New("db error"),
 			wantErr:  true,
 		},
@@ -610,39 +610,21 @@ func TestEmailService_Inbox(t *testing.T) {
 			},
 		}
 
-		mockSessionRepo.EXPECT().
-			GetSession("session123").
-			Return(&models.Session{UserLogin: "user@example.com"}, nil)
-
 		mockEmailRepo.EXPECT().
 			Inbox("user@example.com").
 			Return(emails, nil)
 
-		result, err := service.Inbox("session123")
+		result, err := service.Inbox("user@example.com")
 		assert.NoError(t, err)
 		assert.Equal(t, emails, result)
 	})
 
-	t.Run("ошибка получения сессии", func(t *testing.T) {
-		mockSessionRepo.EXPECT().
-			GetSession("invalid_session").
-			Return(nil, errors.New("session not found"))
-
-		result, err := service.Inbox("invalid_session")
-		assert.Error(t, err)
-		assert.Nil(t, result)
-	})
-
 	t.Run("ошибка получения писем", func(t *testing.T) {
-		mockSessionRepo.EXPECT().
-			GetSession("session123").
-			Return(&models.Session{UserLogin: "user@example.com"}, nil)
-
 		mockEmailRepo.EXPECT().
 			Inbox("user@example.com").
 			Return(nil, errors.New("database error"))
 
-		result, err := service.Inbox("session123")
+		result, err := service.Inbox("user@example.com")
 		assert.Error(t, err)
 		assert.Nil(t, result)
 	})

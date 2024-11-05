@@ -22,7 +22,7 @@ func TestEmailStatusHandler_Success(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	status := Status{Status: "read"}
+	status := Status{Status: true}
 	emailID := "1"
 
 	statusJSON, _ := json.Marshal(status)
@@ -38,7 +38,7 @@ func TestEmailStatusHandler_Success(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	mockEmailUseCase.EXPECT().ChangeStatus(1, "read").Return(nil)
+	mockEmailUseCase.EXPECT().ChangeStatus(1, true).Return(nil)
 
 	router.EmailStatusHandler(rr, req)
 
@@ -52,7 +52,7 @@ func TestEmailStatusHandler_Unauthorized(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	status := Status{Status: "read"}
+	status := Status{Status: true}
 	emailID := "1"
 
 	statusJSON, _ := json.Marshal(status)
@@ -82,7 +82,7 @@ func TestEmailStatusHandler_InvalidID(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	status := Status{Status: "read"}
+	status := Status{Status: true}
 	emailID := "invalid"
 
 	statusJSON, _ := json.Marshal(status)
@@ -115,7 +115,7 @@ func TestEmailStatusHandler_ErrorChangingStatus(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	status := Status{Status: "read"}
+	status := Status{Status: true}
 	emailID := "1"
 
 	statusJSON, _ := json.Marshal(status)
@@ -131,7 +131,7 @@ func TestEmailStatusHandler_ErrorChangingStatus(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	mockEmailUseCase.EXPECT().ChangeStatus(1, "read").Return(assert.AnError)
+	mockEmailUseCase.EXPECT().ChangeStatus(1, true).Return(assert.AnError)
 
 	router.EmailStatusHandler(rr, req)
 
@@ -150,7 +150,6 @@ func TestEmailStatusHandler_InvalidJSON(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	// Отправляем некорректный JSON
 	invalidJSON := []byte(`{"status": invalid}`)
 	req := httptest.NewRequest(http.MethodPut, "/email/1/status", bytes.NewBuffer(invalidJSON))
 
@@ -181,10 +180,9 @@ func TestEmailStatusHandler_MissingID(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	status := Status{Status: "read"}
+	status := Status{Status: true}
 	statusJSON, _ := json.Marshal(status)
 
-	// Не добавляем ID в vars
 	req := httptest.NewRequest(http.MethodPut, "/email/status", bytes.NewBuffer(statusJSON))
 	req = mux.SetURLVars(req, map[string]string{})
 
@@ -210,7 +208,6 @@ func TestEmailStatusHandler_EmptyBody(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	// Отправляем пустое тело запроса
 	req := httptest.NewRequest(http.MethodPut, "/email/1/status", nil)
 
 	vars := map[string]string{
@@ -242,32 +239,32 @@ func TestEmailStatusHandler_DifferentStatuses(t *testing.T) {
 
 	testCases := []struct {
 		name      string
-		status    string
+		status    bool
 		expectErr bool
 		mockSetup func()
 	}{
 		{
 			name:      "Valid Read Status",
-			status:    "read",
+			status:    true,
 			expectErr: false,
 			mockSetup: func() {
-				mockEmailUseCase.EXPECT().ChangeStatus(1, "read").Return(nil)
+				mockEmailUseCase.EXPECT().ChangeStatus(1, true).Return(nil)
 			},
 		},
 		{
 			name:      "Valid Unread Status",
-			status:    "unread",
+			status:    false,
 			expectErr: false,
 			mockSetup: func() {
-				mockEmailUseCase.EXPECT().ChangeStatus(1, "unread").Return(nil)
+				mockEmailUseCase.EXPECT().ChangeStatus(1, false).Return(nil)
 			},
 		},
 		{
 			name:      "Invalid Status",
-			status:    "invalid",
+			status:    false,
 			expectErr: true,
 			mockSetup: func() {
-				mockEmailUseCase.EXPECT().ChangeStatus(1, "invalid").Return(assert.AnError)
+				mockEmailUseCase.EXPECT().ChangeStatus(1, false).Return(assert.AnError)
 			},
 		},
 	}

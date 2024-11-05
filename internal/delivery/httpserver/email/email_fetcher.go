@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var newTicker = time.NewTicker
+var NewTicker = time.NewTicker
 
 type emailFetcher struct {
 	emailService models.EmailUseCase
@@ -24,12 +24,11 @@ func (ef *emailFetcher) Start() {
 	}
 
 	go func() {
-		ticker := newTicker(1 * time.Minute)
+		ticker := NewTicker(1 * time.Minute)
 		defer ticker.Stop()
 
 		for range ticker.C {
 			if err := ef.emailService.FetchEmailsViaPOP3(); err != nil {
-				// slog.Error("Ошибка при получении писем через POP3", "error", err)
 			} else {
 				slog.Info("Письма успешно получены через POP3")
 			}

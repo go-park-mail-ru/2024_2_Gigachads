@@ -7,9 +7,7 @@ package mocks
 import (
 	models "mail/internal/models"
 	reflect "reflect"
-	"fmt"
-	"mail/pkg/utils"
-	"time"
+
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -37,7 +35,7 @@ func (m *MockEmailUseCase) EXPECT() *MockEmailUseCaseMockRecorder {
 }
 
 // ChangeStatus mocks base method.
-func (m *MockEmailUseCase) ChangeStatus(id int, status string) error {
+func (m *MockEmailUseCase) ChangeStatus(id int, status bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChangeStatus", id, status)
 	ret0, _ := ret[0].(error)
@@ -48,6 +46,20 @@ func (m *MockEmailUseCase) ChangeStatus(id int, status string) error {
 func (mr *MockEmailUseCaseMockRecorder) ChangeStatus(id, status interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeStatus", reflect.TypeOf((*MockEmailUseCase)(nil).ChangeStatus), id, status)
+}
+
+// DeleteEmails mocks base method.
+func (m *MockEmailUseCase) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteEmails", userEmail, messageIDs, folder)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteEmails indicates an expected call of DeleteEmails.
+func (mr *MockEmailUseCaseMockRecorder) DeleteEmails(userEmail, messageIDs, folder interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEmails", reflect.TypeOf((*MockEmailUseCase)(nil).DeleteEmails), userEmail, messageIDs, folder)
 }
 
 // FetchEmailsViaPOP3 mocks base method.
@@ -189,7 +201,7 @@ func (m *MockEmailRepository) EXPECT() *MockEmailRepositoryMockRecorder {
 }
 
 // ChangeStatus mocks base method.
-func (m *MockEmailRepository) ChangeStatus(id int, status string) error {
+func (m *MockEmailRepository) ChangeStatus(id int, status bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChangeStatus", id, status)
 	ret0, _ := ret[0].(error)
@@ -200,6 +212,20 @@ func (m *MockEmailRepository) ChangeStatus(id int, status string) error {
 func (mr *MockEmailRepositoryMockRecorder) ChangeStatus(id, status interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeStatus", reflect.TypeOf((*MockEmailRepository)(nil).ChangeStatus), id, status)
+}
+
+// DeleteEmails mocks base method.
+func (m *MockEmailRepository) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteEmails", userEmail, messageIDs, folder)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteEmails indicates an expected call of DeleteEmails.
+func (mr *MockEmailRepositoryMockRecorder) DeleteEmails(userEmail, messageIDs, folder interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEmails", reflect.TypeOf((*MockEmailRepository)(nil).DeleteEmails), userEmail, messageIDs, folder)
 }
 
 // GetEmailByID mocks base method.
@@ -361,117 +387,4 @@ func (m *MockPOP3Repository) Quit() error {
 func (mr *MockPOP3RepositoryMockRecorder) Quit() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Quit", reflect.TypeOf((*MockPOP3Repository)(nil).Quit))
-}
-
-
-type SessionRepositoryService struct {
-	repo map[string]*models.Session
-}
-
-func NewSessionRepositoryService() models.SessionRepository {
-	repo := make(map[string]*models.Session)
-	return &SessionRepositoryService{repo: repo}
-}
-
-func (sr *SessionRepositoryService) CreateSession(mail string) (*models.Session, error) {
-	hash, err := utils.GenerateHash()
-	if err != nil {
-		return &models.Session{}, err
-	}
-	expiration := time.Now().Add(24 * time.Hour)
-	session := models.Session{Name: "session", ID: hash, Time: expiration, UserLogin: mail}
-	sr.repo[mail] = &session
-	return &session, nil
-}
-
-func (sr *SessionRepositoryService) DeleteSession(sessionID string) error {
-	delete(sr.repo, sessionID)
-	return nil
-}
-
-func (sr *SessionRepositoryService) GetSession(sessionID string) (*models.Session, error) {
-	session, ok := sr.repo[sessionID]
-	if !ok {
-		return &models.Session{}, fmt.Errorf("not_auth")
-	}
-	return session, nil
-}
-type Session struct {
-	Name      string
-	ID        string
-	Time      time.Time
-	UserLogin string
-}
-
-type SessionRepository interface {
-	CreateSession(mail string) (*Session, error)
-	DeleteSession(sessionID string) error
-	GetSession(sessionID string) (*Session, error)
-}
-
-// MockSessionRepository is a mock of SessionRepository interface
-type MockSessionRepository struct {
-	ctrl     *gomock.Controller
-	recorder *MockSessionRepositoryMockRecorder
-}
-
-// MockSessionRepositoryMockRecorder is the mock recorder for MockSessionRepository
-type MockSessionRepositoryMockRecorder struct {
-	mock *MockSessionRepository
-}
-
-// NewMockSessionRepository creates a new mock instance
-func NewMockSessionRepository(ctrl *gomock.Controller) *MockSessionRepository {
-	mock := &MockSessionRepository{ctrl: ctrl}
-	mock.recorder = &MockSessionRepositoryMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockSessionRepository) EXPECT() *MockSessionRepositoryMockRecorder {
-	return m.recorder
-}
-
-// CreateSession mocks base method
-func (m *MockSessionRepository) CreateSession(mail string) (*models.Session, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSession", mail)
-	ret0, _ := ret[0].(*models.Session)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateSession indicates an expected call of CreateSession
-func (mr *MockSessionRepositoryMockRecorder) CreateSession(mail interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSession", reflect.TypeOf((*MockSessionRepository)(nil).CreateSession), mail)
-}
-
-// DeleteSession mocks base method
-func (m *MockSessionRepository) DeleteSession(sessionID string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSession", sessionID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteSession indicates an expected call of DeleteSession
-func (mr *MockSessionRepositoryMockRecorder) DeleteSession(sessionID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSession", reflect.TypeOf((*MockSessionRepository)(nil).DeleteSession), sessionID)
-}
-
-// GetSession mocks base method
-func (m *MockSessionRepository) GetSession(sessionID string) (*models.Session, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSession", sessionID)
-	ret0, _ := ret[0].(*models.Session)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSession indicates an expected call of GetSession
-func (mr *MockSessionRepositoryMockRecorder) GetSession(sessionID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSession", reflect.TypeOf((*MockSessionRepository)(nil).GetSession), sessionID)
 }
