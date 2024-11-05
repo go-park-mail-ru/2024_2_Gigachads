@@ -82,7 +82,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 				Sender_email: senderEmail,
 				Recipient:    req.Recipient,
 				Title:        req.Title,
-				Description:  originalEmail.Description,
+				Description:  req.Description,
 				Sending_date: time.Now(),
 				IsRead:       false,
 				ParentID:     req.ParentId,
