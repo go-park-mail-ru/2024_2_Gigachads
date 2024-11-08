@@ -1,0 +1,175 @@
+swagger: '2.0'
+info:
+  description: API for GigaMail
+  title: GigaMail
+  version: '1.0'
+host: localhost:8080
+basePath: /
+paths:
+
+  /mail/inbox:
+    get:
+      description: Get all incoming mails
+      produces:
+        - application/json
+      tags:
+        - mails
+      summary: List with incoming emails
+      responses:
+        '200':
+          description: Emails Data
+          schema:
+            $ref: '#/definitions/mailList'
+        '401':
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/error'
+        '404':
+          description: Error with list
+          schema:
+            $ref: '#/definitions/error'
+
+  /login:
+    post:
+      description: Login
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - users
+      summary: User login
+      parameters:
+        - description: User data for login
+          name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/userLogin'
+      responses:
+        '200':
+          description: Login successful
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to login
+          schema:
+            $ref: '#/definitions/error'
+            
+  /logout:
+    post:
+      description: Logout
+      produces:
+        - application/json
+      tags:
+        - users
+      summary: User logout
+      responses:
+        '200':
+          description: Logout successful
+          schema:
+            $ref: '#/definitions/response'
+        '500' :
+          description: Failed to logout
+          schema:
+            $ref: '#/definitions/error'
+            
+  /signup:
+    post:
+      description: Signup
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - users
+      summary: User signup
+      parameters:
+        - description: Info about new user
+          name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/userSignup'
+      responses:
+        '200':
+          description: New user created
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to add user
+          schema:
+            $ref: '#/definitions/error'
+definitions:
+  email:
+    type: object
+    properties:
+      author:
+        description: Sender login
+        type: string
+      badge_text:
+        description: Text in badge
+        type: string
+      text:
+        description: Text of email
+        type: string
+      description:
+        description: Text of the email
+        type: string
+      date:
+        description: Datetime of sending
+        type: string
+      badge_type:
+        description: badge_type
+        type: string
+  mailList:
+    type: array
+    items:
+      $ref: '#/definitions/email'
+  error:
+    type: object
+    properties:
+      error:
+        type: string
+      status: 
+        type: integer
+        
+  response:
+    type: object
+    properties:
+      status:
+        type: integer
+        
+  userSignup:
+    properties:
+      email:
+        description: User mail
+        type: string
+      name:
+        description: User name
+        type: string
+      password:
+        description: User password
+        type: string
+      repassword:
+        description: User repeated password
+        type: string
+        
+  userLogin:
+    type: object
+    properties:
+      email:
+        description: User login
+        type: string
+      password:
+        description: User password
+        type: string
+

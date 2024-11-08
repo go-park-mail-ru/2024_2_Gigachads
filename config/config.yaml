@@ -1,5 +1,32 @@
 httpserver: 
-    ip: 127.0.0.1
+    ip: 89.208.228.234
     port: 8080
     allowed_ips_by_cors:
-        - http://localhost:4201
+        - http://89.208.228.234/
+
+postgres:
+    ip: 89.208.228.234
+    port: 5432
+    dbname: test
+    user: test
+    password: test
+
+smtp:
+    host: smtp.gmail.com
+    port: 587
+    username: test
+    password: test
+
+pop3:
+    host: pop.gmail.com
+    port: 995
+    username: test
+    password: test 
+
+redis:
+    ip: 89.208.228.234
+    port: 6379
+    dbnum: 0
+    user: test
+    password: test
+    
