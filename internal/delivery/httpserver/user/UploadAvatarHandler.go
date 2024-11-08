@@ -3,6 +3,8 @@ package user
 import (
 	"mail/pkg/utils"
 	"net/http"
+	"io"
+	"errors"
 )
 
 func (uh *UserRouter) UploadAvatarHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,15 +20,31 @@ func (uh *UserRouter) UploadAvatarHandler(w http.ResponseWriter, r *http.Request
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "error_with_parsing_file")
 		return
 	}
+	defer func() {
+		if err := r.MultipartForm.RemoveAll(); err != nil {
+			utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_removing_temp_files")
+		}
+	}()
 
-	file, header, err := r.FormFile("avatar")
+	file, _, err := r.FormFile("avatar")
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "error_with_file")
 		return
 	}
 	defer file.Close()
 
-	err = uh.UserUseCase.ChangeAvatar(file, *header, email)
+	limitedReader := http.MaxBytesReader(w, file, 10 * 1024 * 1024)
+	defer r.Body.Close()
+
+	fileContent, err := io.ReadAll(limitedReader)
+	if err != nil && !errors.Is(err, io.EOF) {
+		if errors.As(err, new(*http.MaxBytesError)) {
+			utils.ErrorResponse(w, r, http.StatusRequestEntityTooLarge, "too_big_body")
+			return
+		}
+	}
+
+	err = uh.UserUseCase.ChangeAvatar(fileContent, email)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 		return

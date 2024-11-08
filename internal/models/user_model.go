@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"mime/multipart"
 	"net/mail"
 	"regexp"
 	
@@ -41,7 +40,7 @@ type UserUseCase interface {
 	ChangePassword(email string, password string) error
 	ChangeName(email string, name string) error
 	GetAvatar(email string) ([]byte, string, error)
-	ChangeAvatar(file multipart.File, header multipart.FileHeader, email string) error
+	ChangeAvatar(fileContent []byte, email string) error
 }
 
 type UserRepository interface {

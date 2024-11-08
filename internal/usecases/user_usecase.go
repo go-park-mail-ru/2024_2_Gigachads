@@ -4,12 +4,10 @@ import (
 
 	"context"
 	"fmt"
-	"io"
+	"net/http"
 	models "mail/internal/models"
-	"mime/multipart"
-	"os"
-	"path/filepath"
-	"strconv"
+	"mail/pkg/utils"
+	"os"	
 )
 
 type UserService struct {
@@ -110,44 +108,42 @@ func (us *UserService) CheckCsrf(ctx context.Context, session string, csrf strin
 	return nil
 }
 
-func (us *UserService) ChangeAvatar(file multipart.File, header multipart.FileHeader, email string) error {
+func (us *UserService) ChangeAvatar(fileContent []byte, email string) error {
 	if err := os.MkdirAll("./avatars", os.ModePerm); err != nil {
 		return err
 	}
 
-	if header.Size > (5 * 1024 * 1024) {
-		return fmt.Errorf("too_big_file")
+	var fileExtension string
+	fileMIMEType := http.DetectContentType(fileContent)
+	switch fileMIMEType {
+	case "image/jpeg", "image/png":
+		fileExtension = fileMIMEType[6:]
+	default:
+		return fmt.Errorf("do_not_support_mime_type_%s", fileMIMEType)
 	}
 
-	ext := filepath.Ext(header.Filename)
 	user, err := us.UserRepo.GetUserByEmail(email)
 	if err != nil {
 		return err
 	}
-	fileName := strconv.Itoa(user.ID) + ext
+
+	var fileName string
+	if fileName, err = utils.GenerateHash(); err != nil {
+		return err
+	}
+
+	fileName += "." + fileExtension
 	filePath := "./avatars/" + fileName
-	_, err = os.Stat(filePath)
-	// if os.IsNotExist(err) {
+
 	outFile, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
 	defer outFile.Close()
-	_, err = io.Copy(outFile, file)
+	_, err = outFile.Write(fileContent)
 	if err != nil {
 		return err
 	}
-	// } else {
-	// 	outFile, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	defer outFile.Close()
-	// 	_, err = io.Copy(outFile, file)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
 
 	user.AvatarURL = fileName
 	err = us.UserRepo.UpdateInfo(user)
@@ -162,14 +158,14 @@ func (us *UserService) GetAvatar(email string) ([]byte, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	
+
 	filePath := "./avatars/" + user.AvatarURL
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, "", err
 	}
 	return data, user.AvatarURL, nil
-	
+
 }
 
 func (us *UserService) ChangePassword(email string, password string) error {

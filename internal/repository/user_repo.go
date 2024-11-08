@@ -23,14 +23,10 @@ func (ur *UserRepositoryService) IsExist(email string) (bool, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return true, nil
-	}
-
 	if err != nil {
 		return false, err
 	}
-	return false, nil
+	return true, nil
 }
 
 func (ur *UserRepositoryService) CreateUser(signup *models.User) (*models.User, error) {
@@ -47,9 +43,9 @@ func (ur *UserRepositoryService) CreateUser(signup *models.User) (*models.User, 
 
 func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, error) {
 	row := ur.repo.QueryRow(
-		`SELECT email, username, password FROM "profile" WHERE email = $1`, login.Email)
+		`SELECT email, password FROM "profile" WHERE email = $1`, login.Email)
 	user := models.User{}
-	err := row.Scan(&user.Email, &user.Name, &user.Password)
+	err := row.Scan(&user.Email, &user.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +68,8 @@ func (ur *UserRepositoryService) GetUserByEmail(email string) (*models.User, err
 	return &user, nil
 }
 
-func (ur *UserRepositoryService) UpdateInfo(user *models.User) error {
-	query :=
+func (ur *UserRepositoryService) UpdateInfo(user *models.User) (error) {
+	query := 
 		`UPDATE "profile"
 		SET username = $1, avatar_url = $2, password = $3
 		WHERE email = $4`
@@ -83,3 +79,8 @@ func (ur *UserRepositoryService) UpdateInfo(user *models.User) error {
 	}
 	return nil
 }
+	
+
+
+
+
