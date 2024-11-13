@@ -1,52 +1,52 @@
 ## Таблица profile
 
-Таблица пользователей содержит информацию о пользователях (id, email, username, password, avatar_url).
+Таблица пользователей содержит информацию о пользователях (id, email, username, password, avatar_url, created_at, updated_at).
 
 Relation User:
-{email} -> username, password, avatar_url;
+{email} -> username, password, avatar_url, created_at, updated_at;
 {id} -> email;
 
-- **1NF**: Все значения в столбцах являются атомарными. Каждый столбец (email, username, password, avatar_url) содержит только одно значение, что исключает множественные значения в ячейках. Нет повторяющихся строк, так как email и user_id являются уникальными.
-- **2NF**: Таблица находится в 1NF. Все неключевые атрибуты (username, password, avatar_url) полностью зависят от каждого потенциального ключа (email и id)
+- **1NF**: Все значения в столбцах являются атомарными. Каждый столбец (email, username, password, avatar_url, created_at, updated_at) содержит только одно значение, что исключает множественные значения в ячейках. Нет повторяющихся строк, так как email и user_id являются уникальными.
+- **2NF**: Таблица находится в 1NF. Все неключевые атрибуты (username, password, avatar_url, created_at, updated_at) полностью зависят от каждого потенциального ключа (email и id)
 - **3NF**: Таблица находится в 2NF. Нет транзитивных зависимостей. Например, username не зависит от password, а password не зависит от avatar_url.
 - **BCNF**: Все детерминанты являются потенциальными ключами. В данном случае, email и id - единственные детерминанты, и оба являются потенциальными ключами.
 
-В данной таблице содержится информация о пользователях (email, username, password, avatar_url).
+В данной таблице содержится информация о пользователях (email, username, password, avatar_url, created_at, updated_at).
 При регистрации в таблице создается запись, при изменении настроек изменяются поля.
 Все поля кроме avatar_url являются обязательно ненулевыми, так как это необходимая информация для пользователя.
 Аватар может быть загружен по желанию. email является альтернативным ключом, так как он уникален.
 
 ## Таблица message
 
-Таблица сообщений содержит информацию о сообщениях (id, title, description)
+Таблица сообщений содержит информацию о сообщениях (id, title, description, created_at, updated_at)
 
 Relation message:
-{id} -> title, description
+{id} -> title, description, created_at, updated_at;
 
 - **1NF**: Все значения в столбцах атомарные (title, description не содержат множественных значений). Нет повторяющихся строк, так как id является уникальным.
-- **2NF**: Таблица находится в 1NF. Все неключевые атрибуты зависят от первичного ключа (id). title и description зависят от id.
+- **2NF**: Таблица находится в 1NF. Все неключевые атрибуты зависят от первичного ключа (id).Например, title и description зависят от id.
 - **3NF**: Таблица находится в 2NF. Нет транзитивных зависимостей. Все неключевые атрибуты напрямую зависят от id. Например, title не зависит от description.
 - **BCNF**: Единственный детерминант id является первичным ключом.
 
-В данной таблице содержится информация о сообщениях (id, title, description).
+В данной таблице содержится информация о сообщениях (id, title, description, created_at, updated_at).
 
 ## Таблица email_transaction
 
-Таблица сообщений содержит информацию о транзакциях сообщений (id, parent_transaction_id, sender_email, recipient_email, message_id, sending_date, isRead, folder_id)
+Таблица сообщений содержит информацию о транзакциях сообщений (id, parent_transaction_id, sender_email, recipient_email, message_id, sending_date, isRead, folder_id, owner_email, created_at, updated_at)
 
 Relation email_transaction:
-{id} -> parent_transaction_id, sender_email, recipient_email, message_id, sending_date, isRead, folder_id
+{id} -> parent_transaction_id, sender_email, recipient_email, message_id, sending_date, isRead, folder_id, owner_email, created_at, updated_at;
 
-- **1NF**: Все значения в столбцах атомарные (parent_transaction_id, sender_email, recipient_email, message_id, sending_date, isRead, folder_id не содержат множественных значений). Нет повторяющихся строк, так как id является уникальным.
+- **1NF**: Все значения в столбцах атомарные (parent_transaction_id, sender_email, recipient_email, message_id, sending_date, isRead, folder_id, owner_email, created_at, updated_at не содержат множественных значений). Нет повторяющихся строк, так как id является уникальным.
 - **2NF**: Таблица находится в 1NF. Все неключевые атрибуты зависят от первичного ключа (id). Например, parent_transaction_id и sender_email зависят от id.
 - **3NF**: Таблица находится в 2NF. Нет транзитивных зависимостей. Все неключевые атрибуты напрямую зависят от id. Например, parent_transaction_id не зависит от sender_email, а message_id не зависит от sending_date.
 - **BCNF**: Единственный детерминант id является первичным ключом.
 
-В данной таблице содержится информация о транзакциях сообщений (id, parent_transaction_id, sender_email, recipient_email, message_id, sending_date, isRead, folder_id). При отправке сообщения в таблицу добавляется запись. Система может отслеживать статус прочтения сообщений. Сообщения могут быть отсортированы по папкам для удобства пользователей. Эта структура позволяет реализовать основные функции почтового клиента: отправку, получение, чтение, ответ и пересылку сообщений.
+В данной таблице содержится информация о транзакциях сообщений (id, parent_transaction_id, sender_email, recipient_email, message_id, sending_date, isRead, folder_id, owner_email, created_at, updated_at). При отправке сообщения в таблицу добавляется запись. Система может отслеживать статус прочтения сообщений. Сообщения могут быть отсортированы по папкам для удобства пользователей. Эта структура позволяет реализовать основные функции почтового клиента: отправку, получение, чтение, ответ и пересылку сообщений.
 
 ## Таблица folder
 
-Таблица сообщений содержит информацию о папках (id, user_id, name)
+Таблица сообщений содержит информацию о папках (id, user_id, name, created_at, updated_at)
 
 Relation folder:
 {id} -> user_id, name
@@ -56,11 +56,11 @@ Relation folder:
 - **3NF**: Таблица находится в 2NF. Нет транзитивных зависимостей. Все неключевые атрибуты напрямую зависят от id. Например, user_id не зависит от name.
 - **BCNF**: Единственный детерминант id является первичным ключом.
 
-В данной таблице содержится информация о папках (id, user_id, name).
+В данной таблице содержится информация о папках (id, user_id, name, created_at, updated_at).
 
 ## Таблица attachment
 
-Таблица сообщений содержит информацию о папках (id, message_id, url)
+Таблица сообщений содержит информацию о папках (id, message_id, url, created_at, updated_at)
 
 Relation attachment:
 {id} -> message_id, url
