@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+option go_package = "./;proto";
+
+package auth;
+
+//protoc -I ./proto/auth --go_out=./gen/go/auth --go-grpc_out=./gen/go/auth --go-grpc_opt=paths=source_relative --go_opt=paths=source_relative ./proto/auth/auth.proto
+//из корня
+
+service AuthService {
+  rpc Login(LoginRequest) returns(LoginReply) {}
+  rpc Signup(SignupRequest) returns(SignupReply) {}
+  rpc Logout(LogoutRequest) returns(LogoutReply) {}
+  rpc CheckAuth(AuthRequest) returns(CheckAuthReply) {}
+  rpc CheckCsrf(CsrfRequest) returns(CheckCsrfReply) {}
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginReply {
+  string avatar = 1;
+  string session_id = 2;
+  string csrf_id = 3;
+  string name = 4;
+}
+
+message SignupRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message SignupReply {
+
+}
+
+message LogoutRequest {
+  string email = 1;
+}
+
+message LogoutReply {
+
+}
+
+message CheckAuthRequest {
+  string id = 1;
+}
+
+message CheckAuthReply {
+  string email = 1;
+}
+
+message CheckCsrfRequest {
+  string id = 1;
+  string email = 2;
+}
+
+message CheckCsrfReply {
+
+}

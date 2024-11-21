@@ -7,11 +7,11 @@ import (
 )
 
 type AuthRouter struct {
-	UserUseCase models.UserUseCase
+	AuthUseCase models.AuthUseCase
 }
 
-func NewAuthRouter(uu models.UserUseCase) *AuthRouter {
-	return &AuthRouter{UserUseCase: uu}
+func NewAuthRouter(au models.UserUseCase) *AuthRouter {
+	return &AuthRouter{AuthUseCase: au}
 }
 
 func (ar *AuthRouter) ConfigureAuthRouter(mux *mux.Router) {
