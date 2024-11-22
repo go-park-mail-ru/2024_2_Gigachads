@@ -98,6 +98,14 @@ func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int, folder 
 
 
 func (es *EmailService) GetFolders(email string) ([]string, error) {
+	emails = es.EmailRepo.GetFolderEmails(email)
+	if len(emails) == 0 {
+		es.EmailRepo.CreateFolder(email, "Входящие")
+		es.EmailRepo.CreateFolder(email, "Отправленные")
+		es.EmailRepo.CreateFolder(email, "Спам")
+		es.EmailRepo.CreateFolder(email, "Черновики")
+		es.EmailRepo.CreateFolder(email, "Корзина")
+	}
 	return es.EmailRepo.GetFolderEmails(email)
 }
 
@@ -110,6 +118,9 @@ func (es *EmailService) CreateFolder(email string, folderName string) error {
 }
 
 func (es *EmailService) DeleteFolder(email string, folderName string) error {
+	if folderName == "Входящие" || folderName == "Отправленные" || folderName == "Спам" || folderName == "Черновики" || folderName == "Корзина" {
+		return fmt.Errorf("unable_to_delete_folder")	
+	}
 	return es.EmailRepo.DeleteFolder(email, folderName)
 }
 
