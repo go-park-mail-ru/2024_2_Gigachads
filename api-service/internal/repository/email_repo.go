@@ -259,3 +259,171 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 
 	return tx.Commit()
 }
+
+func (er *EmailRepositoryService) GetFolderMails(email string, folderName string) ([]models.Email, error) {
+
+	email = utils.Sanitize(email)
+	folderName = utils.Sanitize(folderName)
+
+	rows, err := er.repo.Query(
+		`SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+		 t.sending_date, t.isread, m.description
+		 FROM email_transaction AS t
+		 JOIN message AS m ON t.message_id = m.id
+		 JOIN folder AS f ON t.folder_id = f.id
+		 JOIN profile AS p ON f.user_id = p.id
+		 WHERE f.name = $2
+		 AND p.email = $1
+		 ORDER BY t.sending_date DESC`, email, folderName)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := make([]models.Email, 0)
+	for rows.Next() {
+		email := models.Email{}
+		err := rows.Scan(
+			&email.ID,
+			&email.Sender_email,
+			&email.Recipient,
+			&email.Title,
+			&email.Sending_date,
+			&email.IsRead,
+			&email.Description,
+		)
+		email.Sender_email = utils.Sanitize(email.Sender_email)
+		email.Recipient = utils.Sanitize(email.Recipient)
+		email.Title = utils.Sanitize(email.Title)
+		email.Description = utils.Sanitize(email.Description)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return nil, err
+		}
+		res = append(res, email)
+	}
+	return res, nil
+}
+
+func (er *EmailRepositoryService) CreateFolder(email string, folderName string) error {
+
+	email = utils.Sanitize(email)
+	folderName = utils.Sanitize(folderName)
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
+
+	var userID int
+
+	err = tx.QueryRow(
+		`SELECT id FROM profile WHERE email = $1`,
+		email, 
+	).Scan(&userID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	_, err = tx.Exec(
+		`INSERT INTO folder (user_id, name) 
+		VALUES ($1, $2)`,
+		userID, folderName,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (er *EmailRepositoryService) DeleteFolder(email string, folderName string) error {
+
+	email = utils.Sanitize(email)
+	folderName = utils.Sanitize(folderName)
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
+
+	var userID int
+
+	err = tx.QueryRow(
+		`SELECT id FROM profile WHERE email = $1`,
+		email, 
+	).Scan(&userID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	_, err = tx.Exec(
+		`DELETE FROM folder 
+		 WHERE name = $2
+		 AND user_id = $1`,
+		userID, folderName,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (er *EmailRepositoryService) RenameFolder(email string, folderName string, newFolderName string) error {
+
+	email = utils.Sanitize(email)
+	folderName = utils.Sanitize(folderName)
+	newFolderName = utils.Sanitize(newFolderName)
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
+
+	var userID int
+
+	err = tx.QueryRow(
+		`SELECT id FROM profile WHERE email = $1`,
+		email, 
+	).Scan(&userID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	var folderID int
+
+	err = tx.QueryRow(
+		`SELECT id FROM folder WHERE user_id = $1 AND name = $2`,
+		userID, folderName, 
+	).Scan(&folderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	_, err = tx.Exec(
+		`UPDATE folder
+		 SET name = $2
+		 WHERE message_id = $1`,
+		folderID, newFolderName,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	return tx.Commit()
+}
