@@ -8,7 +8,7 @@ import (
 )
 
 
-func (er *EmailRouter) RenameFolderHandler(w http.ResponseWriter, r *http.Request) {
+func (er *EmailRouter) ChangeEmailFolderHandler(w http.ResponseWriter, r *http.Request) {
 	ctxEmail := r.Context().Value("email")
 	if ctxEmail == nil {
 		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
@@ -17,13 +17,18 @@ func (er *EmailRouter) RenameFolderHandler(w http.ResponseWriter, r *http.Reques
 	email := ctxEmail.(string)
 
 	vars := mux.Vars(r)
-	folderName, ok := vars["name"]
+	strid, ok := vars["id"]
 	if !ok {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_path")
 		return
 	}
+	id, err := strconv.Atoi(strid)
+	if err != nil {
+		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_path")
+		return
+	}
 
-	var folder models.RenameFolder
+	var folder models.Folder
 	err := json.NewDecoder(r.Body).Decode(&folder)
 	
 	if err != nil {
@@ -31,10 +36,9 @@ func (er *EmailRouter) RenameFolderHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	folderName = utils.Sanitize(folderName)
-	folder.NewName = utils.Sanitize(folder.NewName)
+	folder.Name = utils.Sanitize(folder.Name)
 
-	err = er.EmailUseCase.RenameFolder(email, folderName, folder.NewName)
+	err = er.EmailUseCase.ChangeEmailFolder(id, email, folder.Name)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 		return

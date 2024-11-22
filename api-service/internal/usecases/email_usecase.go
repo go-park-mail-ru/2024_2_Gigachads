@@ -127,3 +127,7 @@ func (es *EmailService) DeleteFolder(email string, folderName string) error {
 func (es *EmailService) RenameFolder(email string, folderName string, newFolderName string) error {
 	return es.EmailRepo.RenameFolder(email, folderName, newFolderName)
 }
+
+func (es *EmailService) ChangeEmailFolder(id int, email string, folderName string) error {
+	return es.EmailRepo.ChangeEmailFolder(id, email, folderName)
+}

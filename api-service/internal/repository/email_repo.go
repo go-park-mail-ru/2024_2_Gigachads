@@ -455,3 +455,50 @@ func (er *EmailRepositoryService) RenameFolder(email string, folderName string, 
 
 	return tx.Commit()
 }
+
+func (er *EmailRepositoryService) ChangeEmailFolder(id int, email string, folderName string) error {
+	email = utils.Sanitize(email)
+	folderName = utils.Sanitize(folderName)
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
+
+	var userID int
+
+	err = tx.QueryRow(
+		`SELECT id FROM profile WHERE email = $1`,
+		email, 
+	).Scan(&userID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	var folderID int
+
+	err = tx.QueryRow(
+		`SELECT id FROM folder WHERE user_id = $1 AND name = $2`,
+		userID, folderName, 
+	).Scan(&folderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	_, err = tx.Exec(
+		`UPDATE email_transaction
+			SET folder_id = $2
+			WHERE message_id = $1`,
+		id, folderID,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	return tx.Commit()
+}
