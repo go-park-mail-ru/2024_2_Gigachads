@@ -15,6 +15,14 @@ type Email struct {
 	Description  string    `json:"description"`
 }
 
+type Folder struct {
+	Name 		 string    `json:"name"`
+}
+
+type RenameFolder struct {
+	NewName 	 string    `json:"new_name"`
+}
+
 type EmailUseCase interface {
 	Inbox(id string) ([]Email, error)
 	SendEmail(from string, to []string, subject string, body string) error

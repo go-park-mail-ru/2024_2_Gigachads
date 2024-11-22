@@ -95,3 +95,24 @@ func (es *EmailService) ChangeStatus(id int, status bool) error {
 func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
 	return es.EmailRepo.DeleteEmails(userEmail, messageIDs, folder)
 }
+
+
+func (es *EmailService) GetFolders(email string) ([]string, error) {
+	return es.EmailRepo.GetFolderEmails(email)
+}
+
+func (es *EmailService) GetFolderEmails(email string, folderName string) ([]models.Email, error) {
+	return es.EmailRepo.GetFolderEmails(email, folderName)
+}
+
+func (es *EmailService) CreateFolder(email string, folderName string) error {
+	return es.EmailRepo.CreateFolder(email, folderName)
+}
+
+func (es *EmailService) DeleteFolder(email string, folderName string) error {
+	return es.EmailRepo.DeleteFolder(email, folderName)
+}
+
+func (es *EmailService) RenameFolder(email string, folderName string, newFolderName string) error {
+	return es.EmailRepo.RenameFolder(email, folderName, newFolderName)
+}

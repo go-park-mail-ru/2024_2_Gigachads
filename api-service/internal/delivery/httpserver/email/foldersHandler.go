@@ -1,0 +1,32 @@
+package email
+
+import (
+	"encoding/json"
+	"mail/pkg/utils"
+	"net/http"
+)
+
+func (er *EmailRouter) FoldersHandler(w http.ResponseWriter, r *http.Request) {
+	ctxEmail := r.Context().Value("email")
+	if ctxEmail == nil {
+		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	email := ctxEmail.(string)
+
+	folders, err := er.EmailUseCase.GetFolders(email)
+	if err != nil {
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	result, err := json.Marshal(folders)
+	if err != nil {
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "json error")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+}

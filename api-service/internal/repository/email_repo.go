@@ -260,7 +260,35 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 	return tx.Commit()
 }
 
-func (er *EmailRepositoryService) GetFolderMails(email string, folderName string) ([]models.Email, error) {
+func (er *EmailRepositoryService) GetFolders(email string) ([]string, error) {
+	email = utils.Sanitize(email)
+
+	rows, err := er.repo.Query(
+		`SELECT f.name
+		 FROM folder AS f
+		 JOIN profile AS p ON f.user_id = p.id
+		 WHERE p.email = $1`, email)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := make([]string, 0)
+	for rows.Next() {
+		var folder string
+		err := rows.Scan(&folder)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return nil, err
+		}
+		folder = utils.Sanitize(folder)
+		res = append(res, folder)
+	}
+	return res, nil
+}
+
+func (er *EmailRepositoryService) GetFolderEmails(email string, folderName string) ([]models.Email, error) {
 
 	email = utils.Sanitize(email)
 	folderName = utils.Sanitize(folderName)
