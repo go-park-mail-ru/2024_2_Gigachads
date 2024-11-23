@@ -13,7 +13,7 @@ func (sr *StatisticsRouter) StatisticsHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	statistics, err := sr.StatisticsUseCase.GetStatistics(ctxEmail.(string))
+	statistics, err := sr.StatisticsUseCase.GetStatistics()
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_get_statistics")
 		return
