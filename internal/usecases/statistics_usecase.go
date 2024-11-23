@@ -21,14 +21,14 @@ func NewStatisticsService(srepo models.StatisticsRepository) models.StatisticsUs
 
 
 func (ss *StatisticsService) GetQuestionsStatistics(action string, email string) (models.Question, error) {
-	return
+	return ss.StatisticsRepo.GetQuestionsStatistics(action, email)
 }
 
 func (ss *StatisticsService) AnswersStatistics(action string, value int, email string) error {
-	return
+	return ss.StatisticsRepo.AnswersStatistics(action, value, email)
 }
 
 func (ss *StatisticsService) GetStatistics() ([]models.Statistics, error) {
-	return
+	return ss.StatisticsRepo.GetStatistics()
 }
 
