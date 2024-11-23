@@ -58,7 +58,15 @@ CREATE TABLE IF NOT EXISTS answer (
     CONSTRAINT fk_user FOREIGN KEY (user_email) REFERENCES profile(email) ON DELETE NULL,
     value INT
 )
-    
+
+INSERT INTO question (action, type, dexcription) VALUES ('Send', 'Как бы вы оценили качество работы почтового сервиса?', );
+INSERT INTO question (action, type, dexcription) VALUES ('Forward', 'Number', 'Оцените по шкале от 1 до 10, насколько просто вам пересылать сообщения (где 1 - очень сложно, 10- очень легко).');
+INSERT INTO question (action, type, dexcription) VALUES ('Answer', 'Number', 'Оцените по шкале от 1 до 10, насколько просто вам отвечать на сообщения (где 1 - очень сложно, 10- очень легко).');
+INSERT INTO question (action, type, dexcription) VALUES ('UploadAvatar', 'Насколько просто и удобно вам менять аватарку в почтовом сервисе?');
+INSERT INTO question (action, type, dexcription) VALUES ('SignUp', 'Насколько легким и понятным вы считаете процесс регистрации на сайте Gigamail?');
+INSERT INTO question (action, type, dexcription) VALUES ('Main', 'Как вы оцениваете удобство навигации в почтовом сервисе?');
+INSERT INTO question (action, type, dexcription) VALUES ('Delete', 'Number', 'Оцените по шкале от 1 до 10, насколько легко вам удалять письма в почтовом сервисе (где 1 - очень сложно, 10- очень легко).');
+
     
     
     
