@@ -12,20 +12,25 @@ type Question struct {
 	Type    		string `json:"type"`
 }
 
-type Statistics struct {
+type Answer struct {
 	Action     string `json:"action"`
-	Amount     int 	  `json:"amount"`
+	Value      int    `json:"value"`
+}
+
+type Statistics struct {
+	Action     string   `json:"action"`
+	Amount     int 	    `json:"amount"`
 	Average    float32  `json:"average"`
 }
 
 type StatisticsUseCase interface {
-	GetQuestionsStatistics()
-	GetAnswersStatistics()
-	GetStatistics()
+	GetQuestionsStatistics(action string, email string) (*Question, error)
+	GetAnswersStatistics(action string, value int, email string) error
+	GetStatistics() ([]Statistics, error)
 }
 
 type StatisticsRepository interface {
-	GetQuestionsStatistics(signup *User) (*User, error)
-	GetAnswersStatistics()
-	GetStatistics()
+	GetQuestionsStatistics(action string, email string) (*Question, error)
+	GetAnswersStatistics(action string, value int, email string) error
+	GetStatistics() ([]Statistics, error)
 }
