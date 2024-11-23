@@ -28,7 +28,8 @@ func NewEmailService(
 }
 
 func (es *EmailService) Inbox(email string) ([]models.Email, error) {
-	return es.EmailRepo.Inbox(email)
+	// return es.EmailRepo.Inbox(email)
+	return es.EmailRepo.GetFolderEmails(email, "Входящие")
 }
 
 func (es *EmailService) SendEmail(from string, to []string, subject string, body string) error {
@@ -81,7 +82,8 @@ func (es *EmailService) FetchEmailsViaPOP3() error {
 }
 
 func (es *EmailService) GetSentEmails(senderEmail string) ([]models.Email, error) {
-	return es.EmailRepo.GetSentEmails(senderEmail)
+	//return es.EmailRepo.GetSentEmails(senderEmail)
+	return es.EmailRepo.GetFolderEmails(email, "Отправленные")
 }
 
 func (s *EmailService) SaveEmail(email models.Email) error {
