@@ -24,13 +24,13 @@ type Statistics struct {
 }
 
 type StatisticsUseCase interface {
-	GetQuestionsStatistics(action string, email string) (*Question, error)
-	GetAnswersStatistics(action string, value int, email string) error
+	GetQuestionsStatistics(action string, email string) (Question, error)
+	AnswersStatistics(action string, value int, email string) error
 	GetStatistics() ([]Statistics, error)
 }
 
 type StatisticsRepository interface {
-	GetQuestionsStatistics(action string, email string) (*Question, error)
-	GetAnswersStatistics(action string, value int, email string) error
+	GetQuestionsStatistics(action string, email string) (Question, error)
+	AnswersStatistics(action string, value int, email string) error
 	GetStatistics() ([]Statistics, error)
 }
