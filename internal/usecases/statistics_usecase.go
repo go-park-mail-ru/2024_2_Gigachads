@@ -2,6 +2,7 @@ package usecase
 
 import (
 
+
 	// "context"
 	// "fmt"
 	// "net/http"
@@ -11,12 +12,13 @@ import (
 )
 
 type StatisticsService struct {
-	StatisticsRepo    models.StatisticsRepository
+	StatisticsRepo models.StatisticsRepository
 }
 
 func NewStatisticsService(srepo models.StatisticsRepository) models.StatisticsUseCase {
 	return &StatisticsService{StatisticsRepo: srepo}
 }
+
 
 func (ss *StatisticsService) GetQuestionsStatistics(action string, email string) (models.Question, error) {
 	return
@@ -29,3 +31,4 @@ func (ss *StatisticsService) AnswersStatistics(action string, value int, email s
 func (ss *StatisticsService) GetStatistics() ([]models.Statistics, error) {
 	return
 }
+
