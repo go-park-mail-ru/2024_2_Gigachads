@@ -3,9 +3,9 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"mail/internal/models"
-	"mail/pkg/logger"
-	"mail/pkg/utils"
+	"mail/api-service/internal/models"
+	"mail/api-service/pkg/logger"
+	"mail/api-service/pkg/utils"
 	"strconv"
 	"sync"
 

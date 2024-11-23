@@ -1,7 +1,7 @@
 package user
 
 import (
-	"mail/internal/models"
+	"mail/api-service/internal/models"
 
 	"github.com/gorilla/mux"
 )

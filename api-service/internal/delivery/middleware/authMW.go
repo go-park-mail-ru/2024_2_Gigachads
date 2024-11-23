@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"mail/internal/models"
+	"mail/api-service/internal/models"
 	"net/http"
 )
 

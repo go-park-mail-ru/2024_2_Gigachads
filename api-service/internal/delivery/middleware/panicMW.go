@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"net/http"
-	"mail/pkg/utils"
+	"mail/api-service/pkg/utils"
 )
 
 func PanicMiddleware(next http.Handler) http.Handler {

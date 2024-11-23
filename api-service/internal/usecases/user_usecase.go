@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	models "mail/internal/models"
-	"mail/pkg/utils"
+	models "mail/api-service/internal/models"
+	"mail/api-service/pkg/utils"
 	"os"	
 )
 

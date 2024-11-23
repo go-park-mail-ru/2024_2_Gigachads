@@ -1,7 +1,7 @@
 package user
 
 import (
-	"mail/pkg/utils"
+	"mail/api-service/pkg/utils"
 	"net/http"
 	"strings"
 	"bytes"

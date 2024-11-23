@@ -2,7 +2,7 @@ package repository
 
 import (
 	"mail/config"
-	"mail/pkg/smtp"
+	"mail/api-service/pkg/smtp"
 )
 
 type SMTPRepository struct {

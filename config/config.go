@@ -1,7 +1,7 @@
 package config
 
 import (
-	"mail/pkg/logger"
+	"mail/api-service/pkg/logger"
 	"os"
 
 	"gopkg.in/yaml.v2"

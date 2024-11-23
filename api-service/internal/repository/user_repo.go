@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	models "mail/internal/models"
+	models "mail/api-service/internal/models"
 )
 
 type UserRepositoryService struct {

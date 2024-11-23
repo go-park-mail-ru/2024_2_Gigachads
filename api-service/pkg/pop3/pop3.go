@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
-	"mail/internal/models"
+	"mail/api-service/internal/models"
 	"net"
 	"strings"
 	"time"

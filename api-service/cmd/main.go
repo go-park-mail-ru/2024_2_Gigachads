@@ -4,7 +4,7 @@ import (
 	"flag"
 	config "mail/config"
 	app "mail/api-service/internal/app"
-	"mail/pkg/logger"
+	"mail/api-service/pkg/logger"
 )
 
 func main() {

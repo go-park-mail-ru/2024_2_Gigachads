@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"fmt"
-	models "mail/internal/models"
+	models "mail/api-service/internal/models"
 	"time"
 )
 

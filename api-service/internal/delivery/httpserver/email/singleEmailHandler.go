@@ -3,7 +3,7 @@ package email
 import (
 	"encoding/json"
 	"mail/api-service/internal/models"
-	"mail/pkg/utils"
+	"mail/api-service/pkg/utils"
 	"net/http"
 	"strconv"
 

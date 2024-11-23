@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"mail/pkg/utils"
+	"mail/api-service/pkg/utils"
 	"net/http"
 )
 

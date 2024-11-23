@@ -3,8 +3,8 @@ package middleware
 import (
 	"context"
 	"net/http" 
-	"mail/pkg/logger"
-	"mail/pkg/utils"
+	"mail/api-service/pkg/logger"
+	"mail/api-service/pkg/utils"
 )
 
 type LogResponseWriter struct {

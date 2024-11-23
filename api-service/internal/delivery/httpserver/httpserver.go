@@ -9,9 +9,9 @@ import (
 	"mail/api-service/internal/models"
 	repo "mail/api-service/internal/repository"
 	usecase "mail/api-service/internal/usecases"
-	"mail/pkg/logger"
-	"mail/pkg/pop3"
-	"mail/pkg/smtp"
+	"mail/api-service/pkg/logger"
+	"mail/api-service/pkg/pop3"
+	"mail/api-service/pkg/smtp"
 	
 	"database/sql"
 	"net/http"

@@ -3,7 +3,7 @@ package app
 import (
 	"mail/config"
 	"mail/api-service/internal/delivery/httpserver"
-	"mail/pkg/logger"
+	"mail/api-service/pkg/logger"
 	"mail/service/postgres"
 	"mail/service/redis"
 	"mail/api-service/internal/delivery/grpc"

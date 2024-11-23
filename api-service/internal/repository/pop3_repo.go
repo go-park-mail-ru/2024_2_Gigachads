@@ -2,8 +2,8 @@ package repository
 
 import (
 	"mail/config"
-	"mail/internal/models"
-	"mail/pkg/pop3"
+	"mail/api-service/internal/models"
+	"mail/api-service/pkg/pop3"
 )
 
 type POP3Repository struct {

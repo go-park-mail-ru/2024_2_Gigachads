@@ -1,7 +1,7 @@
 package user
 import (
 	"net/http"
-	"mail/pkg/utils"
+	"mail/api-service/pkg/utils"
 	"mail/api-service/internal/models"
 	"encoding/json"
 )
