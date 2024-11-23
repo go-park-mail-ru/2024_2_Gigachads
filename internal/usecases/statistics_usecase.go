@@ -20,8 +20,8 @@ func NewStatisticsService(srepo models.StatisticsRepository) models.StatisticsUs
 }
 
 
-func (ss *StatisticsService) GetQuestionsStatistics(action string, email string) (models.Question, error) {
-	return ss.StatisticsRepo.GetQuestionsStatistics(action, email)
+func (ss *StatisticsService) GetQuestionsStatistics(action string) (models.Question, error) {
+	return ss.StatisticsRepo.GetQuestionsStatistics(action)
 }
 
 func (ss *StatisticsService) AnswersStatistics(action string, value int, email string) error {
