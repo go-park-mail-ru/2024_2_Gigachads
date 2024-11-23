@@ -553,3 +553,103 @@ func (er *EmailRepositoryService) ChangeEmailFolder(id int, email string, folder
 
 	return tx.Commit()
 }
+
+func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
+	email.Sender_email = utils.Sanitize(email.Sender_email)
+	email.Recipient = utils.Sanitize(email.Recipient)
+	email.Title = utils.Sanitize(email.Title)
+	email.Description = utils.Sanitize(email.Description)
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
+
+	var messageID int
+	err = tx.QueryRow(
+		`INSERT INTO message (title, description) 
+		VALUES ($1, $2) RETURNING id`,
+		email.Title, email.Description,
+	).Scan(&messageID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	var parentID interface{}
+	if email.ParentID == 0 {
+		parentID = nil
+	} else {
+		parentID = email.ParentID
+	}
+
+	var senderID int
+	err = tx.QueryRow(
+		`SELECT id FROM profile WHERE email = $1`,
+		email.Sender_email, 
+	).Scan(&senderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	var senderFolderID int
+	err = tx.QueryRow(
+		`SELECT id FROM folder WHERE user_id = $1 AND name = "Черновики"`,
+		senderID, 
+	).Scan(&senderFolderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	_, err = tx.Exec(
+		`INSERT INTO email_transaction 
+		(sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id, folder_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		email.Sender_email, email.Recipient,
+		email.Sending_date, email.IsRead, messageID,
+		parentID, senderFolderID
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (er *EmailRepositoryService) UpdateDraft(email models.Email) error {
+	email.Sender_email = utils.Sanitize(email.Sender_email)
+	email.Title = utils.Sanitize(email.Title)
+	email.Description = utils.Sanitize(email.Description)
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
+
+	var messageID int
+	err = tx.QueryRow(
+		`SELECT message_id FROM email_transaction WHERE id = $1`,
+		email.ID, 
+	).Scan(&messageID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	_, err = tx.Exec(
+		`UPDATE message
+			SET title = $2, description = $3
+			WHERE mid = $1`,
+		messageID, email.Title, email.Description,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+}

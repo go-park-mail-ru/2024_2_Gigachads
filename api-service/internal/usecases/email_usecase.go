@@ -133,3 +133,12 @@ func (es *EmailService) RenameFolder(email string, folderName string, newFolderN
 func (es *EmailService) ChangeEmailFolder(id int, email string, folderName string) error {
 	return es.EmailRepo.ChangeEmailFolder(id, email, folderName)
 }
+
+
+func (es *EmailService) CreateDraft(email models.Email) error {
+	return es.EmailRepo.CreateDraft(email)
+}
+
+func (es *EmailService) UpdateDraft(email models.Email) error {
+	return es.EmailRepo.UpdateDraft(email)
+}

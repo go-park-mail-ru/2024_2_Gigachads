@@ -34,6 +34,14 @@ type EmailUseCase interface {
 	GetSentEmails(senderEmail string) ([]Email, error)
 	SaveEmail(email Email) error
 	DeleteEmails(userEmail string, messageIDs []int, folder string) error
+	GetFolders(email string) ([]string, error)
+	GetFolderEmails(email string, folderName string) ([]models.Email, error)
+	CreateFolder(email string, folderName string) error
+	DeleteFolder(email string, folderName string) error
+	RenameFolder(email string, folderName string, newFolderName string) error
+	ChangeEmailFolder(id int, email string, folderName string) error
+	CreateDraft(email models.Email) error
+	UpdateDraft(email models.Email) error
 }
 
 type EmailRepository interface {
@@ -43,6 +51,14 @@ type EmailRepository interface {
 	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
 	DeleteEmails(userEmail string, messageIDs []int, folder string) error
+	GetFolders(email string) ([]string, error)
+	GetFolderEmails(email string, folderName string) ([]models.Email, error)
+	CreateFolder(email string, folderName string) error
+	DeleteFolder(email string, folderName string) error
+	RenameFolder(email string, folderName string, newFolderName string) error
+	ChangeEmailFolder(id int, email string, folderName string) error
+	CreateDraft(email models.Email) error
+	UpdateDraft(email models.Email) error
 }
 
 type SMTPRepository interface {
