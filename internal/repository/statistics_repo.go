@@ -16,14 +16,14 @@ func NewStatisticsRepositoryService(db *sql.DB, l logger.Logable) *StatisticsRep
 	return &StatisticsRepositoryService{repo: db, logger: l}
 }
 
-func (sr *StatisticsRepositoryService) GetQuestionStatistics(action string) (*models.Question, error) {
+func (sr *StatisticsRepositoryService) GetQuestionsStatistics(action string) (models.Question, error) {
 	row := sr.repo.QueryRow(
 		`SELECT description, type FROM "question" WHERE action = $1`, action)
 	question := models.Question{}
 	err := row.Scan(&question.Description, &question.Type)
 	if err != nil {
 		sr.logger.Error(err.Error())
-		return nil, err
+		return models.Question{}, err
 	}
 	return question, nil
 }
