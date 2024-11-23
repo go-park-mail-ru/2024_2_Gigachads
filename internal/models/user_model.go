@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/mail"
 	"regexp"
-	
 )
 
 type User struct {
