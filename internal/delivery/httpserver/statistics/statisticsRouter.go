@@ -1,4 +1,4 @@
-package user
+package statistics
 
 import (
 	"mail/internal/models"

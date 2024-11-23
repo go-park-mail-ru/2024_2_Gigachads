@@ -7,6 +7,7 @@ import (
 	"mail/internal/delivery/httpserver/email"
 	emailRouter "mail/internal/delivery/httpserver/email"
 	userRouter "mail/internal/delivery/httpserver/user"
+	statisticsRouter "mail/internal/delivery/httpserver/statistics"
 	mw "mail/internal/delivery/middleware"
 	"mail/internal/models"
 	repo "mail/internal/repository"
@@ -49,6 +50,9 @@ func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSessi
 
 	eu := usecase.NewEmailService(er, sr, smtpRepo, pop3Client)
 
+	srepo := repo.NewStatisticsRepositoryService(db, l)
+	su := usecase.NewStatisticsService(srepo)
+
 	router := mux.NewRouter()
 	router = router.PathPrefix("/").Subrouter()
 	router.Use(mw.PanicMiddleware)
@@ -57,11 +61,13 @@ func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSessi
 	authRout := authRouter.NewAuthRouter(uu)
 	emailRout := emailRouter.NewEmailRouter(eu)
 	userRout := userRouter.NewUserRouter(uu)
+	statRout := statisticsRouter.NewStatisticsRouter(su)
 	mwAuth := mw.NewAuthMW(uu)
 
 	emailRout.ConfigureEmailRouter(router)
 	authRout.ConfigureAuthRouter(router)
 	userRout.ConfigureUserRouter(router)
+	statRout.ConfigureStatisticsRouter(router)
 
 	handler := mw.ConfigureMWs(cfg, router, mwAuth)
 
