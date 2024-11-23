@@ -44,16 +44,25 @@ CREATE TABLE IF NOT EXISTS attachment (
     CONSTRAINT fk_message FOREIGN KEY  (message_id) REFERENCES message(id) ON DELETE CASCADE
 );
 
--- Пересоздание таблицы email_transaction с правильными ограничениями
-CREATE TABLE IF NOT EXISTS email_transaction (
+CREATE TABLE IF NOT EXISTS question (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    parent_transaction_id INTEGER DEFAULT NULL,
-    sender_email TEXT,
-    recipient_email TEXT,
-    message_id INTEGER,
-    sending_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    isRead BOOLEAN NOT NULL DEFAULT FALSE,
-    folder_id INTEGER,
-    CONSTRAINT fk_message FOREIGN KEY (message_id) REFERENCES message(id),
-    CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES folder(id) ON DELETE CASCADE
-);
+    action TEXT IN ('Send', 'Answer', 'Forward', 'UploadAvatar', 'SignUp', 'Main', 'Delete')
+    type TEXT IN ('Star', 'Number')
+    description TEXT
+)
+
+CREATE TABLE IF NOT EXISTS answer (
+    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    action TEXT IN ('Send', 'Answer', 'Forward', 'UploadAvatar', 'SignUp', 'Main', 'Delete')
+    user_email TEXT, 
+    CONSTRAINT fk_user FOREIGN KEY (user_email) REFERENCES profile(email) ON DELETE NULL,
+    value INT
+)
+    
+    
+    
+    
+    
+    
+    
+    
