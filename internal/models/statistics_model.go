@@ -1,36 +1,33 @@
 package models
 
-import (
-)
-
 type GetQuestion struct {
-	Action     string `json:"action"`
+	Action string `json:"action"`
 }
 
 type Question struct {
-	Description     string `json:"description"`
-	Type    		string `json:"type"`
+	Description string `json:"description"`
+	Type        string `json:"type"`
 }
 
 type Answer struct {
-	Action     string `json:"action"`
-	Value      int    `json:"value"`
+	Action string `json:"action"`
+	Value  int    `json:"value"`
 }
 
 type Statistics struct {
-	Action     string   `json:"action"`
-	Amount     int 	    `json:"amount"`
-	Average    float32  `json:"average"`
+	Action  string  `json:"action"`
+	Amount  int     `json:"amount"`
+	Average float32 `json:"average"`
 }
 
 type StatisticsUseCase interface {
 	GetQuestionsStatistics(action string, email string) (*Question, error)
-	GetAnswersStatistics(action string, value int, email string) error
+	AnswersStatistics(action string, value int, email string) error
 	GetStatistics() ([]Statistics, error)
 }
 
 type StatisticsRepository interface {
 	GetQuestionsStatistics(action string, email string) (*Question, error)
-	GetAnswersStatistics(action string, value int, email string) error
+	AnswersStatistics(action string, value int, email string) error
 	GetStatistics() ([]Statistics, error)
 }

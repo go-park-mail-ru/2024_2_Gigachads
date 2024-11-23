@@ -21,7 +21,7 @@ func (sr *StatisticsRouter) QuestionHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	question, err := sr.StatisticsUseCase.GetQuestionsStatistics(ctxEmail.(string))
+	question, err := sr.StatisticsUseCase.GetQuestionsStatistics(questions.Action, ctxEmail.(string))
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_get_questions_statistics")
 		return

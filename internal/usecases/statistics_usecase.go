@@ -1,17 +1,11 @@
 package usecase
 
 import (
-
-	"context"
-	"fmt"
-	"net/http"
 	models "mail/internal/models"
-	"mail/pkg/utils"
-	"os"	
 )
 
 type StatisticsService struct {
-	StatisticsRepo    models.StatisticsRepository
+	StatisticsRepo models.StatisticsRepository
 }
 
 func NewStatisticsService(srepo models.StatisticsRepository) models.StatisticsUseCase {
@@ -19,5 +13,5 @@ func NewStatisticsService(srepo models.StatisticsRepository) models.StatisticsUs
 }
 
 func (ss *StatisticsService) GetQuestionsStatistics() {
-	
+
 }
