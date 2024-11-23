@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"mail/internal/models"
 	"mail/pkg/logger"
-
 )
 
 type StatisticsRepositoryService struct {
@@ -18,7 +17,7 @@ func NewStatisticsRepositoryService(db *sql.DB, l logger.Logable) *StatisticsRep
 
 func (sr *StatisticsRepositoryService) GetQuestionsStatistics(action string) (models.Question, error) {
 	row := sr.repo.QueryRow(
-		`SELECT description, type FROM "question" WHERE action = $1`, action)
+		`SELECT description, type FROM question WHERE action = $1`, action)
 	question := models.Question{}
 	err := row.Scan(&question.Description, &question.Type)
 	if err != nil {
@@ -28,7 +27,7 @@ func (sr *StatisticsRepositoryService) GetQuestionsStatistics(action string) (mo
 	return question, nil
 }
 
-func (sr *StatisticsRepositoryService) AnswersStatistics(action string, value int, email string) (error) {
+func (sr *StatisticsRepositoryService) AnswersStatistics(action string, value int, email string) error {
 	_, err := sr.repo.Exec(
 		`INSERT INTO "answer" (action, value, email) VALUES ($1, $2, $3)`, action, value, email)
 	if err != nil {

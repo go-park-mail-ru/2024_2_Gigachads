@@ -44,33 +44,28 @@ CREATE TABLE IF NOT EXISTS attachment (
     CONSTRAINT fk_message FOREIGN KEY  (message_id) REFERENCES message(id) ON DELETE CASCADE
 );
 
+-- Создание таблицы вопросов (question)
 CREATE TABLE IF NOT EXISTS question (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    action TEXT CHECK (action IN ('Send', 'Answer', 'Forward', 'UploadAvatar', 'SignUp', 'Main', 'Delete'))
-    type TEXT CHECK (type IN ('Star', 'Number'))
+    action TEXT CHECK (action IN ('Send', 'Answer', 'Forward', 'UploadAvatar', 'SignUp', 'Main', 'Delete')),
+    type TEXT CHECK (type IN ('Star', 'Number')),
     description TEXT
-)
+);
 
+-- Создание таблицы ответов (answer)
 CREATE TABLE IF NOT EXISTS answer (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    action TEXT CHECK (action IN ('Send', 'Answer', 'Forward', 'UploadAvatar', 'SignUp', 'Main', 'Delete'))
+    action TEXT CHECK (action IN ('Send', 'Answer', 'Forward', 'UploadAvatar', 'SignUp', 'Main', 'Delete')),
     user_email TEXT, 
-    CONSTRAINT fk_user FOREIGN KEY (user_email) REFERENCES profile(email) ON DELETE NULL,
+    CONSTRAINT fk_user FOREIGN KEY (user_email) REFERENCES profile(email) ON DELETE SET NULL,
     value INT
-)
+);
 
-INSERT INTO question (action, type, dexcription) VALUES ('Send', 'Star', 'Как бы вы оценили качество работы почтового сервиса?');
-INSERT INTO question (action, type, dexcription) VALUES ('Forward', 'Number', 'Оцените по шкале от 1 до 10, насколько просто вам пересылать сообщения (где 1 - очень сложно, 10- очень легко).');
-INSERT INTO question (action, type, dexcription) VALUES ('Answer', 'Number', 'Оцените по шкале от 1 до 10, насколько просто вам отвечать на сообщения (где 1 - очень сложно, 10- очень легко).');
-INSERT INTO question (action, type, dexcription) VALUES ('UploadAvatar', 'Насколько просто и удобно вам менять аватарку в почтовом сервисе?');
-INSERT INTO question (action, type, dexcription) VALUES ('SignUp', 'Насколько легким и понятным вы считаете процесс регистрации на сайте Gigamail?');
-INSERT INTO question (action, type, dexcription) VALUES ('Main', 'Как вы оцениваете удобство навигации в почтовом сервисе?');
-INSERT INTO question (action, type, dexcription) VALUES ('Delete', 'Number', 'Оцените по шкале от 1 до 10, насколько легко вам удалять письма в почтовом сервисе (где 1 - очень сложно, 10- очень легко).');
-
-    
-    
-    
-    
-    
-    
-    
+-- Вставка вопросов
+INSERT INTO question (action, type, description) VALUES ('Send', 'Star', 'Как бы вы оценили качество работы почтового сервиса?');
+INSERT INTO question (action, type, description) VALUES ('Forward', 'Number', 'Оцените по шкале от 1 до 10, насколько просто вам пересылать сообщения (где 1 - очень сложно, 10- очень легко).');
+INSERT INTO question (action, type, description) VALUES ('Answer', 'Number', 'Оцените по шкале от 1 до 10, насколько просто вам отвечать на сообщения (где 1 - очень сложно, 10- очень легко).');
+INSERT INTO question (action, type, description) VALUES ('UploadAvatar', 'Star', 'Насколько просто и удобно вам менять аватарку в почтовом сервисе?');
+INSERT INTO question (action, type, description) VALUES ('SignUp', 'Star','Насколько легким и понятным вы считаете процесс регистрации на сайте Gigamail?');
+INSERT INTO question (action, type, description) VALUES ('Main', 'Star','Как вы оцениваете удобство навигации в почтовом сервисе?');
+INSERT INTO question (action, type, description) VALUES ('Delete', 'Number', 'Оцените по шкале от 1 до 10, насколько легко вам удалять письма в почтовом сервисе (где 1 - очень сложно, 10- очень легко).');
