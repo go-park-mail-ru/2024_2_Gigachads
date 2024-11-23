@@ -22,7 +22,7 @@ func NewEmailRepositoryService(db *sql.DB, l logger.Logable) *EmailRepositorySer
 	return &EmailRepositoryService{repo: db, logger: l}
 }
 
-func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
+func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) { //больше не используется
 
 	email = utils.Sanitize(email)
 
@@ -64,7 +64,7 @@ func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) {
 	return res, nil
 }
 
-func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Email, error) {
+func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Email, error) { //больше не используется
 
 	senderEmail = utils.Sanitize(senderEmail)
 
@@ -182,13 +182,64 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		parentID = email.ParentID
 	}
 
+	var senderID int
+	err = tx.QueryRow(
+		`SELECT id FROM profile WHERE email = $1`,
+		email.Sender_email, 
+	).Scan(&senderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	var senderFolderID int
+	err = tx.QueryRow(
+		`SELECT id FROM folder WHERE user_id = $1 AND name = "Отправленные"`,
+		senderID, 
+	).Scan(&senderFolderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
 	_, err = tx.Exec(
 		`INSERT INTO email_transaction 
-		(sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id)
-		VALUES ($1, $2, $3, $4, $5, $6)`,
+		(sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id, folder_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 		email.Sender_email, email.Recipient,
 		email.Sending_date, email.IsRead, messageID,
-		parentID,
+		parentID, senderFolderID
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	var recipientID int
+	err = tx.QueryRow(
+		`SELECT id FROM profile WHERE email = $1`,
+		email.Recipient, 
+	).Scan(&recipientID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	var recipientFolderID int
+	err = tx.QueryRow(
+		`SELECT id FROM folder WHERE user_id = $1 AND name = "Входящие"`,
+		recipientID, 
+	).Scan(&recipientFolderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	_, err = tx.Exec(
+		`INSERT INTO email_transaction 
+		(sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id, folder_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		email.Sender_email, email.Recipient,
+		email.Sending_date, email.IsRead, messageID,
+		parentID, recipientFolderID
 	)
 	if err != nil {
 		er.logger.Error(err.Error())
