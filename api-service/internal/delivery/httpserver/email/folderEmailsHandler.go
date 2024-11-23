@@ -2,7 +2,7 @@ package email
 
 import (
 	"encoding/json"
-	"mail/internal/models"
+	"mail/api-service/internal/models"
 	"mail/pkg/utils"
 	"net/http"
 	"strconv"

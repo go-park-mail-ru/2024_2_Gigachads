@@ -1,19 +1,19 @@
 package httpserver
 
 import (
-	"database/sql"
 	"mail/config"
-	authRouter "mail/internal/delivery/httpserver/auth"
-	"mail/internal/delivery/httpserver/email"
-	emailRouter "mail/internal/delivery/httpserver/email"
-	userRouter "mail/internal/delivery/httpserver/user"
-	mw "mail/internal/delivery/middleware"
-	"mail/internal/models"
-	repo "mail/internal/repository"
-	usecase "mail/internal/usecases"
+	authRouter "mail/api-service/internal/delivery/httpserver/auth"
+	emailRouter "mail/api-service/internal/delivery/httpserver/email"
+	userRouter "mail/api-service/internal/delivery/httpserver/user"
+	mw "mail/api-service/internal/delivery/middleware"
+	"mail/api-service/internal/models"
+	repo "mail/api-service/internal/repository"
+	usecase "mail/api-service/internal/usecases"
 	"mail/pkg/logger"
 	"mail/pkg/pop3"
 	"mail/pkg/smtp"
+	
+	"database/sql"
 	"net/http"
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
@@ -34,7 +34,8 @@ func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redisSession *redis.C
 	return nil
 }
 
-func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSession *redis.Client, redisCSRF *redis.Client, l logger.Logable) {
+func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSession *redis.Client, redisCSRF *redis.Client, clients *grpcClients.Clients, l logger.Logable) {
+	
 	sr := repo.NewSessionRepositoryService(redisSession, l)
 	cr := repo.NewCsrfRepositoryService(redisCSRF, l)
 	smtpClient := s.createAndConfigureSMTPClient(cfg)
@@ -42,7 +43,7 @@ func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSessi
 	ur := repo.NewUserRepositoryService(db)
 	smtpRepo := repo.NewSMTPRepository(smtpClient, cfg)
 	uu := usecase.NewUserService(ur, sr, cr)
-
+	au := usecase.NewAuthService(clients.AuthConn)
 	er := repo.NewEmailRepositoryService(db, l)
 
 	pop3Client := s.createAndConfigurePOP3Client(cfg)

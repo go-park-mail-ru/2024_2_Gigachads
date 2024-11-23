@@ -2,8 +2,8 @@ package email
 
 import (
 	"encoding/json"
-	"mail/internal/delivery/converters"
-	"mail/internal/models"
+	"mail/api-service/internal/delivery/converters"
+	"mail/api-service/internal/models"
 	"mail/pkg/utils"
 	"net/http"
 	"strings"

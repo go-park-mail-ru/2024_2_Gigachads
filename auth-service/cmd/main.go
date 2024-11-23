@@ -1,15 +1,11 @@
 package main
 
 import (
-	"flag"
-	config "mail/config"
-	app "mail/api-service/internal/app"
-	"mail/pkg/logger"
+
 )
 
 func main() {
 	l := logger.NewLogger()
-
 	configPath := flag.String("config-path", "./config/config.yaml", "path to config file")
 	flag.Parse()
 
@@ -20,4 +16,5 @@ func main() {
 	if err := app.Run(config, l); err != nil {
 		l.Error(err.Error())
 	}
+
 }

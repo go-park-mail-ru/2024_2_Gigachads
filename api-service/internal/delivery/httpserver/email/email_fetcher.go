@@ -2,7 +2,7 @@ package email
 
 import (
 	"log/slog"
-	"mail/internal/models"
+	"mail/api-service/internal/models"
 	"time"
 )
 

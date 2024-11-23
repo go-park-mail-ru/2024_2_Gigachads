@@ -3,7 +3,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"mail/pkg/utils"
-	"mail/internal/models"
+	"mail/api-service/internal/models"
 )
 
 func (ar *UserRouter) ChangeNameHandler(w http.ResponseWriter, r *http.Request) {

@@ -53,7 +53,7 @@ func (as *AuthService) CheckAuth(ctx context.Context, id string) (string, error)
 }
 
 func (as *AuthService) CheckCsrf(ctx context.Context, email string, csrf string) error {
-	email1, err := as.ms.CheckCsrf(ctx, email, csrf)
+	err := as.ms.CheckCsrf(ctx, email, csrf)
 	if err != nil {
 		return err
 	}
