@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"mail/gen/go/auth"
 	models "mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
 	"os"	
