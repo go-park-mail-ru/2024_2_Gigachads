@@ -15,6 +15,12 @@ type Email struct {
 	Description  string    `json:"description"`
 }
 
+type Draft struct {
+	ID           int       `json:"id"`
+	Title        string    `json:"title"`
+	Description  string    `json:"description"`
+}
+
 type Folder struct {
 	Name 		 string    `json:"name"`
 }
@@ -41,7 +47,7 @@ type EmailUseCase interface {
 	RenameFolder(email string, folderName string, newFolderName string) error
 	ChangeEmailFolder(id int, email string, folderName string) error
 	CreateDraft(email models.Email) error
-	UpdateDraft(email models.Email) error
+	UpdateDraft(email models.Draft) error
 }
 
 type EmailRepository interface {
@@ -58,7 +64,7 @@ type EmailRepository interface {
 	RenameFolder(email string, folderName string, newFolderName string) error
 	ChangeEmailFolder(id int, email string, folderName string) error
 	CreateDraft(email models.Email) error
-	UpdateDraft(email models.Email) error
+	UpdateDraft(email models.Draft) error
 }
 
 type SMTPRepository interface {
