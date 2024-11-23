@@ -30,7 +30,7 @@ func (sr *StatisticsRepositoryService) GetQuestionsStatistics(action string) (mo
 
 func (sr *StatisticsRepositoryService) AnswersStatistics(action string, value int, email string) (error) {
 	_, err := sr.repo.Exec(
-		`INSERT INTO "answer" (action, value, email) VALUES ($1, $2, $3)`, action, value, email)
+		`INSERT INTO "answer" (action, value, user_email) VALUES ($1, $2, $3)`, action, value, email)
 	if err != nil {
 		sr.logger.Error(err.Error())
 		return err
