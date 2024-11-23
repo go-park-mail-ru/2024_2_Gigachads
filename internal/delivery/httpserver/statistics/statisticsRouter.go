@@ -15,7 +15,7 @@ func NewStatisticsRouter(su models.StatisticsUseCase) *StatisticsRouter {
 }
 
 func (sr *StatisticsRouter) ConfigureStatisticsRouter(mux *mux.Router) {
-	mux.HandleFunc("/question", sr.QuestionHandler).Methods("GET", "OPTIONS")
-	mux.HandleFunc("/answer", sr.AnswerHandler).Methods("POST", "OPTIONS")
-	mux.HandleFunc("/statistics", sr.StatisticsHandler).Methods("GET", "OPTIONS")
+	mux.HandleFunc("/action/question", sr.QuestionHandler).Methods("GET", "OPTIONS")
+	mux.HandleFunc("/action/answer", sr.AnswerHandler).Methods("POST", "OPTIONS")
+	mux.HandleFunc("/action/statistics", sr.StatisticsHandler).Methods("GET", "OPTIONS")
 }
