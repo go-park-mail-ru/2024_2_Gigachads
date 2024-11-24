@@ -2,7 +2,7 @@ httpserver:
     ip: localhost
     port: 8080
     allowed_ips_by_cors:
-        - http://89.208.228.234/
+        - http://localhost
 
 postgres:
     ip: localhost
