@@ -112,7 +112,7 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	t.isread, t.sending_date, m.description
 	FROM email_transaction AS t
 	JOIN message AS m ON t.message_id = m.id
-	WHERE m.id = $1
+	WHERE t.id = $1
 	`
 
 	var email models.Email
@@ -261,14 +261,14 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 		_, err = tx.Exec(
 			`UPDATE email_transaction
 				SET isread = TRUE
-				WHERE message_id = $1`,
+				WHERE id = $1`,
 			id,
 		)
 	} else {
 		_, err = tx.Exec(
 			`UPDATE email_transaction
 				SET isread = FALSE
-				WHERE message_id = $1`,
+				WHERE id = $1`,
 			id,
 		)
 	}
@@ -292,11 +292,11 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 	switch folder {
 	case "inbox":
 		query = `DELETE FROM email_transaction 
-				 WHERE message_id = ANY($1) 
+				 WHERE id = ANY($1) 
 				 AND recipient_email = $2`
 	case "sent":
 		query = `DELETE FROM email_transaction 
-				 WHERE message_id = ANY($1) 
+				 WHERE id = ANY($1) 
 				 AND sender_email = $2`
 	default:
 		return errors.New("неизвестная папка")
@@ -543,7 +543,7 @@ func (er *EmailRepositoryService) ChangeEmailFolder(id int, email string, folder
 	_, err = tx.Exec(
 		`UPDATE email_transaction
 			SET folder_id = $2
-			WHERE message_id = $1`,
+			WHERE id = $1`,
 		id, folderID,
 	)
 	if err != nil {
