@@ -139,8 +139,11 @@ func (es *EmailService) RenameFolder(email string, folderName string, newFolderN
 	if folderName == "Входящие" || folderName == "Отправленные" || folderName == "Спам" || folderName == "Черновики" || folderName == "Корзина" {
 		return fmt.Errorf("unable_to_rename_folder")	
 	}
-	if newFolderName == "Входящие" || newFolderName == "Отправленные" || newFolderName == "Спам" || newFolderName == "Черновики" || newFolderName == "Корзина" {
-		return fmt.Errorf("unable_to_rename_folder")	
+	if ok, err := es.EmailRepo.CheckFolder(email, newFolderName); ok {
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("folder_already_exists")	
 	}
 	return es.EmailRepo.RenameFolder(email, folderName, newFolderName)
 }
