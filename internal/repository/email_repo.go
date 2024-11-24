@@ -305,7 +305,8 @@ func (er *EmailRepositoryService) GetFolders(email string) ([]string, error) {
 		`SELECT f.name
 		 FROM folder AS f
 		 JOIN profile AS p ON f.user_id = p.id
-		 WHERE p.email = $1`, email)
+		 WHERE p.email = $1
+		 ORDER BY f.id`, email)
 	if err != nil {
 		er.logger.Error(err.Error())
 		return nil, err
