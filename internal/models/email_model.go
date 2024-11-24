@@ -67,6 +67,7 @@ type EmailRepository interface {
 	ChangeEmailFolder(id int, email string, folderName string) error
 	CreateDraft(email Email) error
 	UpdateDraft(email Draft) error
+	CheckFolder(email string, folderName string) (bool, error)
 }
 
 type SMTPRepository interface {

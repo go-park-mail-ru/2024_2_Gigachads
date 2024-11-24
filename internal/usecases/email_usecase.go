@@ -119,8 +119,8 @@ func (es *EmailService) GetFolderEmails(email string, folderName string) ([]mode
 }
 
 func (es *EmailService) CreateFolder(email string, folderName string) error {
-	if folderName == "Входящие" || folderName == "Отправленные" || folderName == "Спам" || folderName == "Черновики" || folderName == "Корзина" {
-		return fmt.Errorf("unable_to_create_folder")	
+	if ok, _ := es.EmailRepo.CheckFolder(email, folderName); !ok {
+		return fmt.Errorf("folder_already_exists")	
 	}
 	return es.EmailRepo.CreateFolder(email, folderName)
 }

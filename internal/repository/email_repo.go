@@ -541,6 +541,35 @@ func (er *EmailRepositoryService) ChangeEmailFolder(id int, email string, folder
 	return tx.Commit()
 }
 
+func (er *EmailRepositoryService) CheckFolder(email string, folderName string) (bool, error) {
+	email = utils.Sanitize(email)
+
+	rows, err := er.repo.Query(
+		`SELECT id
+		 FROM folder AS f
+		 JOIN profile AS p ON f.user_id = p.id
+		 WHERE p.email = $1 AND f.name = $2`, email, folderName)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return false, err
+	}
+	defer rows.Close()
+
+	folderID := -1
+	err = rows.Scan(&folderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return false, err
+	}
+	if folderID == -1 {
+		return false, nil
+	} else {
+		return true, nil
+	}
+	
+	return false, nil
+}
+
 func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
 	email.Sender_email = utils.Sanitize(email.Sender_email)
 	email.Recipient = utils.Sanitize(email.Recipient)
