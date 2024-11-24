@@ -483,7 +483,7 @@ func (er *EmailRepositoryService) RenameFolder(email string, folderName string, 
 	_, err = tx.Exec(
 		`UPDATE folder
 		 SET name = $2
-		 WHERE message_id = $1`,
+		 WHERE id = $1`,
 		folderID, newFolderName,
 	)
 	if err != nil {
