@@ -551,7 +551,7 @@ func (er *EmailRepositoryService) CheckFolder(email string, folderName string) (
 	}
 	defer tx.Rollback()
 
-	folderID := -1
+	folderID := 0
 	err = tx.QueryRow(
 		`SELECT id
 		 FROM folder AS f
@@ -562,10 +562,10 @@ func (er *EmailRepositoryService) CheckFolder(email string, folderName string) (
 		return false, err
 	}
 
-	if folderID == -1 {
-		return false, nil
-	} else {
+	if folderID > 0 {
 		return true, nil
+	} else {
+		return false, nil
 	}
 	
 	return false, tx.Commit()

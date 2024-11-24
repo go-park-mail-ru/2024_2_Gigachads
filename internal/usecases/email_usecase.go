@@ -119,7 +119,10 @@ func (es *EmailService) GetFolderEmails(email string, folderName string) ([]mode
 }
 
 func (es *EmailService) CreateFolder(email string, folderName string) error {
-	if ok, _ := es.EmailRepo.CheckFolder(email, folderName); !ok {
+	if ok, err := es.EmailRepo.CheckFolder(email, folderName); !ok {
+		if err != nil {
+			return err
+		}
 		return fmt.Errorf("folder_already_exists")	
 	}
 	return es.EmailRepo.CreateFolder(email, folderName)
