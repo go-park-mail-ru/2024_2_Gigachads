@@ -26,6 +26,7 @@ type Folder struct {
 }
 
 type RenameFolder struct {
+	Name 		 string    `json:"name"`
 	NewName 	 string    `json:"new_name"`
 }
 
