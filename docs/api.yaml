@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   description: API for GigaMail
   title: GigaMail
-  version: '1.3'
+  version: '1.4'
 host: 89.208.228.234
 basePath: /api/v1
 paths:
@@ -454,7 +454,7 @@ paths:
           schema:
             $ref: '#/definitions/error'
             
-  /folder:
+  
     post:
       description: status
       consumes:
@@ -465,11 +465,11 @@ paths:
         - folder
       summary: Create folder
       parameters:
-        - name: data
-          in: body
+        - name: name
+          in: path
+          description: Название папки
           required: true
-          schema:
-            $ref: '#/definitions/folder'
+          type: string
       responses:
         '200':
           description: folder created
@@ -494,12 +494,11 @@ paths:
         - folder
       summary: Delete folder
       parameters:
-        - name: data
-          in: body
-          description: Массив айдишников для удаления
+        - name: name
+          in: path
+          description: Название папки
           required: true
-          schema:
-            $ref: '#/definitions/folder'
+          type: string
       responses:
         '200':
           description: Status changed
@@ -513,7 +512,7 @@ paths:
           description: Failed to add user
           schema:
             $ref: '#/definitions/error'
-    
+  /folder:
     get:
       description: Get all incoming mails
       produces:
