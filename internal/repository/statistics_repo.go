@@ -39,7 +39,7 @@ func (sr *StatisticsRepositoryService) AnswersStatistics(action string, value in
 
 func (sr *StatisticsRepositoryService) GetStatistics() ([]models.Statistics, error) {
 	rows, err := sr.repo.Query(
-		`SELECT AVERAGE(value), COUNT(value), action FROM "answer" GROUP BY action`)
+		`SELECT AVG(value), COUNT(value), action FROM "answer" GROUP BY action`)
 	if err != nil {
 		sr.logger.Error(err.Error())
 		return nil, err
