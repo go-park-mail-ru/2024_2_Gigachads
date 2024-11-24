@@ -142,3 +142,11 @@ func (es *EmailService) CreateDraft(email models.Email) error {
 func (es *EmailService) UpdateDraft(email models.Draft) error {
 	return es.EmailRepo.UpdateDraft(email)
 }
+
+func (es *EmailService) SendDraft(email models.Email) error {
+	err := es.EmailRepo.DeleteEmails(email.Sender_email, email.ID, "sent")
+	if err != nil {
+		return err
+	}
+	return s.EmailRepo.SaveEmail(email)
+}

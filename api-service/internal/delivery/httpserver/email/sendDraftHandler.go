@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request) {
+func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) {
 	ctxEmail := r.Context().Value("email")
 	if ctxEmail == nil {
 		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
@@ -35,12 +35,18 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 			ParentID:     0,
 		}
 
-		err := er.EmailUseCase.CreateDraft(email)
+		err := er.EmailUseCase.SendDraft(email)
 		if err != nil {
 			utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 			return
 		}
 
+		er.EmailUseCase.SendEmail(
+			senderEmail,
+			[]string{req.Recipient},
+			req.Title,
+			req.Description,
+		)
 	} else {
 		originalEmail, err := er.EmailUseCase.GetEmailByID(req.ParentId)
 		if err != nil {
@@ -59,12 +65,18 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 				ParentID:     req.ParentId,
 			}
 
-			err = er.EmailUseCase.CreateDraft(email)
+			err = er.EmailUseCase.SendDraft(email)
 			if err != nil {
 				utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_save_reply")
 				return
 			}
 
+			er.EmailUseCase.ReplyEmail(
+				senderEmail,
+				originalEmail.Sender_email,
+				originalEmail,
+				req.Description,
+			)
 		} else if strings.HasPrefix(req.Title, "Fwd:") {
 			email := models.Email{
 				Sender_email: senderEmail,
@@ -76,12 +88,18 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 				ParentID:     req.ParentId,
 			}
 
-			err = er.EmailUseCase.CreateDraft(email)
+			err = er.EmailUseCase.SendDraft(email)
 			if err != nil {
 				utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_save_forward")
 				return
 			}
 
+			recipients := strings.Split(req.Recipient, ",")
+			er.EmailUseCase.ForwardEmail(
+				senderEmail,
+				recipients,
+				originalEmail,
+			)
 		} else {
 			utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_operation")
 			return
