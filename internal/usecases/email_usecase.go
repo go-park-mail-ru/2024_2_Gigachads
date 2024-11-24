@@ -120,10 +120,10 @@ func (es *EmailService) GetFolderEmails(email string, folderName string) ([]mode
 		return nil, err
 	}
 	if folderName == "Отправленные" {
-		for _, elem := range emails {
-			temp := elem.Sender_email
-			elem.Sender_email = elem.Recipient
-			elem.Recipient = temp
+		for i, _ := range emails {
+			temp := emails[i].Sender_email
+			emails[i].Sender_email = emails[i].Recipient
+			emails[i].Recipient = temp
 		}
 	}
 	return emails, nil
