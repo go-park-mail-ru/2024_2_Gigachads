@@ -553,7 +553,7 @@ func (er *EmailRepositoryService) CheckFolder(email string, folderName string) (
 
 	folderID := 0
 	err = tx.QueryRow(
-		`SELECT id
+		`SELECT f.id
 		 FROM folder AS f
 		 JOIN profile AS p ON f.user_id = p.id
 		 WHERE p.email = $1 AND f.name = $2`, email, folderName).Scan(&folderID)
