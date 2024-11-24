@@ -130,6 +130,9 @@ func (es *EmailService) DeleteFolder(email string, folderName string) error {
 }
 
 func (es *EmailService) RenameFolder(email string, folderName string, newFolderName string) error {
+	if folderName == "Входящие" || folderName == "Отправленные" || folderName == "Спам" || folderName == "Черновики" || folderName == "Корзина" {
+		return fmt.Errorf("unable_to_rename_folder")	
+	}
 	return es.EmailRepo.RenameFolder(email, folderName, newFolderName)
 }
 
