@@ -194,11 +194,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	var senderFolderID int
 	err = tx.QueryRow(
 		`SELECT id FROM folder WHERE user_id = $1 AND name = 'Отправленные'`,
-<<<<<<< HEAD
 		senderID,
-=======
-		senderID, 
->>>>>>> f3d42445e6e80ab5dbd48f664581bf4197af2ed8
 	).Scan(&senderFolderID)
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -230,11 +226,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	var recipientFolderID int
 	err = tx.QueryRow(
 		`SELECT id FROM folder WHERE user_id = $1 AND name = 'Входящие'`,
-<<<<<<< HEAD
 		recipientID,
-=======
-		recipientID, 
->>>>>>> f3d42445e6e80ab5dbd48f664581bf4197af2ed8
 	).Scan(&recipientFolderID)
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -606,11 +598,7 @@ func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
 	var senderFolderID int
 	err = tx.QueryRow(
 		`SELECT id FROM folder WHERE user_id = $1 AND name = 'Черновики'`,
-<<<<<<< HEAD
 		senderID,
-=======
-		senderID, 
->>>>>>> f3d42445e6e80ab5dbd48f664581bf4197af2ed8
 	).Scan(&senderFolderID)
 	if err != nil {
 		er.logger.Error(err.Error())
