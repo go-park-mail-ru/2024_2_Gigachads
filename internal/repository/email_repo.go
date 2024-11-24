@@ -280,7 +280,7 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 	return tx.Commit()
 }
 
-func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
+func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []int) error {
 	tx, err := er.repo.Begin()
 	if err != nil {
 		er.logger.Error(err.Error())

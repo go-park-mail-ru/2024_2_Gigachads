@@ -46,7 +46,7 @@ func (er *EmailRouter) DeleteEmailsHandler(w http.ResponseWriter, r *http.Reques
 		ids = append(ids, id)
 	}
 
-	if err := er.EmailUseCase.DeleteEmails(userEmail, ids, request.Folder); err != nil {
+	if err := er.EmailUseCase.DeleteEmails(userEmail, ids); err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "ошибка при удалении писем")
 		return
 	}

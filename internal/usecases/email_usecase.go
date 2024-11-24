@@ -94,8 +94,8 @@ func (es *EmailService) ChangeStatus(id int, status bool) error {
 	return es.EmailRepo.ChangeStatus(id, status)
 }
 
-func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
-	return es.EmailRepo.DeleteEmails(userEmail, messageIDs, folder)
+func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int) error {
+	return es.EmailRepo.DeleteEmails(userEmail, messageIDs)
 }
 
 
@@ -156,7 +156,7 @@ func (es *EmailService) UpdateDraft(email models.Draft) error {
 }
 
 func (es *EmailService) SendDraft(email models.Email) error {
-	err := es.EmailRepo.DeleteEmails(email.Sender_email, []int{email.ID}, "sent")
+	err := es.EmailRepo.DeleteEmails(email.Sender_email, []int{email.ID})
 	if err != nil {
 		return err
 	}

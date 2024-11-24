@@ -40,7 +40,7 @@ type EmailUseCase interface {
 	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
 	SaveEmail(email Email) error
-	DeleteEmails(userEmail string, messageIDs []int, folder string) error
+	DeleteEmails(userEmail string, messageIDs []int) error
 	GetFolders(email string) ([]string, error)
 	GetFolderEmails(email string, folderName string) ([]Email, error)
 	CreateFolder(email string, folderName string) error
@@ -58,7 +58,7 @@ type EmailRepository interface {
 	SaveEmail(email Email) error
 	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
-	DeleteEmails(userEmail string, messageIDs []int, folder string) error
+	DeleteEmails(userEmail string, messageIDs []int) error
 	GetFolders(email string) ([]string, error)
 	GetFolderEmails(email string, folderName string) ([]Email, error)
 	CreateFolder(email string, folderName string) error
