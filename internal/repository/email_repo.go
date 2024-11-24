@@ -288,22 +288,8 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 	}
 	defer tx.Rollback()
 
-	var query string
-	switch folder {
-	case "inbox":
-		query = `DELETE FROM email_transaction 
-				 WHERE id = ANY($1) 
-				 AND recipient_email = $2`
-	case "sent":
-		query = `DELETE FROM email_transaction 
-				 WHERE id = ANY($1) 
-				 AND sender_email = $2`
-	default:
-		query = `DELETE FROM email_transaction 
-				 WHERE id = ANY($1)`
-	}
-
-	_, err = tx.Exec(query, pq.Array(messageIDs), userEmail)
+	tx.Exec(`DELETE FROM email_transaction 
+				 WHERE id = ANY($1)`, pq.Array(messageIDs))
 	if err != nil {
 		er.logger.Error(err.Error())
 		return err
