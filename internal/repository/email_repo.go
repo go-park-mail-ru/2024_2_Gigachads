@@ -557,6 +557,10 @@ func (er *EmailRepositoryService) CheckFolder(email string, folderName string) (
 		 FROM folder AS f
 		 JOIN profile AS p ON f.user_id = p.id
 		 WHERE p.email = $1 AND f.name = $2`, email, folderName).Scan(&folderID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
 	if err != nil {
 		er.logger.Error(err.Error())
 		return false, err
