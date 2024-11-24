@@ -115,7 +115,18 @@ func (es *EmailService) GetFolders(email string) ([]string, error) {
 }
 
 func (es *EmailService) GetFolderEmails(email string, folderName string) ([]models.Email, error) {
-	return es.EmailRepo.GetFolderEmails(email, folderName)
+	emails, err := es.EmailRepo.GetFolderEmails(email, folderName)
+	if err != nil {
+		return nil, err
+	}
+	if folderName == "Отправленные" {
+		for _, elem := range emails {
+			temp := elem.Sender_email
+			elem.Sender_email = elem.Recipient
+			elem.Recipient = temp
+		}
+	}
+	return emails, nil
 }
 
 func (es *EmailService) CreateFolder(email string, folderName string) error {
