@@ -299,7 +299,8 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 				 WHERE id = ANY($1) 
 				 AND sender_email = $2`
 	default:
-		return errors.New("неизвестная папка")
+		query = `DELETE FROM email_transaction 
+				 WHERE id = ANY($1)`
 	}
 
 	_, err = tx.Exec(query, pq.Array(messageIDs), userEmail)
