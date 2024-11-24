@@ -81,7 +81,7 @@ func (es *EmailService) FetchEmailsViaPOP3() error {
 	return nil
 }
 
-func (es *EmailService) GetSentEmails(senderEmail string) ([]models.Email, error) {
+func (es *EmailService) GetSentEmails(email string) ([]models.Email, error) {
 	//return es.EmailRepo.GetSentEmails(senderEmail)
 	return es.EmailRepo.GetFolderEmails(email, "Отправленные")
 }
@@ -100,7 +100,10 @@ func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int, folder 
 
 
 func (es *EmailService) GetFolders(email string) ([]string, error) {
-	emails = es.EmailRepo.GetFolderEmails(email)
+	emails, err := es.EmailRepo.GetFolders(email)
+	if err != nil {
+		return nil, err
+	}
 	if len(emails) == 0 {
 		es.EmailRepo.CreateFolder(email, "Входящие")
 		es.EmailRepo.CreateFolder(email, "Отправленные")
@@ -108,7 +111,7 @@ func (es *EmailService) GetFolders(email string) ([]string, error) {
 		es.EmailRepo.CreateFolder(email, "Черновики")
 		es.EmailRepo.CreateFolder(email, "Корзина")
 	}
-	return es.EmailRepo.GetFolderEmails(email)
+	return es.EmailRepo.GetFolders(email)
 }
 
 func (es *EmailService) GetFolderEmails(email string, folderName string) ([]models.Email, error) {
@@ -144,9 +147,9 @@ func (es *EmailService) UpdateDraft(email models.Draft) error {
 }
 
 func (es *EmailService) SendDraft(email models.Email) error {
-	err := es.EmailRepo.DeleteEmails(email.Sender_email, email.ID, "sent")
+	err := es.EmailRepo.DeleteEmails(email.Sender_email, []int{email.ID}, "sent")
 	if err != nil {
 		return err
 	}
-	return s.EmailRepo.SaveEmail(email)
+	return es.EmailRepo.SaveEmail(email)
 }

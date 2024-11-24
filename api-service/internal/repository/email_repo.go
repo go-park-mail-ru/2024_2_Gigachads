@@ -207,7 +207,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 		email.Sender_email, email.Recipient,
 		email.Sending_date, email.IsRead, messageID,
-		parentID, senderFolderID
+		parentID, senderFolderID,
 	)
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -239,7 +239,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 		email.Sender_email, email.Recipient,
 		email.Sending_date, email.IsRead, messageID,
-		parentID, recipientFolderID
+		parentID, recipientFolderID,
 	)
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -610,7 +610,7 @@ func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
 		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 		email.Sender_email, email.Recipient,
 		email.Sending_date, email.IsRead, messageID,
-		parentID, senderFolderID
+		parentID, senderFolderID,
 	)
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -652,4 +652,5 @@ func (er *EmailRepositoryService) UpdateDraft(email models.Draft) error {
 		er.logger.Error(err.Error())
 		return err
 	}
+	return tx.Commit()
 }

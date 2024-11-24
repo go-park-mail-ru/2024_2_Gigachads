@@ -2,10 +2,8 @@ package email
 
 import (
 	"encoding/json"
-	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 )

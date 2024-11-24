@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"mail/api-service/pkg/utils"
 	"net/http"
-	"strconv"
+	"mail/api-service/internal/models"
 )
 
 
@@ -14,7 +14,6 @@ func (er *EmailRouter) UpdateDraftHandler(w http.ResponseWriter, r *http.Request
 		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	email := ctxEmail.(string)
 
 	var draft models.Draft
 	err := json.NewDecoder(r.Body).Decode(&draft)
