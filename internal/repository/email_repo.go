@@ -327,6 +327,8 @@ func (er *EmailRepositoryService) GetFolders(email string) ([]string, error) {
 	return res, nil
 }
 
+
+
 func (er *EmailRepositoryService) GetFolderEmails(email string, folderName string) ([]models.Email, error) {
 
 	email = utils.Sanitize(email)
@@ -574,6 +576,38 @@ func (er *EmailRepositoryService) CheckFolder(email string, folderName string) (
 	}
 	
 	return false, tx.Commit()
+}
+
+func (er *EmailRepositoryService) GetMessageFolder(msgID int) (string, error) {
+	
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return "", err
+	}
+	defer tx.Rollback()
+
+	folderID := 0
+	err = tx.QueryRow(
+		`SELECT folder_id
+		 FROM email_transaction
+		 WHERE id = $1`, msgID).Scan(&folderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return "", err
+	}
+
+	var folderName string
+	err = tx.QueryRow(
+		`SELECT name
+		 FROM folder
+		 WHERE id = $1`, folderID).Scan(&folderName)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return "", err
+	}
+	
+	return folderName, tx.Commit()
 }
 
 func (er *EmailRepositoryService) CreateDraft(email models.Email) error {

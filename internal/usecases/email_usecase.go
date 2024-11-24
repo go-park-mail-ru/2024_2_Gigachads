@@ -95,7 +95,21 @@ func (es *EmailService) ChangeStatus(id int, status bool) error {
 }
 
 func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int) error {
-	return es.EmailRepo.DeleteEmails(userEmail, messageIDs)
+	for _, elem := range messageIDs {
+		folder, err := es.EmailRepo.GetMessageFolder(elem)
+		if err != nil {
+			return err
+		}
+		if folder == "Корзина" {
+			return es.EmailRepo.DeleteEmails(userEmail, messageIDs)
+		} else {
+			err = es.EmailRepo.ChangeEmailFolder(elem, userEmail, "Корзина")
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 
