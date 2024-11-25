@@ -112,7 +112,6 @@ func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int) error {
 	return nil
 }
 
-
 func (es *EmailService) GetFolders(email string) ([]string, error) {
 	emails, err := es.EmailRepo.GetFolders(email)
 	if err != nil {
@@ -133,7 +132,7 @@ func (es *EmailService) GetFolderEmails(email string, folderName string) ([]mode
 	if err != nil {
 		return nil, err
 	}
-	if folderName == "Отправленные" || folderName == "Черновики"{
+	if folderName == "Отправленные" || folderName == "Черновики" {
 		for i, _ := range emails {
 			temp := emails[i].Sender_email
 			emails[i].Sender_email = emails[i].Recipient
@@ -148,7 +147,7 @@ func (es *EmailService) GetFolderEmails(email string, folderName string) ([]mode
 	// 		emails[i].Recipient = temp
 	// 	}
 	// }
-	
+
 	return emails, nil
 }
 
@@ -157,27 +156,27 @@ func (es *EmailService) CreateFolder(email string, folderName string) error {
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("folder_already_exists")	
+		return fmt.Errorf("folder_already_exists")
 	}
 	return es.EmailRepo.CreateFolder(email, folderName)
 }
 
 func (es *EmailService) DeleteFolder(email string, folderName string) error {
 	if folderName == "Входящие" || folderName == "Отправленные" || folderName == "Спам" || folderName == "Черновики" || folderName == "Корзина" {
-		return fmt.Errorf("unable_to_delete_folder")	
+		return fmt.Errorf("unable_to_delete_folder")
 	}
 	return es.EmailRepo.DeleteFolder(email, folderName)
 }
 
 func (es *EmailService) RenameFolder(email string, folderName string, newFolderName string) error {
 	if folderName == "Входящие" || folderName == "Отправленные" || folderName == "Спам" || folderName == "Черновики" || folderName == "Корзина" {
-		return fmt.Errorf("unable_to_rename_folder")	
+		return fmt.Errorf("unable_to_rename_folder")
 	}
 	if ok, err := es.EmailRepo.CheckFolder(email, newFolderName); ok {
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("folder_already_exists")	
+		return fmt.Errorf("folder_already_exists")
 	}
 	return es.EmailRepo.RenameFolder(email, folderName, newFolderName)
 }
@@ -185,7 +184,6 @@ func (es *EmailService) RenameFolder(email string, folderName string, newFolderN
 func (es *EmailService) ChangeEmailFolder(id int, email string, folderName string) error {
 	return es.EmailRepo.ChangeEmailFolder(id, email, folderName)
 }
-
 
 func (es *EmailService) CreateDraft(email models.Email) error {
 	return es.EmailRepo.CreateDraft(email)
@@ -200,7 +198,7 @@ func (es *EmailService) SendDraft(email models.Email) error {
 	s = append(s, email.ID)
 	err := es.EmailRepo.DeleteEmails(email.Sender_email, s)
 	if err != nil {
-		return fmt.Errorf("error_in_delete")//err
+		return err
 	}
 	return es.EmailRepo.SaveEmail(email)
 }
