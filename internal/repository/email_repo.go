@@ -701,7 +701,7 @@ func (er *EmailRepositoryService) UpdateDraft(email models.Draft) error {
 	_, err = tx.Exec(
 		`UPDATE message
 			SET title = $2, description = $3
-			WHERE mid = $1`,
+			WHERE id = $1`,
 		messageID, email.Title, email.Description,
 	)
 	if err != nil {
