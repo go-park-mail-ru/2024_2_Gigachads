@@ -8,7 +8,6 @@ import (
 	"mail/pkg/utils"
 	"strconv"
 	"sync"
-	"fmt"
 
 	"github.com/lib/pq"
 )
@@ -288,20 +287,6 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 		return err
 	}
 	defer tx.Rollback()
-
-	fmt.Println(messageIDs)
-
-	var sender string
-	err = tx.QueryRow(
-		`SELECT sender_email FROM email_transaction WHERE id = ANY($1)`,
-		pq.Array(messageIDs),
-	).Scan(&sender)
-	if err != nil {
-		er.logger.Error(err.Error())
-		return err
-	}
-
-	fmt.Println(sender)
 
 	_, err = tx.Exec(`DELETE FROM email_transaction 
 				 WHERE id = ANY($1)`, pq.Array(messageIDs))
