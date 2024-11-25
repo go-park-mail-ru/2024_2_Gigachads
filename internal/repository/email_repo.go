@@ -288,6 +288,10 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 	}
 	defer tx.Rollback()
 
+	if len(messageIDs) == 0{
+		er.logger.Error("id slice is empty!")
+	}
+
 	_, err = tx.Exec(`DELETE FROM email_transaction 
 				 WHERE id = ANY($1)`, pq.Array(messageIDs))
 	if err != nil {
