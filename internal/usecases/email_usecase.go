@@ -133,7 +133,7 @@ func (es *EmailService) GetFolderEmails(email string, folderName string) ([]mode
 	if err != nil {
 		return nil, err
 	}
-	if folderName == "Отправленные" {
+	if folderName == "Отправленные" || folderName == "Черновики"{
 		for i, _ := range emails {
 			temp := emails[i].Sender_email
 			emails[i].Sender_email = emails[i].Recipient
