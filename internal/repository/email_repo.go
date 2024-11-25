@@ -288,7 +288,7 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 	}
 	defer tx.Rollback()
 
-	tx.Exec(`DELETE FROM email_transaction 
+	_, err = tx.Exec(`DELETE FROM email_transaction 
 				 WHERE id = ANY($1)`, pq.Array(messageIDs))
 	if err != nil {
 		er.logger.Error(err.Error())
