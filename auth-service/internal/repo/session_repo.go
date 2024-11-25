@@ -3,14 +3,14 @@ package repository
 import (
 	"context"
 	"github.com/redis/go-redis/v9"
-	models "mail/internal/models"
-	"mail/pkg/utils"
+	"mail/api-service/pkg/logger"
+	"mail/api-service/pkg/utils"
+	"mail/models"
 	"time"
-	"mail/pkg/logger"
 )
 
 type SessionRepositoryService struct {
-	repo *redis.Client
+	repo   *redis.Client
 	logger logger.Logable
 }
 

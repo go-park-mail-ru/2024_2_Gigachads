@@ -1,7 +1,10 @@
 package main
 
 import (
-
+	"flag"
+	"mail/api-service/pkg/logger"
+	"mail/auth-service/internal/app"
+	"mail/config"
 )
 
 func main() {
@@ -9,11 +12,11 @@ func main() {
 	configPath := flag.String("config-path", "./config/config.yaml", "path to config file")
 	flag.Parse()
 
-	config, err := config.GetConfig(*configPath, l)
+	cfg, err := config.GetConfig(*configPath, l)
 	if err != nil {
 		l.Error(err.Error())
 	}
-	if err := app.Run(config, l); err != nil {
+	if err := app.Run(cfg, l); err != nil {
 		l.Error(err.Error())
 	}
 

@@ -1,9 +1,10 @@
 package user
+
 import (
-	"net/http"
 	"encoding/json"
 	"mail/api-service/pkg/utils"
-	"mail/api-service/internal/models"
+	"mail/models"
+	"net/http"
 )
 
 func (ar *UserRouter) ChangeNameHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,14 +16,14 @@ func (ar *UserRouter) ChangeNameHandler(w http.ResponseWriter, r *http.Request) 
 	email := ctxEmail.(string)
 	var nameModel models.ChangeName
 	err := json.NewDecoder(r.Body).Decode(&nameModel)
-	
+
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
 	nameModel.Name = utils.Sanitize(nameModel.Name)
-		
+
 	if !models.InputIsValid(nameModel.Name) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_name")
 		return

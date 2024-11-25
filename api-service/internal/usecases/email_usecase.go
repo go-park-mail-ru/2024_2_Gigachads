@@ -2,28 +2,25 @@ package usecase
 
 import (
 	"fmt"
-	models "mail/api-service/internal/models"
+	"mail/models"
 	"time"
 )
 
 type EmailService struct {
-	EmailRepo   models.EmailRepository
-	SessionRepo models.SessionRepository
-	SMTPRepo    models.SMTPRepository
-	POP3Repo    models.POP3Repository
+	EmailRepo models.EmailRepository
+	SMTPRepo  models.SMTPRepository
+	POP3Repo  models.POP3Repository
 }
 
 func NewEmailService(
 	erepo models.EmailRepository,
-	srepo models.SessionRepository,
 	smtprepo models.SMTPRepository,
 	pop3repo models.POP3Repository,
 ) *EmailService {
 	return &EmailService{
-		EmailRepo:   erepo,
-		SessionRepo: srepo,
-		SMTPRepo:    smtprepo,
-		POP3Repo:    pop3repo,
+		EmailRepo: erepo,
+		SMTPRepo:  smtprepo,
+		POP3Repo:  pop3repo,
 	}
 }
 
@@ -98,7 +95,6 @@ func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int, folder 
 	return es.EmailRepo.DeleteEmails(userEmail, messageIDs, folder)
 }
 
-
 func (es *EmailService) GetFolders(email string) ([]string, error) {
 	emails, err := es.EmailRepo.GetFolders(email)
 	if err != nil {
@@ -124,7 +120,7 @@ func (es *EmailService) CreateFolder(email string, folderName string) error {
 
 func (es *EmailService) DeleteFolder(email string, folderName string) error {
 	if folderName == "Входящие" || folderName == "Отправленные" || folderName == "Спам" || folderName == "Черновики" || folderName == "Корзина" {
-		return fmt.Errorf("unable_to_delete_folder")	
+		return fmt.Errorf("unable_to_delete_folder")
 	}
 	return es.EmailRepo.DeleteFolder(email, folderName)
 }
@@ -136,7 +132,6 @@ func (es *EmailService) RenameFolder(email string, folderName string, newFolderN
 func (es *EmailService) ChangeEmailFolder(id int, email string, folderName string) error {
 	return es.EmailRepo.ChangeEmailFolder(id, email, folderName)
 }
-
 
 func (es *EmailService) CreateDraft(email models.Email) error {
 	return es.EmailRepo.CreateDraft(email)

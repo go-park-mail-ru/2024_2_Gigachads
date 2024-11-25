@@ -1,32 +1,34 @@
 package httpserver
 
 import (
-	"mail/config"
+	"mail/api-service/internal/delivery/grpc"
 	authRouter "mail/api-service/internal/delivery/httpserver/auth"
 	emailRouter "mail/api-service/internal/delivery/httpserver/email"
 	userRouter "mail/api-service/internal/delivery/httpserver/user"
 	mw "mail/api-service/internal/delivery/middleware"
-	"mail/api-service/internal/models"
 	repo "mail/api-service/internal/repository"
 	usecase "mail/api-service/internal/usecases"
 	"mail/api-service/pkg/logger"
 	"mail/api-service/pkg/pop3"
 	"mail/api-service/pkg/smtp"
-	
+	"mail/config"
+	"mail/models"
+	repo2 "mail/smtp-service/internal/repo"
+
 	"database/sql"
-	"net/http"
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
+	"net/http"
 )
 
 type HTTPServer struct {
 	server *http.Server
 }
 
-func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redisSession *redis.Client, redisCSRF *redis.Client, l logger.Logable) error {
+func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redisSession *redis.Client, redisCSRF *redis.Client, clients *grpcClients.Clients, l logger.Logable) error {
 	s.server = new(http.Server)
 	s.server.Addr = cfg.HTTPServer.IP + ":" + cfg.HTTPServer.Port
-	s.configureRouters(cfg, db, redisSession, redisCSRF, l)
+	s.configureRouters(cfg, db, redisSession, redisCSRF, clients, l)
 	l.Info("Server is running on", "port", cfg.HTTPServer.Port)
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
@@ -35,30 +37,30 @@ func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redisSession *redis.C
 }
 
 func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSession *redis.Client, redisCSRF *redis.Client, clients *grpcClients.Clients, l logger.Logable) {
-	
-	sr := repo.NewSessionRepositoryService(redisSession, l)
-	cr := repo.NewCsrfRepositoryService(redisCSRF, l)
+
+	//sr := repo.NewSessionRepositoryService(redisSession, l)
+	//cr := repo.NewCsrfRepositoryService(redisCSRF, l)
 	smtpClient := s.createAndConfigureSMTPClient(cfg)
 
 	ur := repo.NewUserRepositoryService(db)
-	smtpRepo := repo.NewSMTPRepository(smtpClient, cfg)
-	uu := usecase.NewUserService(ur, sr, cr)
-	au := usecase.NewAuthService(clients.AuthConn)
+	smtpRepo := repo2.NewSMTPRepository(smtpClient, cfg)
+	uu := usecase.NewUserService(ur)
+	au := usecase.NewAuthService(*clients.AuthConn)
 	er := repo.NewEmailRepositoryService(db, l)
 
 	pop3Client := s.createAndConfigurePOP3Client(cfg)
 
-	eu := usecase.NewEmailService(er, sr, smtpRepo, pop3Client)
+	eu := usecase.NewEmailService(er, smtpRepo, pop3Client)
 
 	router := mux.NewRouter()
 	router = router.PathPrefix("/").Subrouter()
 	router.Use(mw.PanicMiddleware)
 	router.Use(mw.NewLogMW(l).Handler)
 
-	authRout := authRouter.NewAuthRouter(uu)
+	authRout := authRouter.NewAuthRouter(au)
 	emailRout := emailRouter.NewEmailRouter(eu)
 	userRout := userRouter.NewUserRouter(uu)
-	mwAuth := mw.NewAuthMW(uu)
+	mwAuth := mw.NewAuthMW(au)
 
 	emailRout.ConfigureEmailRouter(router)
 	authRout.ConfigureAuthRouter(router)
@@ -81,6 +83,6 @@ func (s *HTTPServer) createAndConfigurePOP3Client(cfg *config.Config) *pop3.Pop3
 }
 
 func (s *HTTPServer) startEmailFetcher(eu models.EmailUseCase) {
-	fetcher := email.NewEmailFetcher(eu)
+	fetcher := emailRouter.NewEmailFetcher(eu)
 	fetcher.Start()
 }

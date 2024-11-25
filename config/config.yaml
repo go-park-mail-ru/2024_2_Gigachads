@@ -2,7 +2,7 @@ httpserver:
     ip: 127.0.0.1
     port: 8080
     allowed_ips_by_cors:
-        - http://89.208.228.234/
+        - http://localhost
 
 authserver:
     ip: 127.0.0.1

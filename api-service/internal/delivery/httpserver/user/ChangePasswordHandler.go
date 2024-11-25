@@ -1,9 +1,10 @@
 package user
+
 import (
-	"net/http"
-	"mail/api-service/pkg/utils"
-	"mail/api-service/internal/models"
 	"encoding/json"
+	"mail/api-service/pkg/utils"
+	"mail/models"
+	"net/http"
 )
 
 func (ar *UserRouter) ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
@@ -13,9 +14,9 @@ func (ar *UserRouter) ChangePasswordHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	email := ctxEmail.(string)
-	
+
 	var model *models.ChangePassword
-	
+
 	err := json.NewDecoder(r.Body).Decode(&model)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
@@ -25,7 +26,7 @@ func (ar *UserRouter) ChangePasswordHandler(w http.ResponseWriter, r *http.Reque
 	model.Password = utils.Sanitize(model.Password)
 	model.RePassword = utils.Sanitize(model.RePassword)
 	model.OldPassword = utils.Sanitize(model.OldPassword)
-	
+
 	if !models.InputIsValid(model.Password) || !models.InputIsValid(model.RePassword) || !models.InputIsValid(model.OldPassword) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_input")
 		return

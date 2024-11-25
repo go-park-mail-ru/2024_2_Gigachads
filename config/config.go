@@ -40,9 +40,9 @@ type Config struct {
 		Password string `yaml:"password"`
 	} `yaml:"redis"`
 	AuthServer struct {
-		IP               string   `yaml:"ip"`
-		Port             string   `yaml:"port"`
-	}
+		IP   string `yaml:"ip"`
+		Port string `yaml:"port"`
+	} `yaml:"authserver"`
 }
 
 func GetConfig(path string, l logger.Logable) (*Config, error) {

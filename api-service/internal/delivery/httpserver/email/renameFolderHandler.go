@@ -2,12 +2,11 @@ package email
 
 import (
 	"encoding/json"
-	"mail/api-service/pkg/utils"
-	"net/http"
-	"mail/api-service/internal/models"
 	"github.com/gorilla/mux"
+	"mail/api-service/pkg/utils"
+	"mail/models"
+	"net/http"
 )
-
 
 func (er *EmailRouter) RenameFolderHandler(w http.ResponseWriter, r *http.Request) {
 	ctxEmail := r.Context().Value("email")
@@ -26,7 +25,7 @@ func (er *EmailRouter) RenameFolderHandler(w http.ResponseWriter, r *http.Reques
 
 	var folder models.RenameFolder
 	err := json.NewDecoder(r.Body).Decode(&folder)
-	
+
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
 		return

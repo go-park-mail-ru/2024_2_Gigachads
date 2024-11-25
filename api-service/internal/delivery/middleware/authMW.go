@@ -2,16 +2,16 @@ package middleware
 
 import (
 	"context"
-	"mail/api-service/internal/models"
+	"mail/models"
 	"net/http"
 )
 
 type AuthMiddleware struct {
-	UserUseCase models.UserUseCase
+	AuthUseCase models.AuthUseCase
 }
 
-func NewAuthMW(uu models.UserUseCase) *AuthMiddleware {
-	return &AuthMiddleware{UserUseCase: uu}
+func NewAuthMW(au models.AuthUseCase) *AuthMiddleware {
+	return &AuthMiddleware{AuthUseCase: au}
 }
 
 func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
@@ -20,7 +20,7 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		
+
 		cookie, err := r.Cookie("email")
 		sessionID := ""
 		if cookie != nil {
@@ -32,23 +32,23 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 		if cookie != nil {
 			csrf = cookie.Value
 		}
-		
+
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		
-		email, err := m.UserUseCase.CheckAuth(r.Context(), sessionID)
+
+		email, err := m.AuthUseCase.CheckAuth(r.Context(), sessionID)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		err = m.UserUseCase.CheckCsrf(r.Context(), sessionID, csrf)
+		err = m.AuthUseCase.CheckCsrf(r.Context(), sessionID, csrf)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		
+
 		ctx := context.WithValue(r.Context(), "email", email)
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)

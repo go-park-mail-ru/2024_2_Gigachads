@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"mail/api-service/internal/models"
+	"mail/models"
 
 	"github.com/gorilla/mux"
 )
@@ -10,7 +10,7 @@ type AuthRouter struct {
 	AuthUseCase models.AuthUseCase
 }
 
-func NewAuthRouter(au models.UserUseCase) *AuthRouter {
+func NewAuthRouter(au models.AuthUseCase) *AuthRouter {
 	return &AuthRouter{AuthUseCase: au}
 }
 

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	models "mail/api-service/internal/models"
+	"mail/models"
 )
 
 type UserRepositoryService struct {
@@ -68,8 +68,8 @@ func (ur *UserRepositoryService) GetUserByEmail(email string) (*models.User, err
 	return &user, nil
 }
 
-func (ur *UserRepositoryService) UpdateInfo(user *models.User) (error) {
-	query := 
+func (ur *UserRepositoryService) UpdateInfo(user *models.User) error {
+	query :=
 		`UPDATE "profile"
 		SET username = $1, avatar_url = $2, password = $3
 		WHERE email = $4`
@@ -79,8 +79,3 @@ func (ur *UserRepositoryService) UpdateInfo(user *models.User) (error) {
 	}
 	return nil
 }
-	
-
-
-
-

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"database/sql"
-	"mail/internal/models"
+	"mail/models"
 	"regexp"
 	"testing"
 

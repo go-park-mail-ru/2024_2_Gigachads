@@ -1,12 +1,12 @@
 package app
 
 import (
-	"mail/config"
+	"mail/api-service/internal/delivery/grpc"
 	"mail/api-service/internal/delivery/httpserver"
 	"mail/api-service/pkg/logger"
+	"mail/config"
 	"mail/service/postgres"
 	"mail/service/redis"
-	"mail/api-service/internal/delivery/grpc"
 )
 
 func Run(cfg *config.Config, l logger.Logger) error {
@@ -26,8 +26,12 @@ func Run(cfg *config.Config, l logger.Logger) error {
 	if err != nil {
 		return err
 	}
-	clients := grpcClients.Init(cfg)
-	
+
+	clients, err := grpcClients.Init(cfg)
+	if err != nil {
+		return err
+	}
+
 	if err := srv.Start(cfg, dbPostgres, redisSessionClient, redisCSRFClient, clients, l); err != nil {
 		return err
 	}

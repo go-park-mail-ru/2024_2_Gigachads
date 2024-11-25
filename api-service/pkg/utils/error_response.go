@@ -2,7 +2,7 @@ package utils
 
 import (
 	"encoding/json"
-	"mail/api-service/internal/models"
+	"mail/models"
 	"net/http"
 )
 

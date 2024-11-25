@@ -1,7 +1,7 @@
 package email
 
 import (
-	"mail/api-service/internal/models"
+	"mail/models"
 
 	"github.com/gorilla/mux"
 )

@@ -3,7 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"mail/internal/models"
+	"mail/models"
 	"mail/pkg/logger"
 	"regexp"
 	"testing"

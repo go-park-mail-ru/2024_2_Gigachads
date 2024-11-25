@@ -1,22 +1,20 @@
 package usecase
 
 import (
-
-	"context"
 	"fmt"
-	"net/http"
-	models "mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
-	"os"	
+	"mail/models"
+	"net/http"
+	"os"
 )
 
 type UserService struct {
-	UserRepo    models.UserRepository
+	UserRepo models.UserRepository
 }
 
 func NewUserService(urepo models.UserRepository) models.UserUseCase {
 	return &UserService{
-		UserRepo:    urepo,
+		UserRepo: urepo,
 	}
 }
 

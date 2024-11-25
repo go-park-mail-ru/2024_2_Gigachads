@@ -2,9 +2,10 @@ package auth
 
 import (
 	"encoding/json"
-	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
+	"mail/models"
 	"net/http"
+	"time"
 )
 
 func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +19,7 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	login.Password = utils.Sanitize(login.Password)
 	login.Email = utils.Sanitize(login.Email)
-	
+
 	if !models.EmailIsValid(login.Email) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_input")
 		return
@@ -29,13 +30,13 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, session, csrf, err := ar.UserUseCase.Login(r.Context(), &login)
+	avatar, name, session, csrf, err := ar.AuthUseCase.Login(r.Context(), &login)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusForbidden, err.Error())
 		return
 	}
 
-	userLogin := models.UserLogin{Email: user.Email, Name: user.Name, AvatarURL: user.AvatarURL}
+	userLogin := models.UserLogin{Email: login.Email, Name: name, AvatarURL: avatar}
 	if userLogin.AvatarURL == "" {
 		userLogin.AvatarURL = "/icons/default.png"
 	}
@@ -47,16 +48,16 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionCookie := http.Cookie{
-		Name:     session.Name,
-		Value:    session.ID,
-		Expires:  session.Time,
+		Name:     "email",
+		Value:    session,
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 	}
 
 	csrfCookie := http.Cookie{
-		Name:     csrf.Name,
-		Value:    csrf.ID,
-		Expires:  csrf.Time,
+		Name:     "csrf",
+		Value:    csrf,
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 	}
 

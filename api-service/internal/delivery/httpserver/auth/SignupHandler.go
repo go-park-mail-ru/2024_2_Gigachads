@@ -2,14 +2,15 @@ package auth
 
 import (
 	"encoding/json"
-	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
+	"mail/models"
 	"net/http"
+	"time"
 )
 
 func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 	var signup models.User
-	
+
 	err := json.NewDecoder(r.Body).Decode(&signup)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
@@ -20,7 +21,7 @@ func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 	signup.Name = utils.Sanitize(signup.Name)
 	signup.Password = utils.Sanitize(signup.Password)
 	signup.RePassword = utils.Sanitize(signup.RePassword)
-	
+
 	if !models.EmailIsValid(signup.Email) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_email")
 		return
@@ -36,7 +37,7 @@ func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, session, csrf, err := ar.UserUseCase.Signup(r.Context(), &signup)
+	sessionID, csrfID, err := ar.AuthUseCase.Signup(r.Context(), &signup)
 
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
@@ -44,16 +45,16 @@ func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionCookie := http.Cookie{
-		Name:     session.Name,
-		Value:    session.ID,
-		Expires:  session.Time,
+		Name:     "email",
+		Value:    sessionID,
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 	}
 
 	csrfCookie := http.Cookie{
-		Name:     csrf.Name,
-		Value:    csrf.ID,
-		Expires:  csrf.Time,
+		Name:     "csrf",
+		Value:    csrfID,
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 	}
 	w.Header().Set("Content-Type", "application/json")

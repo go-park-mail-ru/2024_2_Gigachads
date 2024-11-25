@@ -1,111 +1,109 @@
 package usecase
 
 import (
-
 	"context"
 	"fmt"
-	"net/http"
-	models "mail/internal/models"
-	"mail/pkg/utils"
-	"os"	
+	"mail/gen/go/auth"
+	"mail/models"
 )
 
 type AuthServer struct {
-	auth.UnimplementedAuthManagerServer
+	proto.UnimplementedAuthServiceServer
 	UserRepo    models.UserRepository
 	SessionRepo models.SessionRepository
-	CsrfRepo models.CsrfRepository
+	CsrfRepo    models.CsrfRepository
 }
 
-func NewAuthServer(urepo models.UserRepository, srepo models.SessionRepository, crepo models.CsrfRepository) models.AuthServerUseCase {
+func NewAuthServer(urepo models.UserRepository, srepo models.SessionRepository, crepo models.CsrfRepository) proto.AuthServiceServer {
 	return &AuthServer{
-		UserRepo: urepo,
+		UserRepo:    urepo,
 		SessionRepo: srepo,
-		CsrfRepo: crepo,
+		CsrfRepo:    crepo,
 	}
 }
 
-func (as *AuthServer) Signup(ctx context.Context, signup *models.User) (*models.User, *models.Session, *models.Csrf, error) {
-	taken, err := as.UserRepo.IsExist(signup.Email)
+func (as *AuthServer) Signup(ctx context.Context, signup *proto.SignupRequest) (*proto.SignupReply, error) {
+	taken, err := as.UserRepo.IsExist(signup.GetEmail())
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	if taken {
-		return nil, nil, nil, fmt.Errorf("login_taken")
+		return nil, fmt.Errorf("login_taken")
+	}
+	user := &models.User{Name: signup.GetName(), Email: signup.GetEmail(), Password: signup.GetPassword()}
+	userChecked, err := as.UserRepo.CreateUser(user)
+	if err != nil {
+		return nil, err
 	}
 
-	user, err := as.UserRepo.CreateUser(signup)
+	session, err := as.SessionRepo.CreateSession(ctx, userChecked.Email)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-
-	session, err := as.SessionRepo.CreateSession(ctx, user.Email)
+	csrf, err := as.CsrfRepo.CreateCsrf(ctx, userChecked.Email)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	csrf, err := as.CsrfRepo.CreateCsrf(ctx, user.Email)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return user, session, csrf, nil
+	res := &proto.SignupReply{Session: session.ID, Csrf: csrf.ID}
+	return res, nil
 }
 
-func (as *AuthServer) Login(ctx context.Context, login *models.User) (*models.User, *models.Session, *models.Csrf, error) {
-	taken, err := as.UserRepo.IsExist(login.Email)
+func (as *AuthServer) Login(ctx context.Context, login *proto.LoginRequest) (*proto.LoginReply, error) {
+	taken, err := as.UserRepo.IsExist(login.GetEmail())
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	if !taken {
-		return nil, nil, nil, fmt.Errorf("user_does_not_exist")
+		return nil, fmt.Errorf("user_does_not_exist")
 	}
-
-	user, err := as.UserRepo.CheckUser(login)
+	user := &models.User{Email: login.GetEmail(), Password: login.GetPassword()}
+	userChecked, err := as.UserRepo.CheckUser(user)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	session, err := as.SessionRepo.CreateSession(ctx, user.Email)
+	session, err := as.SessionRepo.CreateSession(ctx, userChecked.Email)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	csrf, err := as.CsrfRepo.CreateCsrf(ctx, user.Email)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	return user, session, csrf, nil
+	res := proto.LoginReply{Avatar: user.AvatarURL, SessionId: session.ID, CsrfId: csrf.ID, Name: user.Name}
+	return &res, nil
 }
 
-func (as *UserService) Logout(ctx context.Context, email string) error {
-	err := as.SessionRepo.DeleteSession(ctx, id)
+func (as *AuthServer) Logout(ctx context.Context, logout *proto.LogoutRequest) (*proto.LogoutReply, error) {
+	err := as.SessionRepo.DeleteSession(ctx, logout.GetEmail())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = as.CsrfRepo.DeleteCsrf(ctx, id)
+	err = as.CsrfRepo.DeleteCsrf(ctx, logout.GetEmail())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return nil, nil
 }
 
-func (as *AuthServer) CheckAuth(ctx context.Context, id string) (string, error) {
-	session, err := as.SessionRepo.GetSession(ctx, id)
+func (as *AuthServer) CheckAuth(ctx context.Context, checkAuth *proto.AuthRequest) (*proto.AuthReply, error) {
+	email, err := as.SessionRepo.GetSession(ctx, checkAuth.GetId())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return session, nil
+	return &proto.AuthReply{Email: email}, nil
 }
 
-func (as *AuthServer) CheckCsrf(ctx context.Context, email string, csrf string) error {
-	email1, err := as.CsrfRepo.GetCsrf(ctx, csrf)
+func (as *AuthServer) CheckCsrf(ctx context.Context, checkCsrf *proto.CsrfRequest) (*proto.CsrfReply, error) {
+	email1, err := as.CsrfRepo.GetCsrf(ctx, checkCsrf.GetCsrf())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	email2, err := us.SessionRepo.GetSession(ctx, session)
+	email2, err := as.SessionRepo.GetSession(ctx, checkCsrf.GetEmail())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if email1 != email2 {
-		return fmt.Errorf("invalid_csrf")
+		return nil, fmt.Errorf("invalid_csrf")
 	}
-	return nil
+	return nil, nil
 }
-
