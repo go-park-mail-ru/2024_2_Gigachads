@@ -20,6 +20,7 @@ type Draft struct {
 	Recipient    string    `json:"recipient"`
 	Title        string    `json:"title"`
 	Description  string    `json:"description"`
+	ParentID     int       `json:"parentID"`
 }
 
 type Folder struct {
