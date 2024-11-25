@@ -196,7 +196,9 @@ func (es *EmailService) UpdateDraft(email models.Draft) error {
 }
 
 func (es *EmailService) SendDraft(email models.Email) error {
-	err := es.EmailRepo.DeleteEmails(email.Sender_email, []int{email.ID})
+	s := make([]int, 1)
+	s = append(s, email.ID)
+	err := es.EmailRepo.DeleteEmails(email.Sender_email, s)
 	if err != nil {
 		return fmt.Errorf("error_in_delete")//err
 	}
