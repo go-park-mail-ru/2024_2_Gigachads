@@ -708,5 +708,17 @@ func (er *EmailRepositoryService) UpdateDraft(email models.Draft) error {
 		er.logger.Error(err.Error())
 		return err
 	}
+
+	_, err = tx.Exec(
+		`UPDATE email_transaction
+			SET recipient_email = $2
+			WHERE id = $1`,
+		email.ID, email.Recipient,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
 	return tx.Commit()
 }

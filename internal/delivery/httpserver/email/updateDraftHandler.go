@@ -25,6 +25,7 @@ func (er *EmailRouter) UpdateDraftHandler(w http.ResponseWriter, r *http.Request
 
 	draft.Title = utils.Sanitize(draft.Title)
 	draft.Description = utils.Sanitize(draft.Description)
+	draft.Recipient = utils.Sanitize(draft.Recipient)
 
 	err = er.EmailUseCase.UpdateDraft(draft)
 	if err != nil {

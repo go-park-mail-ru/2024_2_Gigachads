@@ -17,6 +17,7 @@ type Email struct {
 
 type Draft struct {
 	ID           int       `json:"id"`
+	Recipient    string    `json:"recipient"`
 	Title        string    `json:"title"`
 	Description  string    `json:"description"`
 }
