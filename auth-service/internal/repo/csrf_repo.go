@@ -24,6 +24,7 @@ func (sr *CsrfRepositoryService) CreateCsrf(ctx context.Context, mail string) (*
 
 	hash, err := utils.GenerateHash()
 	if err != nil {
+		sr.logger.Error(err.Error())
 		return &models.Csrf{}, err
 	}
 	expiration := time.Now().Add(24 * time.Hour)

@@ -17,14 +17,14 @@ func (er *EmailRouter) CreateFolderHandler(w http.ResponseWriter, r *http.Reques
 
 	var folder models.Folder
 	err := json.NewDecoder(r.Body).Decode(&folder)
-	
+
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
 	folder.Name = utils.Sanitize(folder.Name)
-		
+
 	if !models.InputIsValid(folder.Name) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_name")
 		return
@@ -32,7 +32,7 @@ func (er *EmailRouter) CreateFolderHandler(w http.ResponseWriter, r *http.Reques
 
 	err = er.EmailUseCase.CreateFolder(email, folder.Name)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_creating_folder")
 		return
 	}
 

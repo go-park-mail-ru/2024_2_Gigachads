@@ -32,7 +32,7 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	avatar, name, session, csrf, err := ar.AuthUseCase.Login(r.Context(), &login)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusForbidden, err.Error())
+		utils.ErrorResponse(w, r, http.StatusForbidden, "invalid_login_or_password")
 		return
 	}
 

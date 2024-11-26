@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"google.golang.org/grpc"
 	"mail/api-service/pkg/logger"
@@ -21,14 +20,15 @@ func Run(cfg *config.Config, l logger.Logger) error {
 	if err != nil {
 		return err
 	}
+	l.Info("postgres connected")
 
 	er := repo.NewEmailRepositoryService(dbPostgres, l)
 
 	smtpClient := createAndConfigureSMTPClient(cfg)
-	smtpRepo := repo.NewSMTPRepository(smtpClient, cfg)
+	smtpRepo := repo.NewSMTPRepository(smtpClient, cfg, l)
 
 	pop3Client := createAndConfigurePOP3Client(cfg)
-	pop3Repo := repo.NewPOP3Repository(pop3Client, cfg)
+	pop3Repo := repo.NewPOP3Repository(pop3Client, cfg, l)
 
 	delivery.StartEmailFetcher(pop3Repo, er)
 
@@ -37,7 +37,7 @@ func Run(cfg *config.Config, l logger.Logger) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("smtp started")
+	l.Info("smtp microservice started")
 
 	server := grpc.NewServer(grpc.ChainUnaryInterceptor(
 		recovery.UnaryServerInterceptor(),

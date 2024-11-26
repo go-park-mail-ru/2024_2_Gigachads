@@ -37,7 +37,7 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 
 		err := er.EmailUseCase.CreateDraft(email)
 		if err != nil {
-			utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+			utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_creating_draft")
 			return
 		}
 

@@ -38,7 +38,7 @@ func (ar *UserRouter) ChangePasswordHandler(w http.ResponseWriter, r *http.Reque
 
 	err = ar.UserUseCase.ChangePassword(email, model.Password)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "cant_change_password")
 		return
 	}
 

@@ -12,11 +12,11 @@ func (er *EmailRouter) InboxHandler(w http.ResponseWriter, r *http.Request) {
 		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	
+
 	email := ctxEmail.(string)
 	mails, err := er.EmailUseCase.Inbox(email)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "cant_get_inbox")
 		return
 	}
 

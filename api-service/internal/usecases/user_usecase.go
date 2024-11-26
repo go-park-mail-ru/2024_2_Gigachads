@@ -83,6 +83,9 @@ func (us *UserService) ChangePassword(email string, password string) error {
 	if err != nil {
 		return err
 	}
+	if password != user.Password {
+		return fmt.Errorf("bad_password")
+	}
 	user.Password = password
 	err = us.UserRepo.UpdateInfo(user)
 	if err != nil {

@@ -31,7 +31,7 @@ func (er *EmailRouter) ChangeEmailFolderHandler(w http.ResponseWriter, r *http.R
 
 	var folder models.Folder
 	err = json.NewDecoder(r.Body).Decode(&folder)
-	
+
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
 		return
@@ -41,7 +41,7 @@ func (er *EmailRouter) ChangeEmailFolderHandler(w http.ResponseWriter, r *http.R
 
 	err = er.EmailUseCase.ChangeEmailFolder(id, email, folder.Name)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "cant_change_name")
 		return
 	}
 

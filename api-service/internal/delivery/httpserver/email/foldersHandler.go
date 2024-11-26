@@ -16,7 +16,7 @@ func (er *EmailRouter) FoldersHandler(w http.ResponseWriter, r *http.Request) {
 
 	folders, err := er.EmailUseCase.GetFolders(email)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_getting_folders")
 		return
 	}
 

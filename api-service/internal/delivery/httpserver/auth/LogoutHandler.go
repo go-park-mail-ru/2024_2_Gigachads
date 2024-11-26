@@ -15,7 +15,7 @@ func (ar *AuthRouter) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := ar.AuthUseCase.Logout(r.Context(), email)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_logout")
 		return
 	}
 

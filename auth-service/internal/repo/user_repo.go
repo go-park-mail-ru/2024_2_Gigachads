@@ -4,15 +4,17 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"mail/api-service/pkg/logger"
 	"mail/models"
 )
 
 type UserRepositoryService struct {
-	repo *sql.DB
+	repo   *sql.DB
+	logger logger.Logable
 }
 
-func NewUserRepositoryService(db *sql.DB) models.UserRepository {
-	return &UserRepositoryService{repo: db}
+func NewUserRepositoryService(db *sql.DB, logger logger.Logable) models.UserRepository {
+	return &UserRepositoryService{repo: db, logger: logger}
 }
 
 func (ur *UserRepositoryService) IsExist(email string) (bool, error) {
@@ -21,9 +23,11 @@ func (ur *UserRepositoryService) IsExist(email string) (bool, error) {
 	user := models.User{}
 	err := row.Scan(&user.Email)
 	if errors.Is(err, sql.ErrNoRows) {
+		ur.logger.Error(err.Error())
 		return false, nil
 	}
 	if err != nil {
+		ur.logger.Error(err.Error())
 		return false, err
 	}
 	return true, nil
@@ -36,6 +40,7 @@ func (ur *UserRepositoryService) CreateUser(signup *models.User) (*models.User, 
 	user := models.User{}
 	err := row.Scan(&user.Email)
 	if err != nil {
+		ur.logger.Error(err.Error())
 		return nil, err
 	}
 	return &user, nil
@@ -47,10 +52,12 @@ func (ur *UserRepositoryService) CheckUser(login *models.User) (*models.User, er
 	user := models.User{}
 	err := row.Scan(&user.Email, &user.Name, &user.Password)
 	if err != nil {
+		ur.logger.Error(err.Error())
 		return nil, err
 	}
 
 	if login.Password != user.Password {
+		ur.logger.Error(err.Error())
 		return nil, fmt.Errorf("invalid_password")
 	}
 
@@ -63,6 +70,7 @@ func (ur *UserRepositoryService) GetUserByEmail(email string) (*models.User, err
 	user := models.User{}
 	err := row.Scan(&user.Email, &user.ID, &user.Password, &user.Name, &user.AvatarURL)
 	if err != nil {
+		ur.logger.Error(err.Error())
 		return nil, err
 	}
 	return &user, nil
@@ -75,6 +83,7 @@ func (ur *UserRepositoryService) UpdateInfo(user *models.User) error {
 		WHERE email = $4`
 	_, err := ur.repo.Exec(query, user.Name, user.AvatarURL, user.Password, user.Email)
 	if err != nil {
+		ur.logger.Error(err.Error())
 		return err
 	}
 	return nil

@@ -40,7 +40,7 @@ func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 	sessionID, csrfID, err := ar.AuthUseCase.Signup(r.Context(), &signup)
 
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_signup")
 		return
 	}
 

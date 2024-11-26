@@ -25,7 +25,7 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 
 	if req.ParentID == 0 {
 		email := models.Email{
-			ID:			  req.ID,
+			ID:           req.ID,
 			Sender_email: senderEmail,
 			Recipient:    req.Recipient,
 			Title:        req.Title,
@@ -37,7 +37,7 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 
 		err := er.EmailUseCase.SendDraft(email)
 		if err != nil {
-			utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+			utils.ErrorResponse(w, r, http.StatusInternalServerError, "cant_send_draft")
 			return
 		}
 
@@ -57,7 +57,7 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 
 		if strings.HasPrefix(req.Title, "Re:") {
 			email := models.Email{
-				ID:			  req.ID,
+				ID:           req.ID,
 				Sender_email: senderEmail,
 				Recipient:    originalEmail.Sender_email,
 				Title:        req.Title,
@@ -82,7 +82,7 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 			)
 		} else if strings.HasPrefix(req.Title, "Fwd:") {
 			email := models.Email{
-				ID:			  req.ID,
+				ID:           req.ID,
 				Sender_email: senderEmail,
 				Recipient:    req.Recipient,
 				Title:        req.Title,

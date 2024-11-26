@@ -3,7 +3,6 @@ package httpserver
 import (
 	"database/sql"
 	"github.com/gorilla/mux"
-	"github.com/redis/go-redis/v9"
 	"mail/api-service/internal/delivery/grpc"
 	authRouter "mail/api-service/internal/delivery/httpserver/auth"
 	emailRouter "mail/api-service/internal/delivery/httpserver/email"
@@ -20,10 +19,10 @@ type HTTPServer struct {
 	server *http.Server
 }
 
-func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redisSession *redis.Client, redisCSRF *redis.Client, clients *grpcClients.Clients, l logger.Logable) error {
+func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, clients *grpcClients.Clients, l logger.Logable) error {
 	s.server = new(http.Server)
 	s.server.Addr = cfg.HTTPServer.IP + ":" + cfg.HTTPServer.Port
-	s.configureRouters(cfg, db, redisSession, redisCSRF, clients, l)
+	s.configureRouters(cfg, db, clients, l)
 	l.Info("Server is running on", "port", cfg.HTTPServer.Port)
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
@@ -31,7 +30,7 @@ func (s *HTTPServer) Start(cfg *config.Config, db *sql.DB, redisSession *redis.C
 	return nil
 }
 
-func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, redisSession *redis.Client, redisCSRF *redis.Client, clients *grpcClients.Clients, l logger.Logable) {
+func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, clients *grpcClients.Clients, l logger.Logable) {
 
 	ur := repo.NewUserRepositoryService(db)
 	uu := usecase.NewUserService(ur)

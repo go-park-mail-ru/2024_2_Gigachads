@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"google.golang.org/grpc"
 	"mail/api-service/pkg/logger"
@@ -19,18 +18,22 @@ func Run(cfg *config.Config, l logger.Logger) error {
 	if err != nil {
 		return err
 	}
-	ur := repo.NewUserRepositoryService(dbPostgres)
+	l.Info("postgres connected")
+
+	ur := repo.NewUserRepositoryService(dbPostgres, l)
 
 	redisSessionClient, err := redis.Init(cfg, 0)
 	if err != nil {
 		return err
 	}
+	l.Info("redis session connected")
 	sr := repo.NewSessionRepositoryService(redisSessionClient, l)
 
 	redisCSRFClient, err := redis.Init(cfg, 1)
 	if err != nil {
 		return err
 	}
+	l.Info("redis csrf connected")
 	cr := repo.NewCsrfRepositoryService(redisCSRFClient, l)
 
 	port := ":" + cfg.AuthServer.Port
@@ -38,7 +41,7 @@ func Run(cfg *config.Config, l logger.Logger) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("auth started")
+	l.Info("auth microservice started")
 
 	server := grpc.NewServer(grpc.ChainUnaryInterceptor(
 		recovery.UnaryServerInterceptor(),

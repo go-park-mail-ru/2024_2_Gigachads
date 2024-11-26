@@ -17,7 +17,7 @@ func (er *EmailRouter) RenameFolderHandler(w http.ResponseWriter, r *http.Reques
 
 	var folder models.RenameFolder
 	err := json.NewDecoder(r.Body).Decode(&folder)
-	
+
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
 		return
@@ -28,7 +28,7 @@ func (er *EmailRouter) RenameFolderHandler(w http.ResponseWriter, r *http.Reques
 
 	err = er.EmailUseCase.RenameFolder(email, folder.Name, folder.NewName)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_rename_folder")
 		return
 	}
 

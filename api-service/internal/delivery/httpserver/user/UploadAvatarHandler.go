@@ -1,10 +1,10 @@
 package user
 
 import (
+	"errors"
+	"io"
 	"mail/api-service/pkg/utils"
 	"net/http"
-	"io"
-	"errors"
 )
 
 func (uh *UserRouter) UploadAvatarHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func (uh *UserRouter) UploadAvatarHandler(w http.ResponseWriter, r *http.Request
 	}
 	defer file.Close()
 
-	limitedReader := http.MaxBytesReader(w, file, 10 * 1024 * 1024)
+	limitedReader := http.MaxBytesReader(w, file, 10*1024*1024)
 	defer r.Body.Close()
 
 	fileContent, err := io.ReadAll(limitedReader)
@@ -46,7 +46,7 @@ func (uh *UserRouter) UploadAvatarHandler(w http.ResponseWriter, r *http.Request
 
 	err = uh.UserUseCase.ChangeAvatar(fileContent, email)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_downloading_avatar")
 		return
 	}
 

@@ -31,7 +31,7 @@ func (ar *UserRouter) ChangeNameHandler(w http.ResponseWriter, r *http.Request) 
 
 	err = ar.UserUseCase.ChangeName(email, nameModel.Name)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "cant_change_name")
 		return
 	}
 

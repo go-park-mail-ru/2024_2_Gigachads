@@ -6,7 +6,6 @@ import (
 	"mail/api-service/pkg/logger"
 	"mail/config"
 	"mail/service/postgres"
-	"mail/service/redis"
 )
 
 func Run(cfg *config.Config, l logger.Logger) error {
@@ -16,23 +15,14 @@ func Run(cfg *config.Config, l logger.Logger) error {
 	if err != nil {
 		return err
 	}
+	l.Info("postgres connected")
 
-	redisSessionClient, err := redis.Init(cfg, 0)
+	clients, err := grpcClients.Init(cfg, l)
 	if err != nil {
 		return err
 	}
 
-	redisCSRFClient, err := redis.Init(cfg, 1)
-	if err != nil {
-		return err
-	}
-
-	clients, err := grpcClients.Init(cfg)
-	if err != nil {
-		return err
-	}
-
-	if err := srv.Start(cfg, dbPostgres, redisSessionClient, redisCSRFClient, clients, l); err != nil {
+	if err := srv.Start(cfg, dbPostgres, clients, l); err != nil {
 		return err
 	}
 	return nil

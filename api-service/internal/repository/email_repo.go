@@ -3,18 +3,15 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"github.com/lib/pq"
 	"mail/api-service/pkg/logger"
 	"mail/api-service/pkg/utils"
 	"mail/models"
 	"strconv"
-	"sync"
-
-	"github.com/lib/pq"
 )
 
 type EmailRepositoryService struct {
 	repo   *sql.DB
-	mu     sync.RWMutex
 	logger logger.Logable
 }
 
@@ -572,12 +569,12 @@ func (er *EmailRepositoryService) CheckFolder(email string, folderName string) (
 	} else {
 		return false, nil
 	}
-	
+
 	return false, tx.Commit()
 }
 
 func (er *EmailRepositoryService) GetMessageFolder(msgID int) (string, error) {
-	
+
 	tx, err := er.repo.Begin()
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -604,7 +601,7 @@ func (er *EmailRepositoryService) GetMessageFolder(msgID int) (string, error) {
 		er.logger.Error(err.Error())
 		return "", err
 	}
-	
+
 	return folderName, tx.Commit()
 }
 

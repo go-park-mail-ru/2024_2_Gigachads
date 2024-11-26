@@ -24,6 +24,7 @@ func (sr *SessionRepositoryService) CreateSession(ctx context.Context, mail stri
 
 	hash, err := utils.GenerateHash()
 	if err != nil {
+		sr.logger.Error(err.Error())
 		return &models.Session{}, err
 	}
 	expiration := time.Now().Add(24 * time.Hour)
