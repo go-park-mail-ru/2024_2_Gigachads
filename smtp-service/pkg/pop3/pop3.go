@@ -145,7 +145,7 @@ func (c *Pop3Client) retrieveEmail(msgNumber int) (string, error) {
 	return response, nil
 }
 
-func (c *Pop3Client) FetchEmails(repo models.EmailRepository) error {
+func (c *Pop3Client) FetchEmails(repo models.EmailRepositorySMTP) error {
 	messageCount, err := c.getMessageCount()
 	if err != nil {
 		return err
@@ -174,7 +174,7 @@ func (c *Pop3Client) getMessageCount() (int, error) {
 	return count, nil
 }
 
-func (c *Pop3Client) processEmails(count int, repo models.EmailRepository) error {
+func (c *Pop3Client) processEmails(count int, repo models.EmailRepositorySMTP) error {
 	var saveErrors []error
 	var savedCount int
 
@@ -193,7 +193,7 @@ func (c *Pop3Client) processEmails(count int, repo models.EmailRepository) error
 	return nil
 }
 
-func (c *Pop3Client) processSingleEmail(msgNumber int, repo models.EmailRepository) error {
+func (c *Pop3Client) processSingleEmail(msgNumber int, repo models.EmailRepositorySMTP) error {
 	content, err := c.retrieveEmail(msgNumber)
 	if err != nil {
 		return err

@@ -8,10 +8,12 @@ import (
 
 	"google.golang.org/grpc"
 	"mail/gen/go/auth"
+	"mail/gen/go/smtp"
 )
 
 type Clients struct {
-	AuthConn *proto.AuthServiceClient
+	AuthConn *auth.AuthServiceClient
+	SmtpConn *smtp.SmtpPop3ServiceClient
 }
 
 func Init(cfg *config.Config) (*Clients, error) {
@@ -21,8 +23,15 @@ func Init(cfg *config.Config) (*Clients, error) {
 		fmt.Printf(fmt.Sprintf("the microservice 'authorization' is not available: %v", err))
 		return nil, err
 	}
-	authClient := proto.NewAuthServiceClient(authConn)
+	authClient := auth.NewAuthServiceClient(authConn)
+	smtpConn, err := grpc.NewClient(fmt.Sprintf("%s:%s", cfg.SMTPServer.IP, cfg.SMTPServer.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("the microservice 'authorization' is not available: %v", err))
+		return nil, err
+	}
+	smtpClient := smtp.NewSmtpPop3ServiceClient(smtpConn)
 	return &Clients{
 		AuthConn: &authClient,
+		SmtpConn: &smtpClient,
 	}, nil
 }

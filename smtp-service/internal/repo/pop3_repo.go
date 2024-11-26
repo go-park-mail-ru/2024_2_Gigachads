@@ -1,9 +1,9 @@
 package repo
 
 import (
-	"mail/api-service/pkg/pop3"
 	"mail/config"
 	"mail/models"
+	"mail/smtp-service/pkg/pop3"
 )
 
 type POP3Repository struct {
@@ -22,7 +22,7 @@ func (p *POP3Repository) Connect() error {
 	return p.client.Connect()
 }
 
-func (p *POP3Repository) FetchEmails(repo models.EmailRepository) error {
+func (p *POP3Repository) FetchEmails(repo models.EmailRepositorySMTP) error {
 	return p.client.FetchEmails(repo)
 }
 

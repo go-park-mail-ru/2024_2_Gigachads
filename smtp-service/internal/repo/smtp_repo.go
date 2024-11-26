@@ -1,8 +1,8 @@
 package repo
 
 import (
-	"mail/api-service/pkg/smtp"
 	"mail/config"
+	"mail/smtp-service/pkg/smtp"
 )
 
 type SMTPRepository struct {

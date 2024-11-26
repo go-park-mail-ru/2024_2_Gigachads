@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"time"
 )
 
@@ -16,26 +17,25 @@ type Email struct {
 }
 
 type Draft struct {
-	ID           int       `json:"id"`
-	Title        string    `json:"title"`
-	Description  string    `json:"description"`
+	ID          int    `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }
 
 type Folder struct {
-	Name 		 string    `json:"name"`
+	Name string `json:"name"`
 }
 
 type RenameFolder struct {
-	NewName 	 string    `json:"new_name"`
+	NewName string `json:"new_name"`
 }
 
 type EmailUseCase interface {
 	Inbox(id string) ([]Email, error)
-	SendEmail(from string, to []string, subject string, body string) error
-	ForwardEmail(from string, to []string, originalEmail Email) error
-	ReplyEmail(from string, to string, originalEmail Email, replyText string) error
+	SendEmail(ctx context.Context, from string, to []string, subject string, body string) error
+	ForwardEmail(ctx context.Context, from string, to []string, originalEmail Email) error
+	ReplyEmail(ctx context.Context, from string, to string, originalEmail Email, replyText string) error
 	GetEmailByID(id int) (Email, error)
-	FetchEmailsViaPOP3() error
 	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
 	SaveEmail(email Email) error
@@ -49,6 +49,11 @@ type EmailUseCase interface {
 	CreateDraft(email Email) error
 	UpdateDraft(email Draft) error
 	SendDraft(email Email) error
+}
+type SmtpPop3Usecase interface {
+	SendEmail(ctx context.Context, from string, to []string, subject string, body string) error
+	ForwardEmail(ctx context.Context, from string, to []string, originalEmail Email) error
+	ReplyEmail(ctx context.Context, from string, to string, originalEmail Email, replyText string) error
 }
 
 type EmailRepository interface {
@@ -67,6 +72,9 @@ type EmailRepository interface {
 	CreateDraft(email Email) error
 	UpdateDraft(email Draft) error
 }
+type EmailRepositorySMTP interface {
+	SaveEmail(email Email) error
+}
 
 type SMTPRepository interface {
 	SendEmail(from string, to []string, subject string, body string) error
@@ -74,6 +82,6 @@ type SMTPRepository interface {
 
 type POP3Repository interface {
 	Connect() error
-	FetchEmails(EmailRepository) error
+	FetchEmails(EmailRepositorySMTP) error
 	Quit() error
 }

@@ -8,7 +8,7 @@ import (
 	repo "mail/auth-service/internal/repo"
 	"mail/auth-service/internal/usecase"
 	"mail/config"
-	"mail/gen/go/auth"
+	proto "mail/gen/go/auth"
 	"mail/service/postgres"
 	"mail/service/redis"
 	"net"

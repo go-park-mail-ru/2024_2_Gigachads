@@ -7,7 +7,8 @@ import (
 )
 
 type EmailRouter struct {
-	EmailUseCase models.EmailUseCase
+	EmailUseCase    models.EmailUseCase
+	SmtpPop3UseCase models.SmtpPop3Usecase
 }
 
 func NewEmailRouter(eu models.EmailUseCase) *EmailRouter {

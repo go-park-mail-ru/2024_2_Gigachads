@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"mail/gen/go/auth"
+	proto "mail/gen/go/auth"
 	"mail/models"
 )
 

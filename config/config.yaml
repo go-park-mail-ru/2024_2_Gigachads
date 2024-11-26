@@ -8,6 +8,10 @@ authserver:
     ip: 127.0.0.1
     port: 8081
 
+smtpserver:
+    ip: 127.0.0.1
+    port: 8082
+
 postgres:
     ip: 127.0.0.1
     port: 5432

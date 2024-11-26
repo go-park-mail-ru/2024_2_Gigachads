@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+option go_package = "./;smtp";
+
+package proto;
+
+//protoc -I ./proto/smtp --go_out=./gen/go/smtp --go-grpc_out=./gen/go/smtp --go-grpc_opt=paths=source_relative --go_opt=paths=source_relative ./proto/smtp/smtp.proto
+//из корня
+
+import "google/protobuf/timestamp.proto";
+
+service SmtpPop3Service {
+  rpc SendEmail(SendEmailRequest) returns(SendEmailReply) {}
+  rpc ForwardEmail(ForwardEmailRequest) returns(ForwardEmailReply) {}
+  rpc ReplyEmail(ReplyEmailRequest) returns(ReplyEmailReply) {}
+  rpc FetchEmailsViaPOP3(FetchEmailsViaPOP3Request) returns(FetchEmailsViaPOP3Reply) {}
+}
+
+message SendEmailRequest {
+  string from = 1;
+  string to = 2;
+  string subject = 3;
+  string body = 4;
+}
+
+message SendEmailReply {
+
+}
+
+message ForwardEmailRequest {
+  string from = 1;
+  string to = 2;
+  string title = 3;
+  string sender = 4;
+  google.protobuf.Timestamp sending_date = 5;
+  string description = 6;
+}
+
+message ForwardEmailReply {
+
+}
+
+message ReplyEmailRequest {
+  string from = 1;
+  string to = 2;
+  string title = 3;
+  string sender = 4;
+  string reply_text = 5;
+  google.protobuf.Timestamp sending_date = 6;
+  string description = 7;
+}
+
+message ReplyEmailReply {
+
+}
+
+message FetchEmailsViaPOP3Request {
+
+}
+message FetchEmailsViaPOP3Reply {
+
+}

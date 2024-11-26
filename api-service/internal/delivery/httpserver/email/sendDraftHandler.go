@@ -42,6 +42,7 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 		}
 
 		er.EmailUseCase.SendEmail(
+			r.Context(),
 			senderEmail,
 			[]string{req.Recipient},
 			req.Title,
@@ -72,6 +73,7 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 			}
 
 			er.EmailUseCase.ReplyEmail(
+				r.Context(),
 				senderEmail,
 				originalEmail.Sender_email,
 				originalEmail,
@@ -96,6 +98,7 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 
 			recipients := strings.Split(req.Recipient, ",")
 			er.EmailUseCase.ForwardEmail(
+				r.Context(),
 				senderEmail,
 				recipients,
 				originalEmail,
