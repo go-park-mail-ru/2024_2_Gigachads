@@ -112,7 +112,7 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	t.isread, t.sending_date, m.description
 	FROM email_transaction AS t
 	JOIN message AS m ON t.message_id = m.id
-	WHERE m.id = $1
+	WHERE t.id = $1
 	`
 
 	var email models.Email
@@ -193,7 +193,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	}
 	var senderFolderID int
 	err = tx.QueryRow(
-		`SELECT id FROM folder WHERE user_id = $1 AND name = "Отправленные"`,
+		`SELECT id FROM folder WHERE user_id = $1 AND name = 'Отправленные'`,
 		senderID,
 	).Scan(&senderFolderID)
 	if err != nil {
@@ -225,7 +225,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	}
 	var recipientFolderID int
 	err = tx.QueryRow(
-		`SELECT id FROM folder WHERE user_id = $1 AND name = "Входящие"`,
+		`SELECT id FROM folder WHERE user_id = $1 AND name = 'Входящие'`,
 		recipientID,
 	).Scan(&recipientFolderID)
 	if err != nil {
@@ -280,7 +280,7 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 	return tx.Commit()
 }
 
-func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
+func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []int) error {
 	tx, err := er.repo.Begin()
 	if err != nil {
 		er.logger.Error(err.Error())
@@ -288,21 +288,8 @@ func (er *EmailRepositoryService) DeleteEmails(userEmail string, messageIDs []in
 	}
 	defer tx.Rollback()
 
-	var query string
-	switch folder {
-	case "inbox":
-		query = `DELETE FROM email_transaction 
-				 WHERE message_id = ANY($1) 
-				 AND recipient_email = $2`
-	case "sent":
-		query = `DELETE FROM email_transaction 
-				 WHERE message_id = ANY($1) 
-				 AND sender_email = $2`
-	default:
-		return errors.New("неизвестная папка")
-	}
-
-	_, err = tx.Exec(query, pq.Array(messageIDs), userEmail)
+	_, err = tx.Exec(`DELETE FROM email_transaction 
+				 WHERE id = ANY($1)`, pq.Array(messageIDs))
 	if err != nil {
 		er.logger.Error(err.Error())
 		return err
@@ -318,7 +305,8 @@ func (er *EmailRepositoryService) GetFolders(email string) ([]string, error) {
 		`SELECT f.name
 		 FROM folder AS f
 		 JOIN profile AS p ON f.user_id = p.id
-		 WHERE p.email = $1`, email)
+		 WHERE p.email = $1
+		 ORDER BY f.id`, email)
 	if err != nil {
 		er.logger.Error(err.Error())
 		return nil, err
@@ -496,7 +484,7 @@ func (er *EmailRepositoryService) RenameFolder(email string, folderName string, 
 	_, err = tx.Exec(
 		`UPDATE folder
 		 SET name = $2
-		 WHERE message_id = $1`,
+		 WHERE id = $1`,
 		folderID, newFolderName,
 	)
 	if err != nil {
@@ -543,7 +531,7 @@ func (er *EmailRepositoryService) ChangeEmailFolder(id int, email string, folder
 	_, err = tx.Exec(
 		`UPDATE email_transaction
 			SET folder_id = $2
-			WHERE message_id = $1`,
+			WHERE id = $1`,
 		id, folderID,
 	)
 	if err != nil {
@@ -552,6 +540,72 @@ func (er *EmailRepositoryService) ChangeEmailFolder(id int, email string, folder
 	}
 
 	return tx.Commit()
+}
+
+func (er *EmailRepositoryService) CheckFolder(email string, folderName string) (bool, error) {
+	email = utils.Sanitize(email)
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return false, err
+	}
+	defer tx.Rollback()
+
+	folderID := 0
+	err = tx.QueryRow(
+		`SELECT f.id
+		 FROM folder AS f
+		 JOIN profile AS p ON f.user_id = p.id
+		 WHERE p.email = $1 AND f.name = $2`, email, folderName).Scan(&folderID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		er.logger.Error(err.Error())
+		return false, err
+	}
+
+	if folderID > 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
+	
+	return false, tx.Commit()
+}
+
+func (er *EmailRepositoryService) GetMessageFolder(msgID int) (string, error) {
+	
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return "", err
+	}
+	defer tx.Rollback()
+
+	folderID := 0
+	err = tx.QueryRow(
+		`SELECT folder_id
+		 FROM email_transaction
+		 WHERE id = $1`, msgID).Scan(&folderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return "", err
+	}
+
+	var folderName string
+	err = tx.QueryRow(
+		`SELECT name
+		 FROM folder
+		 WHERE id = $1`, folderID).Scan(&folderName)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return "", err
+	}
+	
+	return folderName, tx.Commit()
 }
 
 func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
@@ -596,7 +650,7 @@ func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
 	}
 	var senderFolderID int
 	err = tx.QueryRow(
-		`SELECT id FROM folder WHERE user_id = $1 AND name = "Черновики"`,
+		`SELECT id FROM folder WHERE user_id = $1 AND name = 'Черновики'`,
 		senderID,
 	).Scan(&senderFolderID)
 	if err != nil {
@@ -645,12 +699,24 @@ func (er *EmailRepositoryService) UpdateDraft(email models.Draft) error {
 	_, err = tx.Exec(
 		`UPDATE message
 			SET title = $2, description = $3
-			WHERE mid = $1`,
+			WHERE id = $1`,
 		messageID, email.Title, email.Description,
 	)
 	if err != nil {
 		er.logger.Error(err.Error())
 		return err
 	}
+
+	_, err = tx.Exec(
+		`UPDATE email_transaction
+			SET recipient_email = $2
+			WHERE id = $1`,
+		email.ID, email.Recipient,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
 	return tx.Commit()
 }

@@ -16,7 +16,7 @@ func (er *EmailRouter) UpdateDraftHandler(w http.ResponseWriter, r *http.Request
 
 	var draft models.Draft
 	err := json.NewDecoder(r.Body).Decode(&draft)
-
+	
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
 		return
@@ -24,6 +24,7 @@ func (er *EmailRouter) UpdateDraftHandler(w http.ResponseWriter, r *http.Request
 
 	draft.Title = utils.Sanitize(draft.Title)
 	draft.Description = utils.Sanitize(draft.Description)
+	draft.Recipient = utils.Sanitize(draft.Recipient)
 
 	err = er.EmailUseCase.UpdateDraft(draft)
 	if err != nil {

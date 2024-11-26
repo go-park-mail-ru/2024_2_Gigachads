@@ -17,17 +17,20 @@ type Email struct {
 }
 
 type Draft struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	ID           int       `json:"id"`
+	Recipient    string    `json:"recipient"`
+	Title        string    `json:"title"`
+	Description  string    `json:"description"`
+	ParentID     int       `json:"parentID"`
 }
 
 type Folder struct {
-	Name string `json:"name"`
+	Name 		 string    `json:"name"`
 }
 
 type RenameFolder struct {
-	NewName string `json:"new_name"`
+	Name 		 string    `json:"name"`
+	NewName 	 string    `json:"new_name"`
 }
 
 type EmailUseCase interface {
@@ -39,7 +42,7 @@ type EmailUseCase interface {
 	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
 	SaveEmail(email Email) error
-	DeleteEmails(userEmail string, messageIDs []int, folder string) error
+	DeleteEmails(userEmail string, messageIDs []int) error
 	GetFolders(email string) ([]string, error)
 	GetFolderEmails(email string, folderName string) ([]Email, error)
 	CreateFolder(email string, folderName string) error
@@ -62,7 +65,7 @@ type EmailRepository interface {
 	SaveEmail(email Email) error
 	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
-	DeleteEmails(userEmail string, messageIDs []int, folder string) error
+	DeleteEmails(userEmail string, messageIDs []int) error
 	GetFolders(email string) ([]string, error)
 	GetFolderEmails(email string, folderName string) ([]Email, error)
 	CreateFolder(email string, folderName string) error
@@ -71,6 +74,8 @@ type EmailRepository interface {
 	ChangeEmailFolder(id int, email string, folderName string) error
 	CreateDraft(email Email) error
 	UpdateDraft(email Draft) error
+	CheckFolder(email string, folderName string) (bool, error)
+	GetMessageFolder(msgID int) (string, error)
 }
 type EmailRepositorySMTP interface {
 	SaveEmail(email Email) error

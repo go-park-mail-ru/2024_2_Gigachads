@@ -45,8 +45,22 @@ func (es *EmailService) ChangeStatus(id int, status bool) error {
 	return es.EmailRepo.ChangeStatus(id, status)
 }
 
-func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int, folder string) error {
-	return es.EmailRepo.DeleteEmails(userEmail, messageIDs, folder)
+func (es *EmailService) DeleteEmails(userEmail string, messageIDs []int) error {
+	for _, elem := range messageIDs {
+		folder, err := es.EmailRepo.GetMessageFolder(elem)
+		if err != nil {
+			return err
+		}
+		if folder == "Корзина" {
+			return es.EmailRepo.DeleteEmails(userEmail, messageIDs)
+		} else {
+			err = es.EmailRepo.ChangeEmailFolder(elem, userEmail, "Корзина")
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (es *EmailService) GetFolders(email string) ([]string, error) {
@@ -65,10 +79,36 @@ func (es *EmailService) GetFolders(email string) ([]string, error) {
 }
 
 func (es *EmailService) GetFolderEmails(email string, folderName string) ([]models.Email, error) {
-	return es.EmailRepo.GetFolderEmails(email, folderName)
+	emails, err := es.EmailRepo.GetFolderEmails(email, folderName)
+	if err != nil {
+		return nil, err
+	}
+	if folderName == "Отправленные" || folderName == "Черновики" {
+		for i, _ := range emails {
+			temp := emails[i].Sender_email
+			emails[i].Sender_email = emails[i].Recipient
+			emails[i].Recipient = temp
+		}
+	}
+
+	// for i, _ := range emails {
+	// 	if emails[i].Sender_email == email {
+	// 		temp := emails[i].Sender_email
+	// 		emails[i].Sender_email = emails[i].Recipient
+	// 		emails[i].Recipient = temp
+	// 	}
+	// }
+
+	return emails, nil
 }
 
 func (es *EmailService) CreateFolder(email string, folderName string) error {
+	if ok, err := es.EmailRepo.CheckFolder(email, folderName); ok {
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("folder_already_exists")
+	}
 	return es.EmailRepo.CreateFolder(email, folderName)
 }
 
@@ -80,6 +120,15 @@ func (es *EmailService) DeleteFolder(email string, folderName string) error {
 }
 
 func (es *EmailService) RenameFolder(email string, folderName string, newFolderName string) error {
+	if folderName == "Входящие" || folderName == "Отправленные" || folderName == "Спам" || folderName == "Черновики" || folderName == "Корзина" {
+		return fmt.Errorf("unable_to_rename_folder")
+	}
+	if ok, err := es.EmailRepo.CheckFolder(email, newFolderName); ok {
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("folder_already_exists")
+	}
 	return es.EmailRepo.RenameFolder(email, folderName, newFolderName)
 }
 
@@ -96,12 +145,17 @@ func (es *EmailService) UpdateDraft(email models.Draft) error {
 }
 
 func (es *EmailService) SendDraft(email models.Email) error {
-	err := es.EmailRepo.DeleteEmails(email.Sender_email, []int{email.ID}, "sent")
+	m, err := es.EmailRepo.GetEmailByID(email.ID)
 	if err != nil {
 		return err
 	}
-	return es.EmailRepo.SaveEmail(email)
+	err = es.EmailRepo.DeleteEmails(email.Sender_email, []int{email.ID})
+	if err != nil {
+		return err
+	}
+	return es.EmailRepo.SaveEmail(m)
 }
+
 func (es *EmailService) SendEmail(ctx context.Context, from string, to []string, subject string, body string) error {
 	for i := range to {
 		req := &proto.SendEmailRequest{From: from, To: to[i], Subject: subject, Body: body}
