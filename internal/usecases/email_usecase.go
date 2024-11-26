@@ -194,9 +194,13 @@ func (es *EmailService) UpdateDraft(email models.Draft) error {
 }
 
 func (es *EmailService) SendDraft(email models.Email) error {
-	err := es.EmailRepo.DeleteEmails(email.Sender_email, []int{email.ID})
+	m, err := es.EmailRepo.GetEmailByID(email.ID)
 	if err != nil {
 		return err
 	}
-	return es.EmailRepo.SaveEmail(email)
+	err = es.EmailRepo.DeleteEmails(email.Sender_email, []int{email.ID})
+	if err != nil {
+		return err
+	}
+	return es.EmailRepo.SaveEmail(m)
 }
