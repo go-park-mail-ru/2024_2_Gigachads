@@ -22,20 +22,23 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 		}
 
 		cookie, err := r.Cookie("email")
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
 		sessionID := ""
 		if cookie != nil {
 			sessionID = cookie.Value
 		}
 
 		cookie, err = r.Cookie("csrf")
-		csrf := ""
-		if cookie != nil {
-			csrf = cookie.Value
-		}
-
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
+		}
+		csrf := ""
+		if cookie != nil {
+			csrf = cookie.Value
 		}
 
 		email, err := m.AuthUseCase.CheckAuth(r.Context(), sessionID)
