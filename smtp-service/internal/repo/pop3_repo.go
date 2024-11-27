@@ -3,7 +3,7 @@ package repo
 import (
 	"mail/api-service/pkg/logger"
 	"mail/config"
-	"mail/models"
+	"mail/smtp-service/internal/models"
 	"mail/smtp-service/pkg/pop3"
 )
 

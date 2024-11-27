@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,7 +19,7 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 	tests := []struct {
 		name        string
 		setupAuth   bool
-		input       models.Draft
+		input       models2.Draft
 		mockSetup   func(*mocks.MockEmailUseCase)
 		wantStatus  int
 		wantBody    string
@@ -29,7 +29,7 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 		{
 			name:      "успешное обновление черновика",
 			setupAuth: true,
-			input: models.Draft{
+			input: models2.Draft{
 				ID:          1,
 				Recipient:   "recipient@example.com",
 				Title:       "Updated Draft",
@@ -38,7 +38,7 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					UpdateDraft(gomock.Any()).
-					DoAndReturn(func(draft models.Draft) error {
+					DoAndReturn(func(draft models2.Draft) error {
 						assert.Equal(t, 1, draft.ID)
 						assert.Equal(t, "recipient@example.com", draft.Recipient)
 						assert.Equal(t, "Updated Draft", draft.Title)
@@ -65,7 +65,7 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 		{
 			name:      "ошибка при обновлении черновика",
 			setupAuth: true,
-			input: models.Draft{
+			input: models2.Draft{
 				ID:          1,
 				Recipient:   "recipient@example.com",
 				Title:       "Test Draft",
@@ -82,7 +82,7 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 		{
 			name:      "проверка санитизации данных",
 			setupAuth: true,
-			input: models.Draft{
+			input: models2.Draft{
 				ID:          1,
 				Recipient:   "<script>alert('xss')</script>recipient@example.com",
 				Title:       "<script>alert('xss')</script>Test Title",
@@ -91,7 +91,7 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					UpdateDraft(gomock.Any()).
-					DoAndReturn(func(draft models.Draft) error {
+					DoAndReturn(func(draft models2.Draft) error {
 						assert.Equal(t, "recipient@example.com", draft.Recipient)
 						assert.Equal(t, "Test Title", draft.Title)
 						assert.Equal(t, "Test Content", draft.Description)
@@ -137,7 +137,7 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
 			if tt.wantBody != "" {
-				var response models.Error
+				var response models2.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantBody, response.Body, "Unexpected error body")

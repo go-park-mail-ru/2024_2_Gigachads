@@ -3,16 +3,15 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"mail/api-service/internal/models"
 	"testing"
 	"time"
-
-	proto "mail/gen/go/smtp"
-	"mail/models"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	proto "mail/gen/go/smtp"
 )
 
 type MockEmailRepository struct {

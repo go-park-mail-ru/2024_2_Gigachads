@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"mail/api-service/pkg/logger"
-	"mail/models"
+	"mail/auth-service/internal/models"
 )
 
 type UserRepositoryService struct {

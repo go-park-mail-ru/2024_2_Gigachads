@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,13 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
 )
 
 func TestEmailRouter_DeleteFolderHandler(t *testing.T) {
 	tests := []struct {
 		name        string
-		input       models.Folder
+		input       models2.Folder
 		setupAuth   bool
 		mockSetup   func(*mocks.MockEmailUseCase)
 		wantStatus  int
@@ -29,7 +29,7 @@ func TestEmailRouter_DeleteFolderHandler(t *testing.T) {
 	}{
 		{
 			name: "успешное удаление папки",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "TestFolder",
 			},
 			setupAuth: true,
@@ -48,7 +48,7 @@ func TestEmailRouter_DeleteFolderHandler(t *testing.T) {
 		},
 		{
 			name: "ошибка удаления папки",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "TestFolder",
 			},
 			setupAuth: true,
@@ -103,7 +103,7 @@ func TestEmailRouter_DeleteFolderHandler(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
 			if tt.wantBody != "" {
-				var response models.Error
+				var response models2.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantBody, response.Body, "Unexpected response body")

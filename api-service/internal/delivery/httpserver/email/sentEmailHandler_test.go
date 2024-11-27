@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -22,7 +22,7 @@ func TestSentEmailsHandler_Success(t *testing.T) {
 	mockLogger := mocks.NewMockLogable(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	emails := []models.Email{
+	emails := []models2.Email{
 		{
 			ID:           1,
 			Sender_email: "sender@example.com",
@@ -55,7 +55,7 @@ func TestSentEmailsHandler_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 
-	var response []models.Email
+	var response []models2.Email
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, len(emails), len(response))
@@ -80,7 +80,7 @@ func TestSentEmailsHandler_Unauthorized(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
-	var response models.Error
+	var response models2.Error
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, "unauthorized", response.Body)
@@ -111,7 +111,7 @@ func TestSentEmailsHandler_Error(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 
-	var response models.Error
+	var response models2.Error
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, "failed_to_get_sent_emails", response.Body)

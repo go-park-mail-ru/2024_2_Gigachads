@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,25 +20,25 @@ func TestEmailRouter_FolderEmailsHandler(t *testing.T) {
 	testTime := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 	tests := []struct {
 		name        string
-		input       models.Folder
+		input       models2.Folder
 		setupAuth   bool
 		mockSetup   func(*mocks.MockEmailUseCase)
 		wantStatus  int
 		wantBody    string
-		wantData    []models.Email
+		wantData    []models2.Email
 		useRawInput bool
 		rawInput    string
 	}{
 		{
 			name: "успешное получение писем",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "Inbox",
 			},
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetFolderEmails("test@example.com", "Inbox").
-					Return([]models.Email{
+					Return([]models2.Email{
 						{
 							ID:           1,
 							ParentID:     0,
@@ -52,7 +52,7 @@ func TestEmailRouter_FolderEmailsHandler(t *testing.T) {
 					}, nil)
 			},
 			wantStatus: http.StatusOK,
-			wantData: []models.Email{
+			wantData: []models2.Email{
 				{
 					ID:           1,
 					ParentID:     0,
@@ -81,7 +81,7 @@ func TestEmailRouter_FolderEmailsHandler(t *testing.T) {
 		},
 		{
 			name: "ошибка получения писем",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "Inbox",
 			},
 			setupAuth: true,
@@ -128,14 +128,14 @@ func TestEmailRouter_FolderEmailsHandler(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
 			if tt.wantBody != "" {
-				var response models.Error
+				var response models2.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantBody, response.Body, "Unexpected error body")
 			}
 
 			if tt.wantData != nil {
-				var response []models.Email
+				var response []models2.Email
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 

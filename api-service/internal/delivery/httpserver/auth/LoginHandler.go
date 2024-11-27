@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
+	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
-	"mail/models"
 	"net/http"
 	"time"
 )
@@ -29,8 +30,10 @@ func (ar *AuthRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_password")
 		return
 	}
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
 
-	avatar, name, session, csrf, err := ar.AuthUseCase.Login(r.Context(), &login)
+	avatar, name, session, csrf, err := ar.AuthUseCase.Login(ctx, &login)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusForbidden, "invalid_login_or_password")
 		return

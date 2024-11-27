@@ -2,9 +2,9 @@ package email
 
 import (
 	"encoding/json"
+	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
 	"net/http"
-	"mail/models"
 )
 
 func (er *EmailRouter) FolderEmailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -17,7 +17,7 @@ func (er *EmailRouter) FolderEmailsHandler(w http.ResponseWriter, r *http.Reques
 
 	var folder models.Folder
 	err := json.NewDecoder(r.Body).Decode(&folder)
-	
+
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
 		return

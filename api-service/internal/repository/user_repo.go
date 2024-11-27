@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"mail/api-service/internal/models"
 	"mail/api-service/pkg/logger"
-	"mail/models"
 )
 
 type UserRepositoryService struct {

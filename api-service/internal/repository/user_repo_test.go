@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"mail/models"
+	"mail/api-service/internal/models"
 	"regexp"
 	"testing"
 

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"

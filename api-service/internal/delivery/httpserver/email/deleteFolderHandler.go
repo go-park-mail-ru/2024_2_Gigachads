@@ -2,8 +2,8 @@ package email
 
 import (
 	"encoding/json"
+	models2 "mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
-	"mail/models"
 	"net/http"
 )
 
@@ -15,7 +15,7 @@ func (er *EmailRouter) DeleteFolderHandler(w http.ResponseWriter, r *http.Reques
 	}
 	email := ctxEmail.(string)
 
-	var folder models.Folder
+	var folder models2.Folder
 	err := json.NewDecoder(r.Body).Decode(&folder)
 
 	if err != nil {
@@ -25,7 +25,7 @@ func (er *EmailRouter) DeleteFolderHandler(w http.ResponseWriter, r *http.Reques
 
 	folder.Name = utils.Sanitize(folder.Name)
 
-	if !models.InputIsValid(folder.Name) {
+	if !models2.InputIsValid(folder.Name) {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_name")
 		return
 	}

@@ -3,15 +3,14 @@ package auth
 import (
 	"bytes"
 	"encoding/json"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
 )
 
 func TestAuthRouter_LoginHandler(t *testing.T) {

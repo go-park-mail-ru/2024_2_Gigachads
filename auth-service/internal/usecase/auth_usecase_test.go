@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 	"mail/auth-service/internal/mocks"
+	"mail/auth-service/internal/models"
 	"mail/gen/go/auth"
-	"mail/models"
 	"testing"
 
 	"github.com/golang/mock/gomock"

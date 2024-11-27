@@ -3,7 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
-	"mail/models"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"

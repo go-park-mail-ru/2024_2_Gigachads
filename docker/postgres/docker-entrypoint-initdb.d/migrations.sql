@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS profile (
 CREATE TABLE IF NOT EXISTS message (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title TEXT NOT NULL CHECK (LENGTH(title) <= 100),
-    description TEXT DEFAULT NULL
+    description TEXT DEFAULT NULL CHECK (LENGTH(description) <= 10000)
 );
 
 -- Создание таблицы папок (folder)

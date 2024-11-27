@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	models "mail/models"
+	"mail/auth-service/internal/models"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"

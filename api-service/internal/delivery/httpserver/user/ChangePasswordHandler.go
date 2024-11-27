@@ -2,8 +2,8 @@ package user
 
 import (
 	"encoding/json"
+	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
-	"mail/models"
 	"net/http"
 )
 

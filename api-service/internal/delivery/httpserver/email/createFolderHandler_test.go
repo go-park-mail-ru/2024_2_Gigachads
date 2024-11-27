@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -19,7 +19,7 @@ import (
 func TestEmailRouter_CreateFolderHandler(t *testing.T) {
 	tests := []struct {
 		name       string
-		input      models.Folder
+		input      models2.Folder
 		setupAuth  bool
 		mockSetup  func(*mocks.MockEmailUseCase)
 		wantStatus int
@@ -27,7 +27,7 @@ func TestEmailRouter_CreateFolderHandler(t *testing.T) {
 	}{
 		{
 			name: "успешное создание папки",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "TestFolder",
 			},
 			setupAuth: true,
@@ -40,7 +40,7 @@ func TestEmailRouter_CreateFolderHandler(t *testing.T) {
 		},
 		{
 			name: "неавторизованный запрос",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "TestFolder",
 			},
 			setupAuth:  false,
@@ -49,7 +49,7 @@ func TestEmailRouter_CreateFolderHandler(t *testing.T) {
 		},
 		{
 			name: "пустое имя папки",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "",
 			},
 			setupAuth: true,
@@ -64,7 +64,7 @@ func TestEmailRouter_CreateFolderHandler(t *testing.T) {
 		},
 		{
 			name: "слишком длинное имя папки",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: strings.Repeat("a", 51),
 			},
 			setupAuth: true,
@@ -79,7 +79,7 @@ func TestEmailRouter_CreateFolderHandler(t *testing.T) {
 		},
 		{
 			name: "ошибка создания папки",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "TestFolder",
 			},
 			setupAuth: true,
@@ -120,7 +120,7 @@ func TestEmailRouter_CreateFolderHandler(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code)
 
 			if tt.wantBody != "" {
-				var response models.Error
+				var response models2.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantBody, response.Body)

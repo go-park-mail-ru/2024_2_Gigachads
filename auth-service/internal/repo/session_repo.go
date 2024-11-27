@@ -4,7 +4,7 @@ import (
 	"context"
 	"mail/api-service/pkg/logger"
 	"mail/api-service/pkg/utils"
-	"mail/models"
+	"mail/auth-service/internal/models"
 	"time"
 
 	"github.com/redis/go-redis/v9"

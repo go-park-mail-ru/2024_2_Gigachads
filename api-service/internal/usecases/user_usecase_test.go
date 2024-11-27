@@ -4,7 +4,7 @@ package usecase
 
 import (
 	"fmt"
-	"mail/models"
+	"mail/api-service/internal/models"
 	"os"
 	"reflect"
 	"testing"

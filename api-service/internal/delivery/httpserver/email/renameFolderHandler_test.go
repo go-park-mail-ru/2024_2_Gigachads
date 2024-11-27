@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +18,7 @@ import (
 func TestEmailRouter_RenameFolderHandler(t *testing.T) {
 	tests := []struct {
 		name        string
-		input       models.RenameFolder
+		input       models2.RenameFolder
 		setupAuth   bool
 		mockSetup   func(*mocks.MockEmailUseCase)
 		wantStatus  int
@@ -28,7 +28,7 @@ func TestEmailRouter_RenameFolderHandler(t *testing.T) {
 	}{
 		{
 			name: "успешное переименование папки",
-			input: models.RenameFolder{
+			input: models2.RenameFolder{
 				Name:    "OldFolder",
 				NewName: "NewFolder",
 			},
@@ -56,7 +56,7 @@ func TestEmailRouter_RenameFolderHandler(t *testing.T) {
 		},
 		{
 			name: "ошибка переименования",
-			input: models.RenameFolder{
+			input: models2.RenameFolder{
 				Name:    "OldFolder",
 				NewName: "NewFolder",
 			},
@@ -104,7 +104,7 @@ func TestEmailRouter_RenameFolderHandler(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
 			if tt.wantBody != "" {
-				var response models.Error
+				var response models2.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantBody, response.Body, "Unexpected error body")

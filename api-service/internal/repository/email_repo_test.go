@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	"mail/api-service/internal/models"
 	"testing"
 	"time"
 

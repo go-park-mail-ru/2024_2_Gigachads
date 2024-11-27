@@ -7,7 +7,7 @@ import (
 	"errors"
 	"mail/api-service/internal/delivery/converters"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -53,7 +53,7 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetEmailByID(1).
-					Return(models.Email{
+					Return(models2.Email{
 						Sender_email: "original@example.com",
 					}, nil)
 				m.EXPECT().
@@ -74,7 +74,7 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetEmailByID(1).
-					Return(models.Email{}, nil)
+					Return(models2.Email{}, nil)
 				m.EXPECT().
 					CreateDraft(gomock.Any()).
 					Return(nil)
@@ -106,7 +106,7 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetEmailByID(1).
-					Return(models.Email{}, errors.New("not found"))
+					Return(models2.Email{}, errors.New("not found"))
 			},
 			wantStatus: http.StatusBadRequest,
 			wantBody:   "parent_email_not_found",
@@ -138,7 +138,7 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetEmailByID(1).
-					Return(models.Email{
+					Return(models2.Email{
 						Sender_email: "original@example.com",
 					}, nil)
 				m.EXPECT().
@@ -160,7 +160,7 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetEmailByID(1).
-					Return(models.Email{}, nil)
+					Return(models2.Email{}, nil)
 				m.EXPECT().
 					CreateDraft(gomock.Any()).
 					Return(errors.New("db error"))
@@ -205,7 +205,7 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
 			if tt.wantBody != "" {
-				var response models.Error
+				var response models2.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantBody, response.Body, "Unexpected response body")

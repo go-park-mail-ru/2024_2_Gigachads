@@ -2,7 +2,7 @@ package repository
 
 import (
 	"database/sql"
-	"mail/models"
+	"mail/auth-service/internal/models"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"

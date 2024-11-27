@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"context"
 	"mail/api-service/pkg/utils"
 	"net/http"
+	"time"
 )
 
 func (ar *AuthRouter) LogoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -13,7 +15,10 @@ func (ar *AuthRouter) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	email := ctxEmail.(string)
 
-	err := ar.AuthUseCase.Logout(r.Context(), email)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	err := ar.AuthUseCase.Logout(ctx, email)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_logout")
 		return

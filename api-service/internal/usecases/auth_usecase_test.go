@@ -3,13 +3,12 @@ package usecase
 import (
 	"context"
 	"errors"
+	"mail/api-service/internal/models"
 	"testing"
-
-	proto "mail/gen/go/auth"
-	"mail/models"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	proto "mail/gen/go/auth"
 )
 
 type mockAuthServiceClient struct {

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,7 +20,7 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 	tests := []struct {
 		name       string
 		emailID    string
-		input      models.Folder
+		input      models2.Folder
 		setupAuth  bool
 		mockSetup  func(*mocks.MockEmailUseCase)
 		wantStatus int
@@ -29,7 +29,7 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 		{
 			name:    "успешное изменение папки",
 			emailID: "1",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "NewFolder",
 			},
 			setupAuth: true,
@@ -43,7 +43,7 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 		{
 			name:    "неавторизованный запрос",
 			emailID: "1",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "NewFolder",
 			},
 			setupAuth:  false,
@@ -53,7 +53,7 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 		{
 			name:    "некорректный ID папки",
 			emailID: "invalid",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "NewFolder",
 			},
 			setupAuth:  true,
@@ -63,7 +63,7 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 		{
 			name:    "ошибка изменения папки",
 			emailID: "1",
-			input: models.Folder{
+			input: models2.Folder{
 				Name: "NewFolder",
 			},
 			setupAuth: true,
@@ -108,7 +108,7 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
 			if tt.wantBody != "" {
-				var response models.Error
+				var response models2.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantBody, response.Body, "Unexpected response body")

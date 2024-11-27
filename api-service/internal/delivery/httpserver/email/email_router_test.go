@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	"mail/models"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -65,7 +65,7 @@ func TestEmailRouter_FoldersWithUser(t *testing.T) {
 			},
 			endpoint:   "/folder",
 			method:     http.MethodPost,
-			body:       models.Folder{Name: "NewFolder"},
+			body:       models2.Folder{Name: "NewFolder"},
 			wantStatus: http.StatusOK,
 		},
 		{
@@ -78,7 +78,7 @@ func TestEmailRouter_FoldersWithUser(t *testing.T) {
 			},
 			endpoint:   "/folder",
 			method:     http.MethodDelete,
-			body:       models.Folder{Name: "OldFolder"},
+			body:       models2.Folder{Name: "OldFolder"},
 			wantStatus: http.StatusOK,
 		},
 		{
@@ -91,7 +91,7 @@ func TestEmailRouter_FoldersWithUser(t *testing.T) {
 			},
 			endpoint:   "/folder",
 			method:     http.MethodPut,
-			body:       models.RenameFolder{Name: "OldFolder", NewName: "NewFolder"},
+			body:       models2.RenameFolder{Name: "OldFolder", NewName: "NewFolder"},
 			wantStatus: http.StatusOK,
 		},
 	}
@@ -132,7 +132,7 @@ func TestEmailRouter_FoldersWithUser(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
 			if tt.wantBody != "" {
-				var response models.Error
+				var response models2.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantBody, response.Body, "Unexpected error body")

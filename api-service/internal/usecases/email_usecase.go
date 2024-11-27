@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"mail/api-service/internal/models"
 	proto "mail/gen/go/smtp"
-	"mail/models"
 )
 
 type EmailService struct {

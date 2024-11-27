@@ -1,9 +1,10 @@
 package email
 
 import (
+	"context"
 	"encoding/json"
+	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
-	"mail/models"
 	"net/http"
 	"strings"
 	"time"
@@ -40,9 +41,10 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 			utils.ErrorResponse(w, r, http.StatusInternalServerError, "cant_send_draft")
 			return
 		}
-
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
 		er.EmailUseCase.SendEmail(
-			r.Context(),
+			ctx,
 			senderEmail,
 			[]string{req.Recipient},
 			req.Title,
@@ -72,9 +74,10 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 				utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_save_reply")
 				return
 			}
-
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+			defer cancel()
 			er.EmailUseCase.ReplyEmail(
-				r.Context(),
+				ctx,
 				senderEmail,
 				originalEmail.Sender_email,
 				originalEmail,
@@ -99,8 +102,10 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 			}
 
 			recipients := strings.Split(req.Recipient, ",")
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+			defer cancel()
 			er.EmailUseCase.ForwardEmail(
-				r.Context(),
+				ctx,
 				senderEmail,
 				recipients,
 				originalEmail,
