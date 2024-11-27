@@ -2,12 +2,12 @@ swagger: '2.0'
 info:
   description: API for GigaMail
   title: GigaMail
-  version: '1.0'
-host: localhost:8080
-basePath: /
+  version: '1.4'
+host: 89.208.228.234
+basePath: /api/v1
 paths:
 
-  /mail/inbox:
+  /email/inbox:
     get:
       description: Get all incoming mails
       produces:
@@ -15,6 +15,28 @@ paths:
       tags:
         - mails
       summary: List with incoming emails
+      responses:
+        '200':
+          description: Emails Data
+          schema:
+            $ref: '#/definitions/mailList'
+        '401':
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/error'
+        '404':
+          description: Error with list
+          schema:
+            $ref: '#/definitions/error'
+            
+  /email/sent:
+    get:
+      description: Get all outcoming mails
+      produces:
+        - application/json
+      tags:
+        - mails
+      summary: List with outcoming emails
       responses:
         '200':
           description: Emails Data
@@ -50,7 +72,7 @@ paths:
         '200':
           description: Login successful
           schema:
-            $ref: '#/definitions/response'
+            $ref: '#/definitions/LoginAnswer'
         '400':
           description: Invalid request body
           schema:
@@ -60,8 +82,100 @@ paths:
           schema:
             $ref: '#/definitions/error'
             
+  /settings/avatar:
+    put:
+      description: change avatar
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - setting
+      summary: change user avatar
+      parameters:
+        - description: User binary avatar
+          name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/avatar'
+      responses:
+        '200':
+          description: Avatar changed
+          schema:
+            $ref: '#/definitions/avatar_response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to change
+          schema:
+            $ref: '#/definitions/error'
+            
+            
+  /settings/password:
+    put:
+      description: change password
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - setting
+      summary: change user password
+      parameters:
+        - description: new password and repassword for check
+          name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/password'
+      responses:
+        '200':
+          description: Password changed
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to change
+          schema:
+            $ref: '#/definitions/error'
+  /settings/name:
+    put:
+      description: change nickname
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - setting
+      summary: change user nickname
+      parameters:
+        - description: new neckname
+          name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/nickname'
+      responses:
+        '200':
+          description: Password changed
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to change
+          schema:
+            $ref: '#/definitions/error'
   /logout:
-    post:
+    delete:
       description: Logout
       produces:
         - application/json
@@ -108,17 +222,448 @@ paths:
           description: Failed to add user
           schema:
             $ref: '#/definitions/error'
+            
+  /email/{id}/status:
+    put:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Change status email
+      parameters:
+        - name: id
+          in: path
+          description: Идентификатор письма
+          required: true
+          type: string
+        - name: status
+          in: body
+          description: Передаю статус на который хочу поменять
+          required: true
+          schema:
+            $ref: '#/definitions/status'
+      responses:
+        '200':
+          description: New user created
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to add user
+          schema:
+            $ref: '#/definitions/error'
+       
+       
+       
+  /email:
+    post:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Create email
+      parameters:
+        - name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/email'
+          
+      responses:
+        '200':
+          description: email created
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to add email
+          schema:
+            $ref: '#/definitions/error'
+    delete:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Delete emails
+      parameters:
+        - name: data
+          in: body
+          description: Массив айдишников для удаления
+          required: true
+          schema:
+            $ref: '#/definitions/array_id'
+      responses:
+        '200':
+          description: Status changed
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to add user
+          schema:
+            $ref: '#/definitions/error'
+  
+  /email/{id}:
+    
+    get:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Get email
+      parameters:
+        - name: id
+          in: path
+          description: Идентификатор письма
+          required: true
+          type: string
+          
+      responses:
+        '200':
+          description: the parent tree of an email starting from itself to the last parent
+          schema:
+            $ref: '#/definitions/mailList'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to add email
+          schema:
+            $ref: '#/definitions/error'
+            
+  /email/{id}/folder:
+    
+    put:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Change email folder
+      parameters:
+        - name: id
+          in: path
+          description: Идентификатор письма
+          required: true
+          type: string
+        - name: data
+          in: body
+          description: Название новой папки
+          required: true
+          schema:
+            $ref: '#/definitions/folder'
+      responses:
+        '200':
+          description: folder changed
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Something failed
+          schema:
+            $ref: '#/definitions/error'
+    
+   
+  /folder/{name}:
+    get:
+      description: Get all mails from folder
+      produces:
+        - application/json
+      tags:
+        - folder
+      summary: List with folder emails
+      parameters:
+        - name: name
+          in: path
+          description: Название папки
+          required: true
+          type: string
+          
+      responses:
+        '200':
+          description: Emails Data
+          schema:
+            $ref: '#/definitions/mailList'
+        '401':
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/error'
+        '404':
+          description: Error with list
+          schema:
+            $ref: '#/definitions/error'
+    put:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - folder
+      summary: Change folder name
+      parameters:
+        - name: name
+          in: path
+          description: Название папки
+          required: true
+          type: string
+        - name: new_name
+          in: body
+          description: Новое название папки
+          required: true
+          schema:
+            $ref: '#/definitions/change_folder'
+      responses:
+        '200':
+          description: name changed
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to add user
+          schema:
+            $ref: '#/definitions/error'
+            
+  
+    post:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - folder
+      summary: Create folder
+      parameters:
+        - name: name
+          in: path
+          description: Название папки
+          required: true
+          type: string
+      responses:
+        '200':
+          description: folder created
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to add folder
+          schema:
+            $ref: '#/definitions/error'
+    
+    delete:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - folder
+      summary: Delete folder
+      parameters:
+        - name: name
+          in: path
+          description: Название папки
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Status changed
+          schema:
+            $ref: '#/definitions/response'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to add user
+          schema:
+            $ref: '#/definitions/error'
+  /folder:
+    get:
+      description: Get all incoming mails
+      produces:
+        - application/json
+      tags:
+        - folder
+      summary: List with folders names
+      responses:
+        '200':
+          description: folders names
+          schema:
+            $ref: '#/definitions/foldersList'
+        '401':
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/error'
+        '404':
+          description: Error with list
+          schema:
+            $ref: '#/definitions/error'
+    
+  /draft:
+    post:
+        description: status
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        tags:
+          - draft
+        summary: Create draft
+        parameters:
+          - name: data
+            in: body
+            required: true
+            schema:
+              $ref: '#/definitions/email'
+            
+        responses:
+          '200':
+            description: draft created
+            schema:
+              $ref: '#/definitions/response'
+          '400':
+            description: Invalid request body
+            schema:
+              $ref: '#/definitions/error'
+          '500':
+            description: Failed to add email
+            schema:
+              $ref: '#/definitions/error'
+    
+    put:
+        description: status
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        tags:
+          - draft
+        summary: Change draft
+        parameters:
+          - name: data
+            in: body
+            required: true
+            schema:
+              $ref: '#/definitions/change_draft'
+            
+        responses:
+          '200':
+            description: draft created
+            schema:
+              $ref: '#/definitions/response'
+          '400':
+            description: Invalid request body
+            schema:
+              $ref: '#/definitions/error'
+          '500':
+            description: Failed to add email
+            schema:
+              $ref: '#/definitions/error'
+  
+  /draft/send:
+    post:
+        description: status
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        tags:
+          - draft
+        summary: Send draft
+        parameters:
+          - name: data
+            in: body
+            required: true
+            schema:
+              $ref: '#/definitions/send_draft'
+            
+        responses:
+          '200':
+            description: draft created
+            schema:
+              $ref: '#/definitions/response'
+          '400':
+            description: Invalid request body
+            schema:
+              $ref: '#/definitions/error'
+          '500':
+            description: Failed to add email
+            schema:
+              $ref: '#/definitions/error'
+
 definitions:
+
+  id_item:
+    type: object
+    properties:
+      id:
+        type: integer
+        
+  array_id:
+    type: array
+    items:
+       $ref: '#/definitions/id_item'
+       
   email:
     type: object
     properties:
-      author:
+      parentID:
+        description: parent email for answer
+        type: integer
+      recipient:
+        description: recipient
+        type: string
+      title:
+        description: Text of email
+        type: string
+      description:
+        description: Text of the email
+        type: string
+    
+  email_response:
+    type: object
+    properties:
+      id:
+        type: integer
+      sender:
         description: Sender login
         type: string
-      badge_text:
-        description: Text in badge
-        type: string
-      text:
+      title:
         description: Text of email
         type: string
       description:
@@ -127,13 +672,17 @@ definitions:
       date:
         description: Datetime of sending
         type: string
-      badge_type:
-        description: badge_type
-        type: string
+      isRead:
+        description: Status of email read
+        type: boolean
+        
+        
+  
+        
   mailList:
     type: array
     items:
-      $ref: '#/definitions/email'
+      $ref: '#/definitions/email_response'
   error:
     type: object
     properties:
@@ -162,7 +711,14 @@ definitions:
       repassword:
         description: User repeated password
         type: string
-        
+  LoginAnswer:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      avatarPath:
+        type: string
   userLogin:
     type: object
     properties:
@@ -172,4 +728,88 @@ definitions:
       password:
         description: User password
         type: string
-
+        
+  avatar:
+    type: object
+    properties:
+      avatar:
+        type: string
+        format: binary
+  avatar_response:
+    type: object
+    properties:
+      avatarPath:
+        type: string
+  status:
+    type: object
+    properties:
+      status:
+        type: boolean
+  password:
+    type: object
+    properties:
+      oldpassword:
+        type: string
+        description: new password
+      password:
+        type: string
+      repassword:
+        description: password for check
+        type: string
+        
+  nickname:
+    type: object
+    properties:
+      name:
+        description: new nick for user
+        type: string
+        
+  folder:
+    type: object
+    properties:
+      name:
+        description: folder name
+        type: string
+        
+  foldersList:
+    type: array
+    items:
+      type: string
+        
+  change_folder:
+    type: object
+    properties:
+      new_name:
+        description: new folder name
+        type: string
+  
+  change_draft:
+    type: object
+    properties:
+      id:
+        description: draft id
+        type: integer
+      title:
+        description: new title
+        type: string
+      description:
+        description: new description
+        type: string
+  send_draft:
+    type: object
+    properties:
+      id:
+        description: draft id
+        type: integer
+      parentID:
+        description: parent email for answer
+        type: integer
+      recipient:
+        description: recipient
+        type: string
+      title:
+        description: Text of email
+        type: string
+      description:
+        description: Text of the email
+        type: string

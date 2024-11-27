@@ -1,11 +1,19 @@
 httpserver: 
-    ip: 89.208.228.234
+    ip: 127.0.0.1
     port: 8080
     allowed_ips_by_cors:
-        - http://89.208.228.234/
+        - http://localhost
+
+authserver:
+    ip: 127.0.0.1
+    port: 8081
+
+smtpserver:
+    ip: 127.0.0.1
+    port: 8082
 
 postgres:
-    ip: 89.208.228.234
+    ip: 127.0.0.1
     port: 5432
     dbname: test
     user: test
@@ -24,7 +32,7 @@ pop3:
     password: test 
 
 redis:
-    ip: 89.208.228.234
+    ip: 127.0.0.1
     port: 6379
     dbnum: 0
     user: test

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"mail/pkg/logger"
+	"mail/api-service/pkg/logger"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -39,6 +39,14 @@ type Config struct {
 		User     string `yaml:"user"`
 		Password string `yaml:"password"`
 	} `yaml:"redis"`
+	AuthServer struct {
+		IP   string `yaml:"ip"`
+		Port string `yaml:"port"`
+	} `yaml:"authserver"`
+	SMTPServer struct {
+		IP   string `yaml:"ip"`
+		Port string `yaml:"port"`
+	} `yaml:"smtpserver"`
 }
 
 func GetConfig(path string, l logger.Logable) (*Config, error) {
