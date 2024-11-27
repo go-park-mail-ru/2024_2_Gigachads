@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"mail/internal/delivery/converters"
-	"mail/internal/delivery/httpserver/email/mocks"
-	"mail/internal/models"
+	"mail/api-service/internal/delivery/converters"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,7 +29,7 @@ func TestSendEmailHandler_SendSuccess(t *testing.T) {
 		Return(nil)
 
 	mockUseCase.EXPECT().
-		SendEmail("sender@example.com", []string{"recipient@example.com"}, "Test Subject", "Test Body").
+		SendEmail(gomock.Any(), "sender@example.com", []string{"recipient@example.com"}, "Test Subject", "Test Body").
 		Return(nil)
 
 	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
@@ -56,7 +56,7 @@ func TestSendEmailHandler_ForwardSuccess(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUseCase := mocks.NewMockEmailUseCase(ctrl)
-	originalEmail := models.Email{
+	originalEmail := models2.Email{
 		ID:           1,
 		Sender_email: "original@example.com",
 		Recipient:    "sender@example.com",
@@ -74,7 +74,7 @@ func TestSendEmailHandler_ForwardSuccess(t *testing.T) {
 		Return(originalEmail, nil)
 
 	mockUseCase.EXPECT().
-		ForwardEmail("sender@example.com", []string{"forward@example.com"}, originalEmail).
+		ForwardEmail(gomock.Any(), "sender@example.com", []string{"forward@example.com"}, originalEmail).
 		Return(nil)
 
 	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
@@ -101,7 +101,7 @@ func TestSendEmailHandler_ReplySuccess(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUseCase := mocks.NewMockEmailUseCase(ctrl)
-	originalEmail := models.Email{
+	originalEmail := models2.Email{
 		ID:           2,
 		Sender_email: "original@example.com",
 		Recipient:    "sender@example.com",
@@ -119,7 +119,7 @@ func TestSendEmailHandler_ReplySuccess(t *testing.T) {
 		Return(originalEmail, nil)
 
 	mockUseCase.EXPECT().
-		ReplyEmail("sender@example.com", "original@example.com", originalEmail, "This is a reply.").
+		ReplyEmail(gomock.Any(), "sender@example.com", "original@example.com", originalEmail, "This is a reply.").
 		Return(nil)
 
 	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
@@ -148,7 +148,7 @@ func TestSendEmailHandler_InvalidParentId(t *testing.T) {
 	mockUseCase := mocks.NewMockEmailUseCase(ctrl)
 	mockUseCase.EXPECT().
 		GetEmailByID(999).
-		Return(models.Email{}, errors.New("email not found"))
+		Return(models2.Email{}, errors.New("email not found"))
 
 	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
 	requestBody := converters.SendEmailRequest{
@@ -234,7 +234,7 @@ func TestSendEmailHandler_Success(t *testing.T) {
 		Return(nil)
 
 	mockEmailUseCase.EXPECT().
-		SendEmail("sender@example.com", []string{"recipient@example.com"}, req.Title, req.Description).
+		SendEmail(gomock.Any(), "sender@example.com", []string{"recipient@example.com"}, req.Title, req.Description).
 		Return(nil)
 
 	router.SendEmailHandler(rr, httpReq)
@@ -249,7 +249,7 @@ func TestSendEmailHandler_Reply(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	originalEmail := models.Email{
+	originalEmail := models2.Email{
 		ID:           1,
 		Sender_email: "original@example.com",
 		Title:        "Original Email",
@@ -277,7 +277,7 @@ func TestSendEmailHandler_Reply(t *testing.T) {
 		Return(nil)
 
 	mockEmailUseCase.EXPECT().
-		ReplyEmail("sender@example.com", "original@example.com", originalEmail, req.Description).
+		ReplyEmail(gomock.Any(), "sender@example.com", "original@example.com", originalEmail, req.Description).
 		Return(nil)
 
 	router.SendEmailHandler(rr, httpReq)
@@ -292,7 +292,7 @@ func TestSendEmailHandler_Forward(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	originalEmail := models.Email{
+	originalEmail := models2.Email{
 		ID:           1,
 		Sender_email: "original@example.com",
 		Description:  "Original Description",
@@ -320,7 +320,7 @@ func TestSendEmailHandler_Forward(t *testing.T) {
 		Return(nil)
 
 	mockEmailUseCase.EXPECT().
-		ForwardEmail("sender@example.com", []string{"forward@example.com"}, originalEmail).
+		ForwardEmail(gomock.Any(), "sender@example.com", []string{"forward@example.com"}, originalEmail).
 		Return(nil)
 
 	router.SendEmailHandler(rr, httpReq)
@@ -335,7 +335,7 @@ func TestSendEmailHandler_InvalidOperation(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	originalEmail := models.Email{
+	originalEmail := models2.Email{
 		ID:           1,
 		Sender_email: "original@example.com",
 	}
@@ -359,7 +359,7 @@ func TestSendEmailHandler_InvalidOperation(t *testing.T) {
 	router.SendEmailHandler(rr, httpReq)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	var response models.Error
+	var response models2.Error
 	json.NewDecoder(rr.Body).Decode(&response)
 	assert.Equal(t, "invalid_operation", response.Body)
 }
@@ -423,14 +423,14 @@ func TestSendEmailHandler_Errors(t *testing.T) {
 			if tc.name == "Parent Email Not Found" {
 				mockEmailUseCase.EXPECT().
 					GetEmailByID(999).
-					Return(models.Email{}, assert.AnError)
+					Return(models2.Email{}, assert.AnError)
 			}
 
 			rr := httptest.NewRecorder()
 			router.SendEmailHandler(rr, httpReq)
 
 			assert.Equal(t, tc.expectedStatus, rr.Code)
-			var response models.Error
+			var response models2.Error
 			json.NewDecoder(rr.Body).Decode(&response)
 			assert.Equal(t, tc.expectedError, response.Body)
 		})
@@ -444,7 +444,7 @@ func TestSendEmailHandler_SaveReplyError(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	originalEmail := models.Email{
+	originalEmail := models2.Email{
 		ID:           1,
 		Sender_email: "original@example.com",
 		Title:        "Original Email",
@@ -473,7 +473,7 @@ func TestSendEmailHandler_SaveReplyError(t *testing.T) {
 	router.SendEmailHandler(rr, httpReq)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	var response models.Error
+	var response models2.Error
 	json.NewDecoder(rr.Body).Decode(&response)
 	assert.Equal(t, "failed_to_save_reply", response.Body)
 }
@@ -485,7 +485,7 @@ func TestSendEmailHandler_SaveForwardError(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	originalEmail := models.Email{
+	originalEmail := models2.Email{
 		ID:           1,
 		Sender_email: "original@example.com",
 		Description:  "Original Description",
@@ -515,7 +515,7 @@ func TestSendEmailHandler_SaveForwardError(t *testing.T) {
 	router.SendEmailHandler(rr, httpReq)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	var response models.Error
+	var response models2.Error
 	json.NewDecoder(rr.Body).Decode(&response)
 	assert.Equal(t, "failed_to_save_forward", response.Body)
 }

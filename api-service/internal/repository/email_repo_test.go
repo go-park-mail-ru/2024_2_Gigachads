@@ -3,566 +3,799 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"mail/models"
-	"mail/pkg/logger"
-	"regexp"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/api-service/internal/models"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/golang/mock/gomock"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
-// Создаем мок логгера
-type mockLogger struct{}
-
-func (m *mockLogger) Info(msg string, args ...any)        {}
-func (m *mockLogger) Error(msg string, args ...any)       {}
-func (m *mockLogger) Debug(msg string, args ...any)       {}
-func (m *mockLogger) Warn(msg string, args ...any)        {}
-func (m *mockLogger) InitLogger() (logger.Logable, error) { return m, nil }
-
-func setupTest(t *testing.T) (*sql.DB, sqlmock.Sqlmock, *EmailRepositoryService) {
+func TestEmailRepositoryService_DeleteEmails(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Не удалось создать sqlmock: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
+	defer db.Close()
 
-	mockLogger := &mockLogger{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any()).AnyTimes()
+
 	repo := NewEmailRepositoryService(db, mockLogger)
-	return db, mock, repo
-}
 
-func TestSaveEmail(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	email := models.Email{
-		Sender_email: "sender@example.com",
-		Recipient:    "recipient@example.com",
-		Title:        "Тестовое письмо",
-		Description:  "Описание письма",
-		Sending_date: time.Now(),
-		IsRead:       false,
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO message (title, description) VALUES ($1, $2) RETURNING id`)).
-		WithArgs(email.Title, email.Description).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO email_transaction (sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id) VALUES ($1, $2, $3, $4, $5, $6)`)).
-		WithArgs(email.Sender_email, email.Recipient, email.Sending_date, email.IsRead, 1, nil).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
-
-	err := repo.SaveEmail(email)
-	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGetSentEmails(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	senderEmail := "sender@example.com"
-	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
-			  t.sending_date, t.isread, m.description
-			  FROM email_transaction AS t
-			  JOIN message AS m ON t.message_id = m.id
-			  WHERE t.sender_email = $1
-			  ORDER BY t.sending_date DESC`
-
-	rows := sqlmock.NewRows([]string{"id", "sender_email", "recipient_email", "title", "sending_date", "isread", "description"}).
-		AddRow(1, senderEmail, "recipient@example.com", "Тестовое письмо", time.Now(), false, "Описание письма")
-
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(senderEmail).
-		WillReturnRows(rows)
-
-	emails, err := repo.GetSentEmails(senderEmail)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(emails))
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGetSentEmails_Error(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	senderEmail := "sender@example.com"
-	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
-			  t.sending_date, t.isread, m.description
-			  FROM email_transaction AS t
-			  JOIN message AS m ON t.message_id = m.id
-			  WHERE t.sender_email = $1
-			  ORDER BY t.sending_date DESC`
-
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(senderEmail).
-		WillReturnError(errors.New("ошибка получения отправленных писем"))
-
-	_, err := repo.GetSentEmails(senderEmail)
-	assert.Error(t, err)
-	assert.Equal(t, "ошибка получения отправленных писем", err.Error())
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestSaveEmail_InsertMessageError(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	email := models.Email{
-		Sender_email: "sender@example.com",
-		Recipient:    "recipient@example.com",
-		Title:        "Тестовое письмо",
-		Description:  "Это тело тестового письма.",
-		Sending_date: time.Now(),
-		IsRead:       false,
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO message (title, description) VALUES ($1, $2) RETURNING id`)).
-		WithArgs(email.Title, email.Description).
-		WillReturnError(errors.New("ошибка вставки message"))
-	mock.ExpectRollback()
-
-	err := repo.SaveEmail(email)
-	if err == nil {
-		t.Errorf("Ожидалась ошибка, но её не было")
-	}
-
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestSaveEmail_ExecError(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	email := models.Email{
-		Sender_email: "sender@example.com",
-		Recipient:    "recipient@example.com",
-		Title:        "Тестовое письмо",
-		Description:  "Это тело тестового письма.",
-		Sending_date: time.Now(),
-		IsRead:       false,
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO message (title, description) VALUES ($1, $2) RETURNING id`)).
-		WithArgs(email.Title, email.Description).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO email_transaction (sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id) VALUES ($1, $2, $3, $4, $5, $6)`)).
-		WithArgs(email.Sender_email, email.Recipient, email.Sending_date, email.IsRead, 1, nil).
-		WillReturnError(errors.New("ошибка выполнения Exec"))
-	mock.ExpectRollback()
-
-	err := repo.SaveEmail(email)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "ошибка выполнения Exec")
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGetEmailByID(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	expectedEmail := models.Email{
-		ID:           1,
-		Sender_email: "sender@example.com",
-		Recipient:    "recipient@example.com",
-		Title:        "Тестовое письмо",
-		Description:  "Описание письма",
-		Sending_date: time.Now(),
-		IsRead:       false,
-	}
-
-	query := `SELECT t.id, parent_transaction_id, t.sender_email, t.recipient_email, 
-			  m.title, t.isread, t.sending_date, m.description 
-			  FROM email_transaction AS t 
-			  JOIN message AS m ON t.message_id = m.id 
-			  WHERE m.id = $1`
-
-	rows := sqlmock.NewRows([]string{
-		"id", "parent_transaction_id", "sender_email", "recipient_email",
-		"title", "isread", "sending_date", "description",
-	}).AddRow(
-		expectedEmail.ID, nil, expectedEmail.Sender_email,
-		expectedEmail.Recipient, expectedEmail.Title,
-		expectedEmail.IsRead, expectedEmail.Sending_date,
-		expectedEmail.Description,
-	)
-
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(1).
-		WillReturnRows(rows)
-
-	email, err := repo.GetEmailByID(1)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedEmail.ID, email.ID)
-	assert.Equal(t, expectedEmail.Sender_email, email.Sender_email)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGetEmailByID_InvalidID(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	query := `SELECT t.id, parent_transaction_id, t.sender_email, t.recipient_email, 
-			  m.title, t.isread, t.sending_date, m.description 
-			  FROM email_transaction AS t 
-			  JOIN message AS m ON t.message_id = m.id 
-			  WHERE m.id = $1`
-
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(-1).
-		WillReturnError(sql.ErrNoRows)
-
-	_, err := repo.GetEmailByID(-1)
-	assert.Error(t, err)
-	assert.Equal(t, sql.ErrNoRows.Error(), err.Error())
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGetEmailByID_InvalidIDZero(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	query := `SELECT t.id, parent_transaction_id, t.sender_email, t.recipient_email, 
-			  m.title, t.isread, t.sending_date, m.description 
-			  FROM email_transaction AS t 
-			  JOIN message AS m ON t.message_id = m.id 
-			  WHERE m.id = $1`
-
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(0).
-		WillReturnError(errors.New("invalid email ID"))
-
-	_, err := repo.GetEmailByID(0)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid email ID")
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestInbox(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	userEmail := "user@example.com"
-
-	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
-			  t.sending_date, t.isread, m.description
-			  FROM email_transaction AS t
-			  JOIN message AS m ON t.message_id = m.id
-			  WHERE t.recipient_email = $1
-			  ORDER BY t.sending_date DESC`
-
-	rows := sqlmock.NewRows([]string{"id", "sender_email", "recipient_email", "title", "sending_date", "isread", "description"}).
-		AddRow(1, "sender1@example.com", userEmail, "Письмо 1", time.Now(), false, "Описание письма 1").
-		AddRow(2, "sender2@example.com", userEmail, "Письмо 2", time.Now(), true, "Описание письма 2")
-
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(userEmail).
-		WillReturnRows(rows)
-
-	emails, err := repo.Inbox(userEmail)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(emails))
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestInbox_NoEmails(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	userEmail := "empty@example.com"
-
-	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
-			  t.sending_date, t.isread, m.description
-			  FROM email_transaction AS t
-			  JOIN message AS m ON t.message_id = m.id
-			  WHERE t.recipient_email = $1
-			  ORDER BY t.sending_date DESC`
-
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(userEmail).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_email", "recipient_email", "title", "sending_date", "isread", "description"}))
-
-	emails, err := repo.Inbox(userEmail)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(emails))
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestInbox_QueryError(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	userEmail := "user@example.com"
-
-	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
-			  t.sending_date, t.isread, m.description
-			  FROM email_transaction AS t
-			  JOIN message AS m ON t.message_id = m.id
-			  WHERE t.recipient_email = $1
-			  ORDER BY t.sending_date DESC`
-
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(userEmail).
-		WillReturnError(errors.New("ошибка запроса"))
-
-	_, err := repo.Inbox(userEmail)
-	assert.Error(t, err)
-	assert.Equal(t, "ошибка запроса", err.Error())
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestSaveEmail_BeginTxError(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	mock.ExpectBegin().WillReturnError(errors.New("ошибка начала транзакции"))
-
-	email := models.Email{
-		Sender_email: "sender@example.com",
-		Recipient:    "recipient@example.com",
-		Title:        "Test",
-		Description:  "Test body",
-	}
-
-	err := repo.SaveEmail(email)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "ошибка начала транзакции")
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestSaveEmail_CommitError(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	email := models.Email{
-		Sender_email: "sender@example.com",
-		Recipient:    "recipient@example.com",
-		Title:        "Test",
-		Description:  "Test body",
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO message`)).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO email_transaction`)).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit().WillReturnError(errors.New("ошибка коммита"))
-
-	err := repo.SaveEmail(email)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "ошибка коммита")
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGetEmailByID_ScanError(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	emailID := 1
-
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
-		WithArgs(emailID).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_email", "recipient_email", "title", "isread", "sending_date", "description"}).
-			AddRow("not_an_int", nil, nil, nil, nil, nil, nil))
-
-	_, err := repo.GetEmailByID(emailID)
-	assert.Error(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestInbox_ScanError(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	userEmail := "test@example.com"
-
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
-		WithArgs(userEmail).
-		WillReturnRows(sqlmock.NewRows([]string{"sender_email", "sending_date", "isread", "title", "description"}).
-			AddRow(nil, "not_a_time", nil, nil, nil))
-
-	_, err := repo.Inbox(userEmail)
-	assert.Error(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGetEmailByID_QueryError(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	emailID := 1
-
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
-		WithArgs(emailID).
-		WillReturnError(errors.New("ошибка запроса к БД"))
-
-	_, err := repo.GetEmailByID(emailID)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "ошибка запроса к БД")
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestInbox_EmptyEmail(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	userEmail := ""
-
-	query := `SELECT t.id, t.sender_email, t.recipient_email, m.title, 
-			  t.sending_date, t.isread, m.description
-			  FROM email_transaction AS t
-			  JOIN message AS m ON t.message_id = m.id
-			  WHERE t.recipient_email = $1
-			  ORDER BY t.sending_date DESC`
-
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(userEmail).
-		WillReturnError(errors.New("email cannot be empty"))
-
-	_, err := repo.Inbox(userEmail)
-	assert.Error(t, err)
-	assert.Equal(t, "email cannot be empty", err.Error())
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestEmailRepository_ChangeStatus(t *testing.T) {
-	db, mock, repo := setupTest(t)
-	defer db.Close()
-
-	testCases := []struct {
+	tests := []struct {
 		name       string
-		id         int
-		status     bool
-		mockSetup  func()
-		wantError  bool
-		errorMatch string
+		email      string
+		messageIDs []int
+		mockFunc   func()
+		wantErr    bool
 	}{
 		{
-			name:   "Success - Mark as true",
-			id:     1,
-			status: true,
-			mockSetup: func() {
+			name:       "Success delete",
+			email:      "test@example.com",
+			messageIDs: []int{1, 2, 3},
+			mockFunc: func() {
 				mock.ExpectBegin()
-				mock.ExpectExec("UPDATE email_transaction").
-					WithArgs(1).
-					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("DELETE FROM email_transaction").
+					WithArgs(pq.Array([]int{1, 2, 3})).
+					WillReturnResult(sqlmock.NewResult(1, 3))
 				mock.ExpectCommit()
 			},
-			wantError: false,
+			wantErr: false,
 		},
 		{
-			name:   "Success - Mark as false",
-			id:     2,
-			status: false,
-			mockSetup: func() {
+			name:       "Delete error",
+			email:      "test@example.com",
+			messageIDs: []int{1},
+			mockFunc: func() {
 				mock.ExpectBegin()
-				mock.ExpectExec("UPDATE email_transaction").
-					WithArgs(2).
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectCommit()
-			},
-			wantError: false,
-		},
-		{
-			name:   "Error - Database Error",
-			id:     3,
-			status: true,
-			mockSetup: func() {
-				mock.ExpectBegin()
-				mock.ExpectExec("UPDATE email_transaction").
-					WithArgs(3).
-					WillReturnError(errors.New("database error"))
+				mock.ExpectExec("DELETE FROM email_transaction").
+					WithArgs(pq.Array([]int{1})).
+					WillReturnError(errors.New("delete error"))
 				mock.ExpectRollback()
 			},
-			wantError:  true,
-			errorMatch: "database error",
-		},
-		{
-			name:   "Error - No Rows Affected",
-			id:     4,
-			status: true,
-			mockSetup: func() {
-				mock.ExpectBegin()
-				mock.ExpectExec("UPDATE email_transaction").
-					WithArgs(4).
-					WillReturnResult(sqlmock.NewResult(0, 0))
-				mock.ExpectCommit()
-			},
-			wantError: false,
-		},
-		{
-			name:   "Error - Invalid Status",
-			id:     5,
-			status: false,
-			mockSetup: func() {
-				mock.ExpectBegin()
-				mock.ExpectExec("UPDATE email_transaction").
-					WithArgs(5).
-					WillReturnError(errors.New("invalid status"))
-				mock.ExpectRollback()
-			},
-			wantError:  true,
-			errorMatch: "invalid status",
-		},
-		{
-			name:   "Error - Begin Transaction",
-			id:     6,
-			status: true,
-			mockSetup: func() {
-				mock.ExpectBegin().WillReturnError(errors.New("begin transaction error"))
-			},
-			wantError:  true,
-			errorMatch: "begin transaction error",
-		},
-		{
-			name:   "Error - Commit Transaction",
-			id:     7,
-			status: true,
-			mockSetup: func() {
-				mock.ExpectBegin()
-				mock.ExpectExec("UPDATE email_transaction").
-					WithArgs(7).
-					WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectCommit().WillReturnError(errors.New("commit error"))
-			},
-			wantError:  true,
-			errorMatch: "commit error",
+			wantErr: true,
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.mockSetup()
-
-			err := repo.ChangeStatus(tc.id, tc.status)
-
-			if tc.wantError {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			err := repo.DeleteEmails(tt.email, tt.messageIDs)
+			if tt.wantErr {
 				assert.Error(t, err)
-				if tc.errorMatch != "" {
-					assert.Contains(t, err.Error(), tc.errorMatch)
-				}
 			} else {
 				assert.NoError(t, err)
 			}
 		})
 	}
-
-	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestEmailRepository_ChangeStatus_TransactionError(t *testing.T) {
-	db, mock, repo := setupTest(t)
+func TestEmailRepositoryService_GetFolderEmails(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
 	defer db.Close()
 
-	mock.ExpectBegin().WillReturnError(errors.New("transaction error"))
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	err := repo.ChangeStatus(1, true)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "transaction error")
-	assert.NoError(t, mock.ExpectationsWereMet())
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	tests := []struct {
+		name       string
+		email      string
+		folderName string
+		mockFunc   func()
+		want       []models.Email
+		wantErr    bool
+	}{
+		{
+			name:       "Success get folder emails",
+			email:      "test@example.com",
+			folderName: "Inbox",
+			mockFunc: func() {
+				testTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+				rows := sqlmock.NewRows([]string{
+					"id", "sender_email", "recipient_email",
+					"title", "sending_date", "isread", "description",
+				}).AddRow(
+					1, "sender@example.com", "test@example.com",
+					"Test Email", testTime, true, "Test Content",
+				)
+				mock.ExpectQuery("SELECT t.id, t.sender_email").
+					WithArgs("test@example.com", "Inbox").
+					WillReturnRows(rows)
+			},
+			want: []models.Email{
+				{
+					ID:           1,
+					Sender_email: "sender@example.com",
+					Recipient:    "test@example.com",
+					Title:        "Test Email",
+					Description:  "Test Content",
+					IsRead:       true,
+					Sending_date: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			got, err := repo.GetFolderEmails(tt.email, tt.folderName)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_UpdateDraft(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	tests := []struct {
+		name     string
+		draft    models.Draft
+		mockFunc func()
+		wantErr  bool
+	}{
+		{
+			name: "Success update draft",
+			draft: models.Draft{
+				ID:          1,
+				Title:       "Updated Draft",
+				Description: "Updated Content",
+				Recipient:   "recipient@example.com",
+			},
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("SELECT message_id").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"message_id"}).AddRow(1))
+				mock.ExpectExec("UPDATE message").
+					WithArgs(1, "Updated Draft", "Updated Content").
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE email_transaction").
+					WithArgs(1, "recipient@example.com").
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			err := repo.UpdateDraft(tt.draft)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_GetSentEmails(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	testTime := time.Date(2024, time.November, 27, 5, 38, 9, 0, time.Local)
+
+	tests := []struct {
+		name        string
+		senderEmail string
+		mockFunc    func()
+		want        []models.Email
+		wantErr     bool
+	}{
+		{
+			name:        "Success get sent emails",
+			senderEmail: "sender@example.com",
+			mockFunc: func() {
+				rows := sqlmock.NewRows([]string{"id", "sender_email", "recipient_email", "title", "sending_date", "isread", "description"}).
+					AddRow(1, "sender@example.com", "recipient@example.com", "Test Email", testTime, false, "Test Content")
+				mock.ExpectQuery("SELECT t.id, t.sender_email").
+					WithArgs("sender@example.com").
+					WillReturnRows(rows)
+			},
+			want: []models.Email{
+				{
+					ID:           1,
+					ParentID:     0,
+					Sender_email: "sender@example.com",
+					Recipient:    "recipient@example.com",
+					Title:        "Test Email",
+					IsRead:       false,
+					Sending_date: testTime,
+					Description:  "Test Content",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Error getting sent emails",
+			senderEmail: "sender@example.com",
+			mockFunc: func() {
+				mock.ExpectQuery("SELECT t.id, t.sender_email").
+					WithArgs("sender@example.com").
+					WillReturnError(errors.New("db error"))
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			got, err := repo.GetSentEmails(tt.senderEmail)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_GetEmailByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	testTime := time.Date(2024, time.November, 27, 5, 37, 32, 0, time.Local)
+
+	tests := []struct {
+		name     string
+		id       int
+		mockFunc func()
+		want     models.Email
+		wantErr  bool
+	}{
+		{
+			name: "Success get email by ID",
+			id:   1,
+			mockFunc: func() {
+				rows := sqlmock.NewRows([]string{"id", "parent_transaction_id", "sender_email", "recipient_email", "title", "isread", "sending_date", "description"}).
+					AddRow(1, nil, "sender@example.com", "recipient@example.com", "Test Email", false, testTime, "Test Content")
+				mock.ExpectQuery("SELECT t.id, parent_transaction_id, t.sender_email, t.recipient_email, m.title, t.isread, t.sending_date, m.description").
+					WithArgs(1).
+					WillReturnRows(rows)
+			},
+			want: models.Email{
+				ID:           1,
+				ParentID:     0,
+				Sender_email: "sender@example.com",
+				Recipient:    "recipient@example.com",
+				Title:        "Test Email",
+				IsRead:       false,
+				Sending_date: testTime,
+				Description:  "Test Content",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Error getting email by ID",
+			id:   1,
+			mockFunc: func() {
+				mock.ExpectQuery("SELECT t.id, parent_transaction_id, t.sender_email, t.recipient_email, m.title, t.isread, t.sending_date, m.description").
+					WithArgs(1).
+					WillReturnError(errors.New("db error"))
+			},
+			want:    models.Email{},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			got, err := repo.GetEmailByID(tt.id)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_SaveEmail(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	testTime := time.Date(2024, time.November, 27, 5, 38, 9, 0, time.Local)
+
+	tests := []struct {
+		name     string
+		email    models.Email
+		mockFunc func()
+		wantErr  bool
+	}{
+		{
+			name: "Error saving email",
+			email: models.Email{
+				Sender_email: "sender@example.com",
+				Recipient:    "recipient@example.com",
+				Title:        "Test Email",
+				Description:  "Test Content",
+				IsRead:       false,
+				Sending_date: testTime,
+			},
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO message \(title, description\) VALUES \(\$1, \$2\) RETURNING id`).
+					WithArgs("Test Email", "Test Content").
+					WillReturnError(errors.New("db error"))
+				mock.ExpectRollback()
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			err := repo.SaveEmail(tt.email)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_DeleteFolder(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	tests := []struct {
+		name       string
+		email      string
+		folderName string
+		mockFunc   func()
+		wantErr    bool
+	}{
+		{
+			name:       "Success delete folder",
+			email:      "test@example.com",
+			folderName: "TestFolder",
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("SELECT id FROM profile").
+					WithArgs("test@example.com").
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectExec("DELETE FROM folder").
+					WithArgs(1, "TestFolder").
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			wantErr: false,
+		},
+		{
+			name:       "Error user not found",
+			email:      "test@example.com",
+			folderName: "TestFolder",
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("SELECT id FROM profile").
+					WithArgs("test@example.com").
+					WillReturnError(sql.ErrNoRows)
+				mock.ExpectRollback()
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			err := repo.DeleteFolder(tt.email, tt.folderName)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_RenameFolder(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	tests := []struct {
+		name          string
+		email         string
+		folderName    string
+		newFolderName string
+		mockFunc      func()
+		wantErr       bool
+	}{
+		{
+			name:          "Success rename folder",
+			email:         "test@example.com",
+			folderName:    "OldName",
+			newFolderName: "NewName",
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("SELECT id FROM profile").
+					WithArgs("test@example.com").
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectQuery("SELECT id FROM folder").
+					WithArgs(1, "OldName").
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
+				mock.ExpectExec("UPDATE folder").
+					WithArgs(2, "NewName").
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			err := repo.RenameFolder(tt.email, tt.folderName, tt.newFolderName)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_ChangeEmailFolder(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	tests := []struct {
+		name       string
+		id         int
+		email      string
+		folderName string
+		mockFunc   func()
+		wantErr    bool
+	}{
+		{
+			name:       "Success change folder",
+			id:         1,
+			email:      "test@example.com",
+			folderName: "NewFolder",
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("SELECT id FROM profile").
+					WithArgs("test@example.com").
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectQuery("SELECT id FROM folder").
+					WithArgs(1, "NewFolder").
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
+				mock.ExpectExec("UPDATE email_transaction").
+					WithArgs(1, 2).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			err := repo.ChangeEmailFolder(tt.id, tt.email, tt.folderName)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_CheckFolder(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	tests := []struct {
+		name       string
+		email      string
+		folderName string
+		mockFunc   func()
+		want       bool
+		wantErr    bool
+	}{
+		{
+			name:       "Folder exists",
+			email:      "test@example.com",
+			folderName: "TestFolder",
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("SELECT f.id").
+					WithArgs("test@example.com", "TestFolder").
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:       "Folder does not exist",
+			email:      "test@example.com",
+			folderName: "NonExistentFolder",
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("SELECT f.id").
+					WithArgs("test@example.com", "NonExistentFolder").
+					WillReturnError(sql.ErrNoRows)
+			},
+			want:    false,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			got, err := repo.CheckFolder(tt.email, tt.folderName)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_GetMessageFolder(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	tests := []struct {
+		name     string
+		msgID    int
+		mockFunc func()
+		want     string
+		wantErr  bool
+	}{
+		{
+			name:  "Success get folder",
+			msgID: 1,
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("SELECT folder_id").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"folder_id"}).AddRow(2))
+				mock.ExpectQuery("SELECT name").
+					WithArgs(2).
+					WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("TestFolder"))
+				mock.ExpectCommit()
+			},
+			want:    "TestFolder",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			got, err := repo.GetMessageFolder(tt.msgID)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestEmailRepositoryService_CreateDraft(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+	mockLogger.EXPECT().Error(gomock.Any()).AnyTimes()
+
+	repo := NewEmailRepositoryService(db, mockLogger)
+
+	testTime := time.Now()
+
+	tests := []struct {
+		name     string
+		email    models.Email
+		mockFunc func()
+		wantErr  bool
+	}{
+		{
+			name: "Success create draft",
+			email: models.Email{
+				Sender_email: "test@example.com",
+				Recipient:    "recipient@example.com",
+				Title:        "Draft Title",
+				Description:  "Draft Content",
+				Sending_date: testTime,
+				IsRead:       false,
+			},
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("INSERT INTO message").
+					WithArgs("Draft Title", "Draft Content").
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectQuery("SELECT id FROM profile").
+					WithArgs("test@example.com").
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectQuery(`SELECT id FROM folder WHERE user_id = \$1 AND name = 'Черновики'`).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
+				mock.ExpectExec("INSERT INTO email_transaction").
+					WithArgs("test@example.com", "recipient@example.com", testTime, false, 1, nil, 2).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			wantErr: false,
+		},
+		{
+			name: "Error creating message",
+			email: models.Email{
+				Sender_email: "test@example.com",
+				Title:        "Draft Title",
+				Description:  "Draft Content",
+			},
+			mockFunc: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("INSERT INTO message").
+					WithArgs("Draft Title", "Draft Content").
+					WillReturnError(errors.New("db error"))
+				mock.ExpectRollback()
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			err := repo.CreateDraft(tt.email)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
 }

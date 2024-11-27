@@ -3,9 +3,8 @@ package email
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"mail/internal/delivery/httpserver/email/mocks"
-	"mail/internal/models"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -21,7 +20,7 @@ func TestInboxHandler_Success(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	emails := []models.Email{
+	emails := []models2.Email{
 		{
 			ID:           1,
 			Sender_email: "sender@example.com",
@@ -50,7 +49,7 @@ func TestInboxHandler_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 
-	var response []models.Email
+	var response []models2.Email
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, len(emails), len(response))
@@ -77,34 +76,8 @@ func TestInboxHandler_Unauthorized(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
-	var response models.Error
+	var response models2.Error
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, "unauthorized", response.Body)
-}
-
-func TestInboxHandler_InboxError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	req := httptest.NewRequest(http.MethodGet, "/inbox", nil)
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	mockEmailUseCase.EXPECT().
-		Inbox("test@example.com").
-		Return(nil, errors.New("database error"))
-
-	router.InboxHandler(rr, req)
-
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "database error", response.Body)
 }

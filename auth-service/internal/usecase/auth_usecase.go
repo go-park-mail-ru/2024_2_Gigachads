@@ -3,18 +3,19 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"mail/auth-service/internal/models"
+	models2 "mail/auth-service/internal/models"
 	proto "mail/gen/go/auth"
-	"mail/models"
 )
 
 type AuthServer struct {
 	proto.UnimplementedAuthServiceServer
 	UserRepo    models.UserRepository
-	SessionRepo models.SessionRepository
-	CsrfRepo    models.CsrfRepository
+	SessionRepo models2.SessionRepository
+	CsrfRepo    models2.CsrfRepository
 }
 
-func NewAuthServer(urepo models.UserRepository, srepo models.SessionRepository, crepo models.CsrfRepository) proto.AuthServiceServer {
+func NewAuthServer(urepo models.UserRepository, srepo models2.SessionRepository, crepo models2.CsrfRepository) proto.AuthServiceServer {
 	return &AuthServer{
 		UserRepo:    urepo,
 		SessionRepo: srepo,
@@ -35,7 +36,6 @@ func (as *AuthServer) Signup(ctx context.Context, signup *proto.SignupRequest) (
 	if err != nil {
 		return nil, err
 	}
-
 	session, err := as.SessionRepo.CreateSession(ctx, userChecked.Email)
 	if err != nil {
 		return nil, err

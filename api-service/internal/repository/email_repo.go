@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/lib/pq"
+	"mail/api-service/internal/models"
 	"mail/api-service/pkg/logger"
 	"mail/api-service/pkg/utils"
-	"mail/models"
 	"strconv"
 )
 

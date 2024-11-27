@@ -2,7 +2,7 @@ package delivery
 
 import (
 	"log/slog"
-	"mail/models"
+	"mail/smtp-service/internal/models"
 	"time"
 )
 

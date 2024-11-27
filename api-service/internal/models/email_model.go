@@ -17,20 +17,26 @@ type Email struct {
 }
 
 type Draft struct {
-	ID           int       `json:"id"`
-	Recipient    string    `json:"recipient"`
-	Title        string    `json:"title"`
-	Description  string    `json:"description"`
-	ParentID     int       `json:"parentID"`
+	ID          int    `json:"id"`
+	Recipient   string `json:"recipient"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	ParentID    int    `json:"parentID"`
 }
 
 type Folder struct {
-	Name 		 string    `json:"name"`
+	Name string `json:"name"`
 }
 
 type RenameFolder struct {
-	Name 		 string    `json:"name"`
-	NewName 	 string    `json:"new_name"`
+	Name    string `json:"name"`
+	NewName string `json:"new_name"`
+}
+
+type SmtpPop3Usecase interface {
+	SendEmail(ctx context.Context, from string, to []string, subject string, body string) error
+	ForwardEmail(ctx context.Context, from string, to []string, originalEmail Email) error
+	ReplyEmail(ctx context.Context, from string, to string, originalEmail Email, replyText string) error
 }
 
 type EmailUseCase interface {
@@ -53,11 +59,6 @@ type EmailUseCase interface {
 	UpdateDraft(email Draft) error
 	SendDraft(email Email) error
 }
-type SmtpPop3Usecase interface {
-	SendEmail(ctx context.Context, from string, to []string, subject string, body string) error
-	ForwardEmail(ctx context.Context, from string, to []string, originalEmail Email) error
-	ReplyEmail(ctx context.Context, from string, to string, originalEmail Email, replyText string) error
-}
 
 type EmailRepository interface {
 	Inbox(id string) ([]Email, error)
@@ -76,17 +77,4 @@ type EmailRepository interface {
 	UpdateDraft(email Draft) error
 	CheckFolder(email string, folderName string) (bool, error)
 	GetMessageFolder(msgID int) (string, error)
-}
-type EmailRepositorySMTP interface {
-	SaveEmail(email Email) error
-}
-
-type SMTPRepository interface {
-	SendEmail(from string, to []string, subject string, body string) error
-}
-
-type POP3Repository interface {
-	Connect() error
-	FetchEmails(EmailRepositorySMTP) error
-	Quit() error
 }

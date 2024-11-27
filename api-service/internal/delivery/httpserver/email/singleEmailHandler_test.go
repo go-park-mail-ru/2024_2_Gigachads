@@ -3,8 +3,8 @@ package email
 import (
 	"context"
 	"encoding/json"
-	"mail/internal/delivery/httpserver/email/mocks"
-	"mail/internal/models"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	models2 "mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -21,7 +21,7 @@ func TestSingleEmailHandler_Success(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	email := models.Email{
+	email := models2.Email{
 		ID:       2,
 		ParentID: 0,
 		Title:    "Test Email",
@@ -44,7 +44,7 @@ func TestSingleEmailHandler_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	var response []models.Email
+	var response []models2.Email
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
@@ -58,13 +58,13 @@ func TestSingleEmailHandler_WithParent(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	child := models.Email{
+	child := models2.Email{
 		ID:       2,
 		ParentID: 1,
 		Title:    "Child Email",
 	}
 
-	parent := models.Email{
+	parent := models2.Email{
 		ID:       1,
 		ParentID: 0,
 		Title:    "Parent Email",
@@ -92,7 +92,7 @@ func TestSingleEmailHandler_WithParent(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	var response []models.Email
+	var response []models2.Email
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(response))
@@ -118,7 +118,7 @@ func TestSingleEmailHandler_Unauthorized(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
-	var response models.Error
+	var response models2.Error
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, "unauthorized", response.Body)
@@ -144,7 +144,7 @@ func TestSingleEmailHandler_InvalidID(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	var response models.Error
+	var response models2.Error
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, "invalid_path", response.Body)
@@ -167,7 +167,7 @@ func TestSingleEmailHandler_NoID(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	var response models.Error
+	var response models2.Error
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, "invalid_path", response.Body)
@@ -180,7 +180,7 @@ func TestSingleEmailHandler_SingleEmail(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	email := models.Email{
+	email := models2.Email{
 		ID:       1,
 		ParentID: 0,
 		Title:    "Single Email",
@@ -201,7 +201,7 @@ func TestSingleEmailHandler_SingleEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	var response []models.Email
+	var response []models2.Email
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
@@ -226,13 +226,13 @@ func TestSingleEmailHandler_EmailNotFound(t *testing.T) {
 
 	mockEmailUseCase.EXPECT().
 		GetEmailByID(999).
-		Return(models.Email{}, assert.AnError)
+		Return(models2.Email{}, assert.AnError)
 
 	router.SingleEmailHandler(rr, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 
-	var response models.Error
+	var response models2.Error
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, "email_not_found", response.Body)
@@ -245,7 +245,7 @@ func TestSingleEmailHandler_ParentNotFound(t *testing.T) {
 	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
 	router := NewEmailRouter(mockEmailUseCase)
 
-	child := models.Email{
+	child := models2.Email{
 		ID:       2,
 		ParentID: 1,
 		Title:    "Child Email",
@@ -266,14 +266,14 @@ func TestSingleEmailHandler_ParentNotFound(t *testing.T) {
 			Return(child, nil),
 		mockEmailUseCase.EXPECT().
 			GetEmailByID(1).
-			Return(models.Email{}, assert.AnError),
+			Return(models2.Email{}, assert.AnError),
 	)
 
 	router.SingleEmailHandler(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	var response []models.Email
+	var response []models2.Email
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))

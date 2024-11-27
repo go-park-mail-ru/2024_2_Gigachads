@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"mail/api-service/pkg/logger"
 	"mail/api-service/pkg/utils"
-	"mail/models"
+	"mail/smtp-service/internal/models"
 )
 
 type EmailRepositoryService struct {

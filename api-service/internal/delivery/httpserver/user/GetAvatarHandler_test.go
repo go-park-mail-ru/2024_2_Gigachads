@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"mail/internal/delivery/httpserver/email/mocks"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
 	"net/http"
 	"net/http/httptest"
 	"testing"

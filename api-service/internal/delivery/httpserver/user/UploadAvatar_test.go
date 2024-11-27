@@ -3,31 +3,17 @@ package user
 import (
 	"bytes"
 	"context"
-	"io"
-	"mail/internal/delivery/httpserver/email/mocks"
+	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
-
-func createMultipartFormData(t *testing.T, fieldName, fileName string, fileContent []byte) (*bytes.Buffer, string) {
-	var b bytes.Buffer
-	w := multipart.NewWriter(&b)
-
-	fw, err := w.CreateFormFile(fieldName, fileName)
-	assert.NoError(t, err)
-
-	_, err = io.Copy(fw, bytes.NewReader(fileContent))
-	assert.NoError(t, err)
-
-	w.Close()
-
-	return &b, w.FormDataContentType()
-}
 
 func TestUserRouter_UploadAvatarHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -37,20 +23,29 @@ func TestUserRouter_UploadAvatarHandler(t *testing.T) {
 	router := NewUserRouter(mockUserUseCase)
 
 	t.Run("успешная загрузка аватара", func(t *testing.T) {
-		fileContent := []byte("fake-image-content")
-		body, contentType := createMultipartFormData(t, "avatar", "test.jpg", fileContent)
+		// Создаем тестовый файл
+		body := new(bytes.Buffer)
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("avatar", "test.jpg")
+		part.Write([]byte("fake-image-content"))
+		writer.Close()
 
 		req := httptest.NewRequest("POST", "/upload-avatar", body)
-		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		// Добавляем email в контекст
 		ctx := context.WithValue(req.Context(), "email", "test@example.com")
 		req = req.WithContext(ctx)
+
 		w := httptest.NewRecorder()
 
+		// Устанавливаем ожидание
 		mockUserUseCase.EXPECT().
-			ChangeAvatar(gomock.Any(), gomock.Any(), "test@example.com").
+			ChangeAvatar(gomock.Any(), "test@example.com").
 			Return(nil)
 
 		router.UploadAvatarHandler(w, req)
+
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -59,23 +54,34 @@ func TestUserRouter_UploadAvatarHandler(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		router.UploadAvatarHandler(w, req)
+
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
+		var response map[string]interface{}
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.NoError(t, err)
+		assert.Equal(t, "unauthorized", response["body"])
 	})
 
-	t.Run("ошибка парсинга формы", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/upload-avatar", bytes.NewBuffer([]byte("invalid form data")))
-		req.Header.Set("Content-Type", "multipart/form-data")
+	t.Run("ошибка при загрузке файла", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/upload-avatar", nil)
 		ctx := context.WithValue(req.Context(), "email", "test@example.com")
 		req = req.WithContext(ctx)
 		w := httptest.NewRecorder()
 
 		router.UploadAvatarHandler(w, req)
+
 		assert.Equal(t, http.StatusBadRequest, w.Code)
+		var response map[string]interface{}
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.NoError(t, err)
+		assert.Equal(t, "error_with_parsing_file", response["body"])
 	})
 
-	t.Run("отсутствие файла в форме", func(t *testing.T) {
-		body := &bytes.Buffer{}
+	t.Run("ошибка при сохранении аватара", func(t *testing.T) {
+		body := new(bytes.Buffer)
 		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("avatar", "test.jpg")
+		part.Write([]byte("fake-image-content"))
 		writer.Close()
 
 		req := httptest.NewRequest("POST", "/upload-avatar", body)
@@ -84,7 +90,16 @@ func TestUserRouter_UploadAvatarHandler(t *testing.T) {
 		req = req.WithContext(ctx)
 		w := httptest.NewRecorder()
 
+		mockUserUseCase.EXPECT().
+			ChangeAvatar(gomock.Any(), "test@example.com").
+			Return(assert.AnError)
+
 		router.UploadAvatarHandler(w, req)
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		var response map[string]interface{}
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.NoError(t, err)
+		assert.Equal(t, "error_with_downloading_avatar", response["body"])
 	})
 }

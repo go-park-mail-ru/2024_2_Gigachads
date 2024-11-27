@@ -1,9 +1,8 @@
 package user
 
 import (
-	"mail/models"
-
 	"github.com/gorilla/mux"
+	"mail/api-service/internal/models"
 )
 
 type UserRouter struct {

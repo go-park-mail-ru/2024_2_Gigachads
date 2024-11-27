@@ -3,12 +3,12 @@ package auth
 import (
 	"bytes"
 	"encoding/json"
-	"mail/internal/delivery/httpserver/email/mocks"
-	"mail/internal/models"
+	"errors"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -18,8 +18,8 @@ func TestAuthRouter_SignupHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUserUseCase := mocks.NewMockUserUseCase(ctrl)
-	router := NewAuthRouter(mockUserUseCase)
+	mockAuthUseCase := mocks.NewMockAuthUseCase(ctrl)
+	router := NewAuthRouter(mockAuthUseCase)
 
 	t.Run("невалидный JSON", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/signup", bytes.NewBuffer([]byte("invalid json")))
@@ -94,20 +94,12 @@ func TestAuthRouter_SignupHandler(t *testing.T) {
 		req := httptest.NewRequest("POST", "/signup", bytes.NewBuffer(body))
 		w := httptest.NewRecorder()
 
-		session := &models.Session{
-			ID:   "session_id",
-			Name: "session",
-			Time: time.Now().Add(24 * time.Hour),
-		}
-		csrf := &models.Csrf{
-			ID:   "csrf_id",
-			Name: "csrf",
-			Time: time.Now().Add(24 * time.Hour),
-		}
+		sessionID := "session_id"
+		csrfID := "csrf_id"
 
-		mockUserUseCase.EXPECT().
+		mockAuthUseCase.EXPECT().
 			Signup(gomock.Any(), gomock.Any()).
-			Return(user, session, csrf, nil)
+			Return(sessionID, csrfID, nil)
 
 		router.SignupHandler(w, req)
 
@@ -117,7 +109,7 @@ func TestAuthRouter_SignupHandler(t *testing.T) {
 		cookies := w.Result().Cookies()
 		var sessionCookie, csrfCookie *http.Cookie
 		for _, cookie := range cookies {
-			if cookie.Name == "session" {
+			if cookie.Name == "email" {
 				sessionCookie = cookie
 			}
 			if cookie.Name == "csrf" {
@@ -127,8 +119,8 @@ func TestAuthRouter_SignupHandler(t *testing.T) {
 
 		assert.NotNil(t, sessionCookie)
 		assert.NotNil(t, csrfCookie)
-		assert.Equal(t, "session_id", sessionCookie.Value)
-		assert.Equal(t, "csrf_id", csrfCookie.Value)
+		assert.Equal(t, sessionID, sessionCookie.Value)
+		assert.Equal(t, csrfID, csrfCookie.Value)
 	})
 
 	t.Run("ошибка при создании пользователя", func(t *testing.T) {
@@ -143,9 +135,9 @@ func TestAuthRouter_SignupHandler(t *testing.T) {
 		req := httptest.NewRequest("POST", "/signup", bytes.NewBuffer(body))
 		w := httptest.NewRecorder()
 
-		mockUserUseCase.EXPECT().
+		mockAuthUseCase.EXPECT().
 			Signup(gomock.Any(), gomock.Any()).
-			Return(nil, nil, nil, assert.AnError)
+			Return("", "", errors.New("ошибка создания пользователя"))
 
 		router.SignupHandler(w, req)
 
@@ -155,6 +147,6 @@ func TestAuthRouter_SignupHandler(t *testing.T) {
 		err := json.NewDecoder(w.Body).Decode(&response)
 		assert.NoError(t, err)
 		assert.Equal(t, float64(http.StatusInternalServerError), response["status"])
-		assert.Equal(t, assert.AnError.Error(), response["body"])
+		assert.Equal(t, "error_with_signup", response["body"])
 	})
 }

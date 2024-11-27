@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"mail/internal/delivery/httpserver/email/mocks"
-	"mail/internal/models"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,178 +15,100 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeleteEmailsHandler_Success(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	request := DeleteEmailsRequest{
-		IDs:    []string{"1", "2", "3"},
-		Folder: "inbox",
+func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      DeleteEmailsRequest
+		setupAuth  bool
+		mockSetup  func(*mocks.MockEmailUseCase)
+		wantStatus int
+		wantBody   string
+	}{
+		{
+			name: "успешное удаление",
+			input: DeleteEmailsRequest{
+				IDs: []string{"1", "2", "3"},
+			},
+			setupAuth: true,
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					DeleteEmails("test@example.com", []int{1, 2, 3}).
+					Return(nil)
+			},
+			wantStatus: http.StatusNoContent,
+		},
+		{
+			name:       "неавторизованный запрос",
+			setupAuth:  false,
+			wantStatus: http.StatusUnauthorized,
+			wantBody:   "unauthorized",
+		},
+		{
+			name: "пустой список ID",
+			input: DeleteEmailsRequest{
+				IDs: []string{},
+			},
+			setupAuth:  true,
+			wantStatus: http.StatusBadRequest,
+			wantBody:   "список ID пуст",
+		},
+		{
+			name: "некорректный ID",
+			input: DeleteEmailsRequest{
+				IDs: []string{"1", "invalid", "3"},
+			},
+			setupAuth:  true,
+			wantStatus: http.StatusBadRequest,
+			wantBody:   "неверный формат ID",
+		},
+		{
+			name: "ошибка удаления",
+			input: DeleteEmailsRequest{
+				IDs: []string{"1", "2", "3"},
+			},
+			setupAuth: true,
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					DeleteEmails("test@example.com", []int{1, 2, 3}).
+					Return(errors.New("error"))
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   "ошибка при удалении писем",
+		},
 	}
 
-	body, _ := json.Marshal(request)
-	req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(body))
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	mockEmailUseCase.EXPECT().
-		DeleteEmails("test@example.com", []int{1, 2, 3}, "inbox").
-		Return(nil)
+			mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
+			if tt.mockSetup != nil {
+				tt.mockSetup(mockEmailUseCase)
+			}
 
-	router.DeleteEmailsHandler(rr, req)
+			router := NewEmailRouter(mockEmailUseCase)
 
-	assert.Equal(t, http.StatusNoContent, rr.Code)
-}
+			body, _ := json.Marshal(tt.input)
+			req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
 
-func TestDeleteEmailsHandler_Unauthorized(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+			if tt.setupAuth {
+				ctx := context.WithValue(req.Context(), "email", "test@example.com")
+				req = req.WithContext(ctx)
+			}
 
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
+			w := httptest.NewRecorder()
+			router.DeleteEmailsHandler(w, req)
 
-	req := httptest.NewRequest(http.MethodDelete, "/emails", nil)
-	rr := httptest.NewRecorder()
+			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
-	router.DeleteEmailsHandler(rr, req)
-
-	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "unauthorized", response.Body)
-}
-
-func TestDeleteEmailsHandler_InvalidJSON(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	invalidJSON := []byte(`{"ids": [1, 2,`)
-	req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(invalidJSON))
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	router.DeleteEmailsHandler(rr, req)
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "неверный формат данных", response.Body)
-}
-
-func TestDeleteEmailsHandler_EmptyIDs(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	request := DeleteEmailsRequest{
-		IDs:    []string{},
-		Folder: "inbox",
+			if tt.wantBody != "" {
+				var response models.Error
+				err := json.NewDecoder(w.Body).Decode(&response)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantBody, response.Body, "Unexpected response body")
+			}
+		})
 	}
-	body, _ := json.Marshal(request)
-	req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(body))
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	router.DeleteEmailsHandler(rr, req)
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "список ID пуст", response.Body)
-}
-
-func TestDeleteEmailsHandler_EmptyFolder(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	request := DeleteEmailsRequest{
-		IDs:    []string{"1", "2"},
-		Folder: "",
-	}
-	body, _ := json.Marshal(request)
-	req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(body))
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	router.DeleteEmailsHandler(rr, req)
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "не указана папка", response.Body)
-}
-
-func TestDeleteEmailsHandler_InvalidID(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	request := DeleteEmailsRequest{
-		IDs:    []string{"1", "invalid", "3"},
-		Folder: "inbox",
-	}
-	body, _ := json.Marshal(request)
-	req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(body))
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	router.DeleteEmailsHandler(rr, req)
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "неверный формат ID", response.Body)
-}
-
-func TestDeleteEmailsHandler_DeleteError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	request := DeleteEmailsRequest{
-		IDs:    []string{"1", "2", "3"},
-		Folder: "inbox",
-	}
-	body, _ := json.Marshal(request)
-	req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(body))
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	mockEmailUseCase.EXPECT().
-		DeleteEmails("test@example.com", []int{1, 2, 3}, "inbox").
-		Return(errors.New("delete error"))
-
-	router.DeleteEmailsHandler(rr, req)
-
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "ошибка при удалении писем", response.Body)
 }

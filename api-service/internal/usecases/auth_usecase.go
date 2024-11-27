@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
+	"mail/api-service/internal/models"
 	proto "mail/gen/go/auth"
-	"mail/models"
 )
 
 type AuthService struct {

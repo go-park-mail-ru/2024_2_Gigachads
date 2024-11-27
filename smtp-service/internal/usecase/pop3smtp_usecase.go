@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	proto "mail/gen/go/smtp"
-	"mail/models"
+	"mail/smtp-service/internal/models"
 	"mail/smtp-service/pkg/pop3"
 	"mail/smtp-service/pkg/smtp"
 	"time"

@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
+	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
-	"mail/models"
 	"net/http"
 	"time"
 )
@@ -37,7 +38,10 @@ func (ar *AuthRouter) SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID, csrfID, err := ar.AuthUseCase.Signup(r.Context(), &signup)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	sessionID, csrfID, err := ar.AuthUseCase.Signup(ctx, &signup)
 
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_signup")
