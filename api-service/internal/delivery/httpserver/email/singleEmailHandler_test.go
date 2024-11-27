@@ -3,8 +3,8 @@ package email
 import (
 	"context"
 	"encoding/json"
-	"mail/internal/delivery/httpserver/email/mocks"
-	"mail/internal/models"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"

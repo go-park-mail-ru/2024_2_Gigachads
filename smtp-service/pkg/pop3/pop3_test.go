@@ -7,11 +7,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"mail/smtp-service/pkg/mocks"
+
 	"fmt"
-	"mail/internal/delivery/httpserver/email/mocks"
 	"math/big"
 	"net"
 	"strings"
+
 	"sync"
 	"testing"
 	"time"

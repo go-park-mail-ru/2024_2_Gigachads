@@ -30,9 +30,9 @@ func (er *EmailRouter) DeleteFolderHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = er.EmailUseCase.CreateFolder(email, folder.Name)
+	err = er.EmailUseCase.DeleteFolder(email, folder.Name)
 	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_creating_folder")
+		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_deleting_folder")
 		return
 	}
 

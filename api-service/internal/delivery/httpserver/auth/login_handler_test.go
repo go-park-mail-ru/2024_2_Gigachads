@@ -3,12 +3,12 @@ package auth
 import (
 	"bytes"
 	"encoding/json"
-	"mail/internal/delivery/httpserver/email/mocks"
-	"mail/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
+
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/models"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -18,38 +18,27 @@ func TestAuthRouter_LoginHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUserUseCase := mocks.NewMockUserUseCase(ctrl)
-	router := NewAuthRouter(mockUserUseCase)
+	mockAuthUseCase := mocks.NewMockAuthUseCase(ctrl)
+	router := NewAuthRouter(mockAuthUseCase)
 
 	t.Run("успешный вход", func(t *testing.T) {
-		loginData := &models.User{
+		user := models.User{
 			Email:    "test@example.com",
 			Password: "password123",
 		}
-		body, _ := json.Marshal(loginData)
+		userJSON, _ := json.Marshal(user)
 
-		req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(body))
+		req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(userJSON))
 		w := httptest.NewRecorder()
 
-		returnedUser := &models.User{
-			Email:     "test@example.com",
-			Name:      "TestUser",
-			AvatarURL: "/custom/avatar.png",
-		}
-		session := &models.Session{
-			ID:   "session_id",
-			Name: "session",
-			Time: time.Now().Add(24 * time.Hour),
-		}
-		csrf := &models.Csrf{
-			ID:   "csrf_id",
-			Name: "csrf",
-			Time: time.Now().Add(24 * time.Hour),
-		}
+		expectedAvatar := "/avatars/test.jpg"
+		expectedName := "Test User"
+		expectedSession := "session123"
+		expectedCSRF := "csrf123"
 
-		mockUserUseCase.EXPECT().
-			Login(gomock.Any(), gomock.Any()).
-			Return(returnedUser, session, csrf, nil)
+		mockAuthUseCase.EXPECT().
+			Login(gomock.Any(), &user).
+			Return(expectedAvatar, expectedName, expectedSession, expectedCSRF, nil)
 
 		router.LoginHandler(w, req)
 
@@ -59,75 +48,162 @@ func TestAuthRouter_LoginHandler(t *testing.T) {
 		var response models.UserLogin
 		err := json.NewDecoder(w.Body).Decode(&response)
 		assert.NoError(t, err)
-		assert.Equal(t, "test@example.com", response.Email)
-		assert.Equal(t, "TestUser", response.Name)
-		assert.Equal(t, "/custom/avatar.png", response.AvatarURL)
+		assert.Equal(t, user.Email, response.Email)
+		assert.Equal(t, expectedName, response.Name)
+		assert.Equal(t, expectedAvatar, response.AvatarURL)
 
 		cookies := w.Result().Cookies()
 		var sessionCookie, csrfCookie *http.Cookie
 		for _, cookie := range cookies {
-			if cookie.Name == "session" {
+			switch cookie.Name {
+			case "email":
 				sessionCookie = cookie
-			}
-			if cookie.Name == "csrf" {
+			case "csrf":
 				csrfCookie = cookie
 			}
 		}
 
 		assert.NotNil(t, sessionCookie)
+		assert.Equal(t, expectedSession, sessionCookie.Value)
 		assert.NotNil(t, csrfCookie)
-		assert.Equal(t, "session_id", sessionCookie.Value)
-		assert.Equal(t, "csrf_id", csrfCookie.Value)
+		assert.Equal(t, expectedCSRF, csrfCookie.Value)
 	})
 
-	t.Run("успешный вход без аватара", func(t *testing.T) {
-		loginData := &models.User{
-			Email:    "test@example.com",
-			Password: "password123",
-		}
-		body, _ := json.Marshal(loginData)
-
-		req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(body))
-		w := httptest.NewRecorder()
-
-		returnedUser := &models.User{
-			Email:     "test@example.com",
-			Name:      "TestUser",
-			AvatarURL: "",
-		}
-		session := &models.Session{
-			ID:   "session_id",
-			Name: "session",
-			Time: time.Now().Add(24 * time.Hour),
-		}
-		csrf := &models.Csrf{
-			ID:   "csrf_id",
-			Name: "csrf",
-			Time: time.Now().Add(24 * time.Hour),
-		}
-
-		mockUserUseCase.EXPECT().
-			Login(gomock.Any(), gomock.Any()).
-			Return(returnedUser, session, csrf, nil)
-
-		router.LoginHandler(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var response models.UserLogin
-		err := json.NewDecoder(w.Body).Decode(&response)
-		assert.NoError(t, err)
-		assert.Equal(t, "test@example.com", response.Email)
-		assert.Equal(t, "TestUser", response.Name)
-		assert.Equal(t, "/icons/default.png", response.AvatarURL)
-	})
-
-	t.Run("невалидный JSON", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/login", bytes.NewBuffer([]byte("invalid JSON")))
+	t.Run("неверный JSON", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/login", bytes.NewBufferString("invalid json"))
 		w := httptest.NewRecorder()
 
 		router.LoginHandler(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
+		var response map[string]interface{}
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.NoError(t, err)
+		assert.Equal(t, "invalid_json", response["body"])
+	})
+
+	t.Run("неверный email", func(t *testing.T) {
+		user := models.User{
+			Email:    "invalid-email",
+			Password: "password123",
+		}
+		userJSON, _ := json.Marshal(user)
+
+		req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(userJSON))
+		w := httptest.NewRecorder()
+
+		router.LoginHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		var response map[string]interface{}
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.NoError(t, err)
+		assert.Equal(t, "invalid_input", response["body"])
+	})
+
+	t.Run("ошибка авторизации", func(t *testing.T) {
+		user := models.User{
+			Email:    "test@example.com",
+			Password: "password123",
+		}
+		userJSON, _ := json.Marshal(user)
+
+		req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(userJSON))
+		w := httptest.NewRecorder()
+
+		mockAuthUseCase.EXPECT().
+			Login(gomock.Any(), &user).
+			Return("", "", "", "", assert.AnError)
+
+		router.LoginHandler(w, req)
+
+		assert.Equal(t, http.StatusForbidden, w.Code)
+		var response map[string]interface{}
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.NoError(t, err)
+		assert.Equal(t, "invalid_login_or_password", response["body"])
+	})
+
+	t.Run("пустой email", func(t *testing.T) {
+		user := models.User{
+			Email:    "",
+			Password: "password123",
+		}
+		userJSON, _ := json.Marshal(user)
+
+		req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(userJSON))
+		w := httptest.NewRecorder()
+
+		router.LoginHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		var response map[string]interface{}
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.NoError(t, err)
+		assert.Equal(t, "invalid_input", response["body"])
+	})
+	t.Run("пустое тело запроса", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/login", nil)
+		w := httptest.NewRecorder()
+
+		router.LoginHandler(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		var response map[string]interface{}
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.NoError(t, err)
+		assert.Equal(t, "invalid_json", response["body"])
+	})
+
+	t.Run("ошибка установки cookie", func(t *testing.T) {
+		user := models.User{
+			Email:    "test@example.com",
+			Password: "password123",
+		}
+		userJSON, _ := json.Marshal(user)
+
+		req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(userJSON))
+		w := httptest.NewRecorder()
+
+		mockAuthUseCase.EXPECT().
+			Login(gomock.Any(), &user).
+			Return("/avatars/test.jpg", "Test User", "session123", "csrf123", nil)
+
+		router.LoginHandler(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		cookies := w.Result().Cookies()
+		assert.Len(t, cookies, 2)
+	})
+}
+
+func TestAuthRouter_LoginHandler_AdditionalCases(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockAuthUseCase := mocks.NewMockAuthUseCase(ctrl)
+	router := NewAuthRouter(mockAuthUseCase)
+
+	t.Run("ошибка сервиса авторизации с пустыми значениями", func(t *testing.T) {
+		user := models.User{
+			Email:    "test@example.com",
+			Password: "password123",
+		}
+		userJSON, _ := json.Marshal(user)
+
+		req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(userJSON))
+		w := httptest.NewRecorder()
+
+		mockAuthUseCase.EXPECT().
+			Login(gomock.Any(), &user).
+			Return("", "", "", "", assert.AnError)
+
+		router.LoginHandler(w, req)
+
+		assert.Equal(t, http.StatusForbidden, w.Code)
+		var response map[string]interface{}
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.NoError(t, err)
+		assert.Equal(t, "invalid_login_or_password", response["body"])
 	})
 }

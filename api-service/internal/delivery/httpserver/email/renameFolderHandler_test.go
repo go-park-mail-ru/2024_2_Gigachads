@@ -15,27 +15,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
+func TestEmailRouter_RenameFolderHandler(t *testing.T) {
 	tests := []struct {
-		name       string
-		input      DeleteEmailsRequest
-		setupAuth  bool
-		mockSetup  func(*mocks.MockEmailUseCase)
-		wantStatus int
-		wantBody   string
+		name        string
+		input       models.RenameFolder
+		setupAuth   bool
+		mockSetup   func(*mocks.MockEmailUseCase)
+		wantStatus  int
+		wantBody    string
+		useRawInput bool
+		rawInput    string
 	}{
 		{
-			name: "успешное удаление",
-			input: DeleteEmailsRequest{
-				IDs: []string{"1", "2", "3"},
+			name: "успешное переименование папки",
+			input: models.RenameFolder{
+				Name:    "OldFolder",
+				NewName: "NewFolder",
 			},
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					DeleteEmails("test@example.com", []int{1, 2, 3}).
+					RenameFolder("test@example.com", "OldFolder", "NewFolder").
 					Return(nil)
 			},
-			wantStatus: http.StatusNoContent,
+			wantStatus: http.StatusOK,
 		},
 		{
 			name:       "неавторизованный запрос",
@@ -44,36 +47,27 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 			wantBody:   "unauthorized",
 		},
 		{
-			name: "пустой список ID",
-			input: DeleteEmailsRequest{
-				IDs: []string{},
-			},
-			setupAuth:  true,
-			wantStatus: http.StatusBadRequest,
-			wantBody:   "список ID пуст",
+			name:        "некорректный JSON",
+			setupAuth:   true,
+			useRawInput: true,
+			rawInput:    `{"name": "Old", "newName":}`,
+			wantStatus:  http.StatusBadRequest,
+			wantBody:    "invalid_json",
 		},
 		{
-			name: "некорректный ID",
-			input: DeleteEmailsRequest{
-				IDs: []string{"1", "invalid", "3"},
-			},
-			setupAuth:  true,
-			wantStatus: http.StatusBadRequest,
-			wantBody:   "неверный формат ID",
-		},
-		{
-			name: "ошибка удаления",
-			input: DeleteEmailsRequest{
-				IDs: []string{"1", "2", "3"},
+			name: "ошибка переименования",
+			input: models.RenameFolder{
+				Name:    "OldFolder",
+				NewName: "NewFolder",
 			},
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					DeleteEmails("test@example.com", []int{1, 2, 3}).
+					RenameFolder("test@example.com", "OldFolder", "NewFolder").
 					Return(errors.New("error"))
 			},
 			wantStatus: http.StatusInternalServerError,
-			wantBody:   "ошибка при удалении писем",
+			wantBody:   "error_with_rename_folder",
 		},
 	}
 
@@ -89,8 +83,14 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 
 			router := NewEmailRouter(mockEmailUseCase)
 
-			body, _ := json.Marshal(tt.input)
-			req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(body))
+			var reqBody []byte
+			if tt.useRawInput {
+				reqBody = []byte(tt.rawInput)
+			} else {
+				reqBody, _ = json.Marshal(tt.input)
+			}
+
+			req := httptest.NewRequest(http.MethodPut, "/folders/rename", bytes.NewBuffer(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			if tt.setupAuth {
@@ -99,7 +99,7 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			router.DeleteEmailsHandler(w, req)
+			router.RenameFolderHandler(w, req)
 
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
@@ -107,7 +107,7 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 				var response models.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantBody, response.Body, "Unexpected response body")
+				assert.Equal(t, tt.wantBody, response.Body, "Unexpected error body")
 			}
 		})
 	}

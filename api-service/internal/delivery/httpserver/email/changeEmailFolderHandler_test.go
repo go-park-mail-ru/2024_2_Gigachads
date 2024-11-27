@@ -12,68 +12,68 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
+func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 	tests := []struct {
 		name       string
-		input      DeleteEmailsRequest
+		emailID    string
+		input      models.Folder
 		setupAuth  bool
 		mockSetup  func(*mocks.MockEmailUseCase)
 		wantStatus int
 		wantBody   string
 	}{
 		{
-			name: "успешное удаление",
-			input: DeleteEmailsRequest{
-				IDs: []string{"1", "2", "3"},
+			name:    "успешное изменение папки",
+			emailID: "1",
+			input: models.Folder{
+				Name: "NewFolder",
 			},
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					DeleteEmails("test@example.com", []int{1, 2, 3}).
+					ChangeEmailFolder(1, "test@example.com", "NewFolder").
 					Return(nil)
 			},
-			wantStatus: http.StatusNoContent,
+			wantStatus: http.StatusOK,
 		},
 		{
-			name:       "неавторизованный запрос",
+			name:    "неавторизованный запрос",
+			emailID: "1",
+			input: models.Folder{
+				Name: "NewFolder",
+			},
 			setupAuth:  false,
 			wantStatus: http.StatusUnauthorized,
 			wantBody:   "unauthorized",
 		},
 		{
-			name: "пустой список ID",
-			input: DeleteEmailsRequest{
-				IDs: []string{},
+			name:    "некорректный ID папки",
+			emailID: "invalid",
+			input: models.Folder{
+				Name: "NewFolder",
 			},
 			setupAuth:  true,
 			wantStatus: http.StatusBadRequest,
-			wantBody:   "список ID пуст",
+			wantBody:   "invalid_path",
 		},
 		{
-			name: "некорректный ID",
-			input: DeleteEmailsRequest{
-				IDs: []string{"1", "invalid", "3"},
-			},
-			setupAuth:  true,
-			wantStatus: http.StatusBadRequest,
-			wantBody:   "неверный формат ID",
-		},
-		{
-			name: "ошибка удаления",
-			input: DeleteEmailsRequest{
-				IDs: []string{"1", "2", "3"},
+			name:    "ошибка изменения папки",
+			emailID: "1",
+			input: models.Folder{
+				Name: "NewFolder",
 			},
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					DeleteEmails("test@example.com", []int{1, 2, 3}).
+					ChangeEmailFolder(1, "test@example.com", "NewFolder").
 					Return(errors.New("error"))
 			},
 			wantStatus: http.StatusInternalServerError,
-			wantBody:   "ошибка при удалении писем",
+			wantBody:   "cant_change_name",
 		},
 	}
 
@@ -89,8 +89,12 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 
 			router := NewEmailRouter(mockEmailUseCase)
 
+			// Создаем новый роутер mux
+			r := mux.NewRouter()
+			r.HandleFunc("/emails/{id}/folder", router.ChangeEmailFolderHandler).Methods("PUT")
+
 			body, _ := json.Marshal(tt.input)
-			req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(body))
+			req := httptest.NewRequest(http.MethodPut, "/emails/"+tt.emailID+"/folder", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			if tt.setupAuth {
@@ -99,7 +103,7 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			router.DeleteEmailsHandler(w, req)
+			r.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 

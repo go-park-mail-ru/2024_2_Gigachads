@@ -1,7 +1,6 @@
 package email
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,27 +14,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
+func TestEmailRouter_FoldersHandler(t *testing.T) {
 	tests := []struct {
 		name       string
-		input      DeleteEmailsRequest
 		setupAuth  bool
 		mockSetup  func(*mocks.MockEmailUseCase)
 		wantStatus int
 		wantBody   string
+		wantData   []string
 	}{
 		{
-			name: "успешное удаление",
-			input: DeleteEmailsRequest{
-				IDs: []string{"1", "2", "3"},
-			},
+			name:      "успешное получение папок",
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					DeleteEmails("test@example.com", []int{1, 2, 3}).
-					Return(nil)
+					GetFolders("test@example.com").
+					Return([]string{"Inbox", "Sent"}, nil)
 			},
-			wantStatus: http.StatusNoContent,
+			wantStatus: http.StatusOK,
+			wantData:   []string{"Inbox", "Sent"},
 		},
 		{
 			name:       "неавторизованный запрос",
@@ -44,36 +41,15 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 			wantBody:   "unauthorized",
 		},
 		{
-			name: "пустой список ID",
-			input: DeleteEmailsRequest{
-				IDs: []string{},
-			},
-			setupAuth:  true,
-			wantStatus: http.StatusBadRequest,
-			wantBody:   "список ID пуст",
-		},
-		{
-			name: "некорректный ID",
-			input: DeleteEmailsRequest{
-				IDs: []string{"1", "invalid", "3"},
-			},
-			setupAuth:  true,
-			wantStatus: http.StatusBadRequest,
-			wantBody:   "неверный формат ID",
-		},
-		{
-			name: "ошибка удаления",
-			input: DeleteEmailsRequest{
-				IDs: []string{"1", "2", "3"},
-			},
+			name:      "ошибка получения папок",
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					DeleteEmails("test@example.com", []int{1, 2, 3}).
-					Return(errors.New("error"))
+					GetFolders("test@example.com").
+					Return(nil, errors.New("db error"))
 			},
 			wantStatus: http.StatusInternalServerError,
-			wantBody:   "ошибка при удалении писем",
+			wantBody:   "error_with_getting_folders",
 		},
 	}
 
@@ -89,17 +65,14 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 
 			router := NewEmailRouter(mockEmailUseCase)
 
-			body, _ := json.Marshal(tt.input)
-			req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
-
+			req := httptest.NewRequest(http.MethodGet, "/folders", nil)
 			if tt.setupAuth {
 				ctx := context.WithValue(req.Context(), "email", "test@example.com")
 				req = req.WithContext(ctx)
 			}
 
 			w := httptest.NewRecorder()
-			router.DeleteEmailsHandler(w, req)
+			router.FoldersHandler(w, req)
 
 			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
 
@@ -107,7 +80,14 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 				var response models.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantBody, response.Body, "Unexpected response body")
+				assert.Equal(t, tt.wantBody, response.Body, "Unexpected error body")
+			}
+
+			if tt.wantData != nil {
+				var response []string
+				err := json.NewDecoder(w.Body).Decode(&response)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantData, response, "Unexpected response data")
 			}
 		})
 	}

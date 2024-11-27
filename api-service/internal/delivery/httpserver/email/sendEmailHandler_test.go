@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"mail/internal/delivery/converters"
-	"mail/internal/delivery/httpserver/email/mocks"
-	"mail/internal/models"
+	"mail/api-service/internal/delivery/converters"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,7 +29,7 @@ func TestSendEmailHandler_SendSuccess(t *testing.T) {
 		Return(nil)
 
 	mockUseCase.EXPECT().
-		SendEmail("sender@example.com", []string{"recipient@example.com"}, "Test Subject", "Test Body").
+		SendEmail(gomock.Any(), "sender@example.com", []string{"recipient@example.com"}, "Test Subject", "Test Body").
 		Return(nil)
 
 	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
@@ -74,7 +74,7 @@ func TestSendEmailHandler_ForwardSuccess(t *testing.T) {
 		Return(originalEmail, nil)
 
 	mockUseCase.EXPECT().
-		ForwardEmail("sender@example.com", []string{"forward@example.com"}, originalEmail).
+		ForwardEmail(gomock.Any(), "sender@example.com", []string{"forward@example.com"}, originalEmail).
 		Return(nil)
 
 	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
@@ -119,7 +119,7 @@ func TestSendEmailHandler_ReplySuccess(t *testing.T) {
 		Return(originalEmail, nil)
 
 	mockUseCase.EXPECT().
-		ReplyEmail("sender@example.com", "original@example.com", originalEmail, "This is a reply.").
+		ReplyEmail(gomock.Any(), "sender@example.com", "original@example.com", originalEmail, "This is a reply.").
 		Return(nil)
 
 	emailRouter := &EmailRouter{EmailUseCase: mockUseCase}
@@ -234,7 +234,7 @@ func TestSendEmailHandler_Success(t *testing.T) {
 		Return(nil)
 
 	mockEmailUseCase.EXPECT().
-		SendEmail("sender@example.com", []string{"recipient@example.com"}, req.Title, req.Description).
+		SendEmail(gomock.Any(), "sender@example.com", []string{"recipient@example.com"}, req.Title, req.Description).
 		Return(nil)
 
 	router.SendEmailHandler(rr, httpReq)
@@ -277,7 +277,7 @@ func TestSendEmailHandler_Reply(t *testing.T) {
 		Return(nil)
 
 	mockEmailUseCase.EXPECT().
-		ReplyEmail("sender@example.com", "original@example.com", originalEmail, req.Description).
+		ReplyEmail(gomock.Any(), "sender@example.com", "original@example.com", originalEmail, req.Description).
 		Return(nil)
 
 	router.SendEmailHandler(rr, httpReq)
@@ -320,7 +320,7 @@ func TestSendEmailHandler_Forward(t *testing.T) {
 		Return(nil)
 
 	mockEmailUseCase.EXPECT().
-		ForwardEmail("sender@example.com", []string{"forward@example.com"}, originalEmail).
+		ForwardEmail(gomock.Any(), "sender@example.com", []string{"forward@example.com"}, originalEmail).
 		Return(nil)
 
 	router.SendEmailHandler(rr, httpReq)
