@@ -17,7 +17,15 @@ type Logger struct{
 }
 
 func NewLogger() Logger{
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	f, err := os.OpenFile("log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	logger := slog.New(slog.NewJSONHandler(f, nil)) //os.Stdout
+	if err != nil {
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+		logger.Error(err.Error())
+	}
+	
+	//defer f.Close()
+	//logger := slog.New(slog.NewJSONHandler(f, nil)) //os.Stdout
     return Logger{logger}
 }
 

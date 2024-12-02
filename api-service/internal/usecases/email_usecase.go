@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"errors"
+	"database/sql"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"mail/api-service/internal/models"
 	proto "mail/gen/go/smtp"
@@ -38,7 +40,14 @@ func (es *EmailService) GetSentEmails(email string) ([]models.Email, error) {
 }
 
 func (s *EmailService) SaveEmail(email models.Email) error {
-	return s.EmailRepo.SaveEmail(email)
+	err := s.EmailRepo.SaveEmail(email)
+	if err == sql.ErrNoRows {
+		return errors.New("email_not_found")
+	}
+	if err != nil {
+		return errors.New("failed_to_save_email")
+	}
+	return nil
 }
 
 func (es *EmailService) ChangeStatus(id int, status bool) error {
