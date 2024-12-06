@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   description: API for GigaMail
   title: GigaMail
-  version: '1.4'
+  version: '1.5'
 host: 89.208.228.234
 basePath: /api/v1
 paths:
@@ -390,9 +390,8 @@ paths:
           schema:
             $ref: '#/definitions/error'
     
-   
-  /folder/{name}:
-    get:
+  /getfolder:
+    post:
       description: Get all mails from folder
       produces:
         - application/json
@@ -401,10 +400,11 @@ paths:
       summary: List with folder emails
       parameters:
         - name: name
-          in: path
-          description: Название папки
+          in: body
+          description: название папки
           required: true
-          type: string
+          schema:
+            $ref: '#/definitions/folder'
           
       responses:
         '200':
@@ -419,6 +419,8 @@ paths:
           description: Error with list
           schema:
             $ref: '#/definitions/error'
+            
+  /folder:
     put:
       description: status
       consumes:
@@ -429,11 +431,6 @@ paths:
         - folder
       summary: Change folder name
       parameters:
-        - name: name
-          in: path
-          description: Название папки
-          required: true
-          type: string
         - name: new_name
           in: body
           description: Новое название папки
@@ -466,10 +463,11 @@ paths:
       summary: Create folder
       parameters:
         - name: name
-          in: path
-          description: Название папки
+          in: body
+          description: название папки
           required: true
-          type: string
+          schema:
+            $ref: '#/definitions/folder'
       responses:
         '200':
           description: folder created
@@ -495,10 +493,11 @@ paths:
       summary: Delete folder
       parameters:
         - name: name
-          in: path
-          description: Название папки
+          in: body
+          description: название папки
           required: true
-          type: string
+          schema:
+            $ref: '#/definitions/folder'
       responses:
         '200':
           description: Status changed
@@ -512,7 +511,7 @@ paths:
           description: Failed to add user
           schema:
             $ref: '#/definitions/error'
-  /folder:
+  
     get:
       description: Get all incoming mails
       produces:
@@ -779,6 +778,9 @@ definitions:
   change_folder:
     type: object
     properties:
+      name:
+        description: folder name
+        type: string
       new_name:
         description: new folder name
         type: string
