@@ -17,6 +17,7 @@ func Init(cfg *config.Config) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
 	return db, nil
 }

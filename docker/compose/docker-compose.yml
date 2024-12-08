@@ -10,8 +10,8 @@ services:
       - POSTGRES_PASSWORD=test
       - POSTGRES_DB=test
     volumes:
-      - ../postgres/data:/etc/lib/postgresql/data
       - ../postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    command: postgres -c config_file=../postgres/db.conf
     ports:
       - '5432:5432'
   redis:
