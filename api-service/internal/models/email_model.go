@@ -33,6 +33,10 @@ type RenameFolder struct {
 	NewName string `json:"new_name"`
 }
 
+type Timestamp struct {
+	LastModified time.Time `json:"date"`
+}
+
 type SmtpPop3Usecase interface {
 	SendEmail(ctx context.Context, from string, to []string, subject string, body string) error
 	ForwardEmail(ctx context.Context, from string, to []string, originalEmail Email) error
@@ -58,6 +62,7 @@ type EmailUseCase interface {
 	CreateDraft(email Email) error
 	UpdateDraft(email Draft) error
 	SendDraft(email Email) error
+	InboxStatus(ctx context.Context, email string, lastModified time.Time) ([]Email, error)
 }
 
 type EmailRepository interface {
@@ -77,4 +82,6 @@ type EmailRepository interface {
 	UpdateDraft(email Draft) error
 	CheckFolder(email string, folderName string) (bool, error)
 	GetMessageFolder(msgID int) (string, error)
+	GetTimestamp(ctx context.Context, email string) (time.Time, error)
+	SetTimestamp(ctx context.Context, email string) error
 }

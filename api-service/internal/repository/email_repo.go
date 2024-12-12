@@ -2,21 +2,25 @@ package repository
 
 import (
 	"database/sql"
+	"github.com/redis/go-redis/v9"
 	"errors"
 	"github.com/lib/pq"
 	"mail/api-service/internal/models"
 	"mail/api-service/pkg/logger"
 	"mail/api-service/pkg/utils"
 	"strconv"
+	"time"
+	"context"
 )
 
 type EmailRepositoryService struct {
 	repo   *sql.DB
+	redis  *redis.Client
 	logger logger.Logable
 }
 
-func NewEmailRepositoryService(db *sql.DB, l logger.Logable) *EmailRepositoryService {
-	return &EmailRepositoryService{repo: db, logger: l}
+func NewEmailRepositoryService(db *sql.DB, r *redis.Client, l logger.Logable) *EmailRepositoryService {
+	return &EmailRepositoryService{repo: db, redis: r, logger: l}
 }
 
 func (er *EmailRepositoryService) Inbox(email string) ([]models.Email, error) { //больше не используется
@@ -716,4 +720,32 @@ func (er *EmailRepositoryService) UpdateDraft(email models.Draft) error {
 	}
 
 	return tx.Commit()
+}
+
+func (er *EmailRepositoryService) GetTimestamp(ctx context.Context, email string) (time.Time, error) {
+
+	email = utils.Sanitize(email)
+	var timestamp models.Timestamp
+
+	err := er.redis.Get(ctx, email).Scan(&timestamp)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return time.Time{}, err
+	}
+
+	return timestamp.LastModified, nil
+}
+
+func (er *EmailRepositoryService) SetTimestamp(ctx context.Context, email string) error {
+
+	email = utils.Sanitize(email)
+	timestamp := models.Timestamp{LastModified: time.Now()}
+
+	err := er.redis.Set(ctx, email, timestamp, 0).Err()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return  err
+	}
+
+	return nil
 }

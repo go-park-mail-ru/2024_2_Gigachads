@@ -1,0 +1,45 @@
+{"time":"2024-12-12T22:31:56.5503191+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T22:31:56.5813584+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T22:31:56.5813584+03:00","level":"INFO","msg":"auth connected successfully"}
+{"time":"2024-12-12T22:31:56.5813584+03:00","level":"INFO","msg":"smtp connected successfully"}
+{"time":"2024-12-12T22:31:56.5818928+03:00","level":"INFO","msg":"Server is running on","port":"8080"}
+{"time":"2024-12-12T22:31:56.5835406+03:00","level":"ERROR","msg":"listen tcp 89.208.228.234:8080: bind: The requested address is not valid in its context."}
+{"time":"2024-12-12T22:32:19.2451272+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T22:32:19.2770401+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T22:32:19.2775744+03:00","level":"INFO","msg":"auth connected successfully"}
+{"time":"2024-12-12T22:32:19.2775744+03:00","level":"INFO","msg":"smtp connected successfully"}
+{"time":"2024-12-12T22:32:19.2781457+03:00","level":"INFO","msg":"Server is running on","port":"8080"}
+{"time":"2024-12-12T22:32:19.2786879+03:00","level":"ERROR","msg":"listen tcp 89.208.228.234:8080: bind: The requested address is not valid in its context."}
+{"time":"2024-12-12T23:01:11.8773597+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:01:11.9080756+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:01:16.9095172+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:01:34.2871961+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:01:34.3177106+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:01:39.3270956+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:02:30.5867758+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:02:30.6182917+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:02:35.6260802+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:10:51.9554261+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:10:51.9866966+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:10:56.9944138+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:17:40.0682747+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:17:40.1005846+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:17:45.1033414+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:21:48.5020722+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:21:48.5335508+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:21:53.5374238+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:23:48.3647953+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:23:48.3961368+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:23:53.4002126+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:32:26.695423+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:32:26.7261362+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:32:31.7309186+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:41:50.1298574+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:41:50.161039+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:41:55.1651127+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:45:26.0530217+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:45:26.0856601+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:45:31.088287+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-12T23:48:43.6903307+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-12T23:48:43.7221787+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-12T23:48:48.7261987+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}

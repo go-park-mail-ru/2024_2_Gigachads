@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"time"
 	"errors"
 	"database/sql"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -172,6 +173,7 @@ func (es *EmailService) SendEmail(ctx context.Context, from string, to []string,
 		if err != nil {
 			return err
 		}
+		es.EmailRepo.SetTimestamp(ctx, to[i])
 	}
 	return nil
 }
@@ -183,6 +185,7 @@ func (es *EmailService) ForwardEmail(ctx context.Context, from string, to []stri
 		if err != nil {
 			return err
 		}
+		es.EmailRepo.SetTimestamp(ctx, to[i])
 	}
 	return nil
 }
@@ -190,5 +193,20 @@ func (es *EmailService) ForwardEmail(ctx context.Context, from string, to []stri
 func (es *EmailService) ReplyEmail(ctx context.Context, from string, to string, originalEmail models.Email, replyText string) error {
 	req := &proto.ReplyEmailRequest{ReplyText: replyText, SendingDate: timestamppb.New(originalEmail.Sending_date), Sender: originalEmail.Sender_email, From: from, To: to, Title: originalEmail.Title, Description: originalEmail.Description}
 	_, err := es.EmailMS.ReplyEmail(ctx, req)
+	es.EmailRepo.SetTimestamp(ctx, to)
 	return err
+}
+
+func (es *EmailService) InboxStatus(ctx context.Context, email string, frontLastModified time.Time) ([]models.Email, error) {
+	lastModified, err := es.EmailRepo.GetTimestamp(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if (frontLastModified.Before(lastModified)){
+		return es.EmailRepo.GetFolderEmails(email, "Входящие")
+	} else {
+		return nil, fmt.Errorf("not_modified")
+	}
+
+	return nil, nil
 }
