@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   description: API for GigaMail
   title: GigaMail
-  version: '1.5'
+  version: '1.6'
 host: 89.208.228.234
 basePath: /api/v1
 paths:
@@ -387,6 +387,42 @@ paths:
             $ref: '#/definitions/error'
         '500':
           description: Something failed
+          schema:
+            $ref: '#/definitions/error'
+            
+  /status:
+    post:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Get new inbox if it changed
+      parameters:
+      - name: data
+        in: body
+        description: timestamp
+        required: true
+        schema:
+          $ref: '#/definitions/timestamp'
+          
+      responses:
+        '200':
+          description: new inbox
+          schema:
+            $ref: '#/definitions/mailList'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to get timestamp
+          schema:
+            $ref: '#/definitions/error'
+        '304':
+          description: not modified
           schema:
             $ref: '#/definitions/error'
     
@@ -814,4 +850,11 @@ definitions:
         type: string
       description:
         description: Text of the email
+        type: string
+
+  timestamp:
+    type: object
+    properties:
+      date:
+        description: Datetime of sending
         type: string
