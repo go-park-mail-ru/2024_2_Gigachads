@@ -5,7 +5,7 @@ httpserver:
         - https://89.208.228.234
         - http://localhost
         - https://giga-mail.ru
-        - http://gigachads.ru
+        - http://giga-mail.ru
         - http://localhost:3000
         - https://localhost:3000
 
