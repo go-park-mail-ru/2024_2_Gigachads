@@ -1,5 +1,5 @@
 httpserver: 
-    ip: 89.208.228.234
+    ip: localhost
     port: 8080
     allowed_ips_by_cors:
         - https://89.208.228.234
@@ -13,15 +13,15 @@ httpserver:
 
 
 authserver:
-    ip: 89.208.228.234
+    ip: localhost
     port: 8081
 
 smtpserver:
-    ip: 89.208.228.234
+    ip: localhost
     port: 8082
 
 postgres:
-    ip: 89.208.228.234
+    ip: localhost
     port: 5432
     dbname: test
     user: test
@@ -40,7 +40,7 @@ pop3:
     password: test 
 
 redis:
-    ip: 89.208.228.234
+    ip: localhost
     port: 6379
     dbnum: 0
     user: test

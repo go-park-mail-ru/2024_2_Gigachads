@@ -1,4 +1,6 @@
 .DS_Store
 go.sum
 .idea
-
+api-service/cmd/main
+auth-service/cmd/main
+smtp-service/cmd/main
