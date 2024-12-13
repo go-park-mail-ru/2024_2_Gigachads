@@ -3,7 +3,9 @@ httpserver:
     port: 8080
     allowed_ips_by_cors:
         - https://89.208.228.234
+        - http://89.208.228.234
         - http://localhost
+        - https://localhost
         - https://giga-mail.ru
         - http://giga-mail.ru
         - http://localhost:3000
