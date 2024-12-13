@@ -43,3 +43,6 @@
 {"time":"2024-12-12T23:48:43.6903307+03:00","level":"INFO","msg":"loaded config"}
 {"time":"2024-12-12T23:48:43.7221787+03:00","level":"INFO","msg":"postgres connected"}
 {"time":"2024-12-12T23:48:48.7261987+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
+{"time":"2024-12-13T12:58:16.0450107+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-13T12:58:16.0823868+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-13T12:58:21.0866575+03:00","level":"ERROR","msg":"dial tcp 89.208.228.234:6379: i/o timeout"}
