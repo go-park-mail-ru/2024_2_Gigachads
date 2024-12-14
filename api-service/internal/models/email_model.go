@@ -14,6 +14,7 @@ type Email struct {
 	IsRead       bool      `json:"isRead"`
 	Sending_date time.Time `json:"date"`
 	Description  string    `json:"description"`
+	Attachments  []string  `json:"attachments"`
 }
 
 type Draft struct {
@@ -35,6 +36,10 @@ type RenameFolder struct {
 
 type Timestamp struct {
 	LastModified time.Time `json:"date"`
+}
+
+type FilePath struct {
+	Path string `json:"path"`
 }
 
 type SmtpPop3Usecase interface {
@@ -63,6 +68,9 @@ type EmailUseCase interface {
 	UpdateDraft(email Draft) error
 	SendDraft(email Email) error
 	InboxStatus(ctx context.Context, email string, lastModified time.Time) ([]Email, error)
+	UploadAttach(fileContent []byte) (string, error)
+	GetAttach(path string) ([]byte, error)
+	DeleteAttach(path string) error
 }
 
 type EmailRepository interface {
@@ -84,4 +92,6 @@ type EmailRepository interface {
 	GetMessageFolder(msgID int) (string, error)
 	GetTimestamp(ctx context.Context, email string) (time.Time, error)
 	SetTimestamp(ctx context.Context, email string) error
+	DeleteAttach(path string) error
+	GetAttach(path string) ([]byte, error)
 }

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"os"
 	"database/sql"
 	"github.com/redis/go-redis/v9"
 	"errors"
@@ -110,7 +111,7 @@ func (er *EmailRepositoryService) GetSentEmails(senderEmail string) ([]models.Em
 func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	query := `
 	SELECT t.id, parent_transaction_id, t.sender_email, t.recipient_email, m.title, 
-	t.isread, t.sending_date, m.description
+	t.isread, t.sending_date, m.description, m.id
 	FROM email_transaction AS t
 	JOIN message AS m ON t.message_id = m.id
 	WHERE t.id = $1
@@ -118,10 +119,12 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 
 	var email models.Email
 	var parentIdNullString sql.NullString
+	var messageID int
+
 	err := er.repo.QueryRow(query, id).
 		Scan(&email.ID, &parentIdNullString, &email.Sender_email, &email.Recipient,
 			&email.Title, &email.IsRead, &email.Sending_date,
-			&email.Description)
+			&email.Description, &messageID)
 	if err != nil {
 		er.logger.Error(err.Error())
 		return models.Email{}, err
@@ -149,6 +152,29 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 		}
 		return models.Email{}, err
 	}
+
+	
+	rows, err := er.repo.Query(
+		`SELECT url
+		 FROM attachment
+		 WHERE message_id = $1`, messageID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return models.Email{}, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var path string
+		err := rows.Scan(&path)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return models.Email{}, err
+		}
+		path = utils.Sanitize(path)
+		email.Attachments = append(email.Attachments, path)
+	}
+
 	return email, nil
 }
 
@@ -748,4 +774,42 @@ func (er *EmailRepositoryService) SetTimestamp(ctx context.Context, email string
 	}
 
 	return nil
+}
+
+func (er *EmailRepositoryService) DeleteAttach(path string) error {
+
+	path = utils.Sanitize(path)
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
+
+
+	_, err = tx.Exec(
+		`DELETE FROM attachment 
+		 WHERE url = $1`,
+		path,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	err = os.Remove(path)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (er *EmailRepositoryService) GetAttach(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

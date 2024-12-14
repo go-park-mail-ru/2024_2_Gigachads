@@ -18,7 +18,7 @@ func (er *EmailRouter) SendDraftHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	senderEmail := ctxEmail.(string)
 
-	var req models.Draft
+	var req models.Email
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_request_body")
 		return

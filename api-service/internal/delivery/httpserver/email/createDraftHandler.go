@@ -2,7 +2,6 @@ package email
 
 import (
 	"encoding/json"
-	"mail/api-service/internal/delivery/converters"
 	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
 	"net/http"
@@ -18,13 +17,13 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 	}
 	senderEmail := ctxEmail.(string)
 
-	var req converters.SendEmailRequest
+	var req models.Email
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 
-	if req.ParentId == 0 {
+	if req.ParentID == 0 {
 		email := models.Email{
 			Sender_email: senderEmail,
 			Recipient:    req.Recipient,
@@ -42,7 +41,7 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 		}
 
 	} else {
-		originalEmail, err := er.EmailUseCase.GetEmailByID(req.ParentId)
+		originalEmail, err := er.EmailUseCase.GetEmailByID(req.ParentID)
 		if err != nil {
 			utils.ErrorResponse(w, r, http.StatusBadRequest, "parent_email_not_found")
 			return
@@ -56,7 +55,7 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 				Description:  req.Description,
 				Sending_date: time.Now(),
 				IsRead:       false,
-				ParentID:     req.ParentId,
+				ParentID:     req.ParentID,
 			}
 
 			err = er.EmailUseCase.CreateDraft(email)
@@ -73,7 +72,7 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 				Description:  req.Description,
 				Sending_date: time.Now(),
 				IsRead:       false,
-				ParentID:     req.ParentId,
+				ParentID:     req.ParentID,
 			}
 
 			err = er.EmailUseCase.CreateDraft(email)

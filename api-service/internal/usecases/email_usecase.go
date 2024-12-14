@@ -211,6 +211,15 @@ func (es *EmailService) InboxStatus(ctx context.Context, email string, frontLast
 	return nil, nil
 }
 
-func (es *EmailService) UploadAttach(ctx context.Context, email string, frontLastModified time.Time) ([]models.Email, error) {
-	
+func (es *EmailService) UploadAttach(fileContent []byte) (string, error) {
+
+	return "", nil
+}
+
+func (es *EmailService) GetAttach(path string) ([]byte, error) {
+	return es.EmailRepo.GetAttach(path)
+}
+
+func (es *EmailService) DeleteAttach(path string) error {
+	return es.EmailRepo.DeleteAttach(path)
 }
