@@ -210,3 +210,7 @@ func (es *EmailService) InboxStatus(ctx context.Context, email string, frontLast
 
 	return nil, nil
 }
+
+func (es *EmailService) UploadAttach(ctx context.Context, email string, frontLastModified time.Time) ([]models.Email, error) {
+	
+}
