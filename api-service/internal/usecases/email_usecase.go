@@ -33,20 +33,16 @@ func (es *EmailService) Inbox(email string) ([]models.Email, error) {
 }
 
 func (es *EmailService) GetEmailByID(id int) (models.Email, error) {
-	fmt.Println("usecase 1")
 	email, err :=  es.EmailRepo.GetEmailByID(id)
-	fmt.Println("usecase 2")
-	if err != nil {
+		if err != nil {
 		return models.Email{}, err
 	}
-	fmt.Println("usecase 3")
+
 	for i, path := range email.Attachments {
-		fmt.Println("path ", i)
-		_, file := filepath.Split(path)
+		file := filepath.Base(path)
 		email.Files[i].Path = path
 		email.Files[i].Name = file
 	}
-	fmt.Println("usecase 4")
 	return email, nil
 }
 
