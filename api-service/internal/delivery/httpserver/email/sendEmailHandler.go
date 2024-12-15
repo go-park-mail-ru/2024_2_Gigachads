@@ -25,15 +25,6 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if email.ParentID == 0 {
-		// email := models.Email{
-		// 	Sender_email: senderEmail,
-		// 	Recipient:    req.Recipient,
-		// 	Title:        req.Title,
-		// 	Description:  req.Description,
-		// 	Sending_date: time.Now(),
-		// 	IsRead:       false,
-		// 	ParentID:     0,
-		// }
 		email.Sender_email = senderEmail
 		email.Sending_date = time.Now()
 		email.IsRead = false
@@ -60,15 +51,6 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 		}
 
 		if strings.HasPrefix(email.Title, "Re:") {
-			// email := models.Email{
-			// 	Sender_email: senderEmail,
-			// 	Recipient:    originalEmail.Sender_email,
-			// 	Title:        req.Title,
-			// 	Description:  req.Description,
-			// 	Sending_date: time.Now(),
-			// 	IsRead:       false,
-			// 	ParentID:     req.ParentID,
-			// }
 			email.Sender_email = senderEmail
 			email.Recipient = originalEmail.Sender_email
 			email.Sending_date = time.Now()
@@ -89,15 +71,6 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 				email.Description,
 			)
 		} else if strings.HasPrefix(email.Title, "Fwd:") {
-			// email := models.Email{
-			// 	Sender_email: senderEmail,
-			// 	Recipient:    req.Recipient,
-			// 	Title:        req.Title,
-			// 	Description:  req.Description,
-			// 	Sending_date: time.Now(),
-			// 	IsRead:       false,
-			// 	ParentID:     req.ParentID,
-			// }
 			email.Sender_email = senderEmail
 			email.Sending_date = time.Now()
 			email.IsRead = false
