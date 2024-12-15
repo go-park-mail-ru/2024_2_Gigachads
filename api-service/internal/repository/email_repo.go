@@ -800,6 +800,10 @@ func (er *EmailRepositoryService) UpdateDraft(email models.Email) error {
 		return err
 	}
 
+	for _, path := range email.Attachments { //прирязать аттачи к письму
+		er.ConnectAttachToMessage(messageID, path)
+	}
+
 	return tx.Commit()
 }
 
