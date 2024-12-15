@@ -150,7 +150,7 @@ func (es *EmailService) CreateDraft(email models.Email) error {
 	return es.EmailRepo.CreateDraft(email)
 }
 
-func (es *EmailService) UpdateDraft(email models.Draft) error {
+func (es *EmailService) UpdateDraft(email models.Email) error {
 	return es.EmailRepo.UpdateDraft(email)
 }
 

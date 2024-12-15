@@ -748,7 +748,7 @@ func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
 	return tx.Commit()
 }
 
-func (er *EmailRepositoryService) UpdateDraft(email models.Draft) error {
+func (er *EmailRepositoryService) UpdateDraft(email models.Email) error {
 
 	email.Title = utils.Sanitize(email.Title)
 	email.Description = utils.Sanitize(email.Description)

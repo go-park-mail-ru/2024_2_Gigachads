@@ -17,13 +17,13 @@ type Email struct {
 	Attachments  []string  `json:"attachments"`
 }
 
-type Draft struct {
-	ID          int    `json:"id"`
-	Recipient   string `json:"recipient"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	ParentID    int    `json:"parentID"`
-}
+// type Draft struct {
+// 	ID          int    `json:"id"`
+// 	Recipient   string `json:"recipient"`
+// 	Title       string `json:"title"`
+// 	Description string `json:"description"`
+// 	ParentID    int    `json:"parentID"`
+// }
 
 type Folder struct {
 	Name string `json:"name"`
@@ -70,7 +70,7 @@ type EmailUseCase interface {
 	RenameFolder(email string, folderName string, newFolderName string) error
 	ChangeEmailFolder(id int, email string, folderName string) error
 	CreateDraft(email Email) error
-	UpdateDraft(email Draft) error
+	UpdateDraft(email Email) error
 	SendDraft(email Email) error
 	InboxStatus(ctx context.Context, email string, lastModified time.Time) ([]Email, error)
 	UploadAttach(fileContent []byte, filename string) (string, error)
@@ -93,7 +93,7 @@ type EmailRepository interface {
 	RenameFolder(email string, folderName string, newFolderName string) error
 	ChangeEmailFolder(id int, email string, folderName string) error
 	CreateDraft(email Email) error
-	UpdateDraft(email Draft) error
+	UpdateDraft(email Email) error
 	CheckFolder(email string, folderName string) (bool, error)
 	GetMessageFolder(msgID int) (string, error)
 	GetTimestamp(ctx context.Context, email string) (time.Time, error)

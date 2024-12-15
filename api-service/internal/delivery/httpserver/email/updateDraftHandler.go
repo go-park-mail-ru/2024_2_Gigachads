@@ -14,7 +14,7 @@ func (er *EmailRouter) UpdateDraftHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var draft models.Draft
+	var draft models.Email
 	err := json.NewDecoder(r.Body).Decode(&draft)
 
 	if err != nil {
