@@ -5,3 +5,4 @@ auth-service/cmd/main
 smtp-service/cmd/main
 main
 log
+attachments

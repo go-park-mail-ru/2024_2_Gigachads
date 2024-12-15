@@ -877,11 +877,16 @@ func (er *EmailRepositoryService) GetAttach(path string) ([]byte, error) {
 
 func (er *EmailRepositoryService) UploadAttach(fileContent []byte, filename string) (string, error) {
 
-	if err := os.MkdirAll("./attachments", os.ModePerm); err != nil {
+	filedir, err := utils.GenerateHash()
+	if err != nil {
 		return "", err
 	}
 
-	filePath := "./attachments/" + filename
+	if err := os.MkdirAll("./attachments/" + filedir, os.ModePerm); err != nil {
+		return "", err
+	}
+
+	filePath := "./attachments/" + filedir + "/" + filename
 
 	outFile, err := os.Create(filePath)
 	if err != nil {
