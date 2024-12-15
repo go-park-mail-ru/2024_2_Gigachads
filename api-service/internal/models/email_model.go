@@ -62,7 +62,7 @@ type EmailUseCase interface {
 	GetEmailByID(id int) (Email, error)
 	ChangeStatus(id int, status bool) error
 	GetSentEmails(senderEmail string) ([]Email, error)
-	SaveEmail(email Email) error
+	SaveEmail(ctx context.Context, email Email) error
 	DeleteEmails(userEmail string, messageIDs []int) error
 	GetFolders(email string) ([]string, error)
 	GetFolderEmails(email string, folderName string) ([]Email, error)
