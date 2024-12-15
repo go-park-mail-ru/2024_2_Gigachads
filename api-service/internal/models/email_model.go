@@ -74,9 +74,9 @@ type EmailUseCase interface {
 	UpdateDraft(email Email) error
 	SendDraft(email Email) error
 	InboxStatus(ctx context.Context, email string, lastModified time.Time) ([]Email, error)
-	UploadAttach(fileContent []byte, filename string) (string, error)
-	GetAttach(path string) ([]byte, error)
-	DeleteAttach(path string) error
+	UploadAttach(ctx context.Context, fileContent []byte, filename string) (string, error)
+	GetAttach(ctx context.Context, path string) ([]byte, error)
+	DeleteAttach(ctx context.Context, path string) error
 }
 
 type EmailRepository interface {
@@ -99,8 +99,8 @@ type EmailRepository interface {
 	GetMessageFolder(msgID int) (string, error)
 	GetTimestamp(ctx context.Context, email string) (time.Time, error)
 	SetTimestamp(ctx context.Context, email string) error
-	DeleteAttach(path string) error
-	GetAttach(path string) ([]byte, error)
-	UploadAttach(fileContent []byte, filename string) (string, error)
+	DeleteAttach(ctx context.Context, path string) error
+	GetAttach(ctx context.Context, path string) ([]byte, error)
+	UploadAttach(ctx context.Context, fileContent []byte, filename string) (string, error)
 	ConnectAttachToMessage(messageID int, path string) error
 }

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"errors"
 	"io"
+	"context"
+	"time"
 )
 
 func (er *EmailRouter) UploadAttachHandler(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +56,9 @@ func (er *EmailRouter) UploadAttachHandler(w http.ResponseWriter, r *http.Reques
 	name := r.FormValue("name")
 	name = utils.Sanitize(name)
 
-	path, err := er.EmailUseCase.UploadAttach(fileContent, name)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	path, err := er.EmailUseCase.UploadAttach(ctx, fileContent, name)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_upload_attach")
 		return

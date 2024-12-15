@@ -5,6 +5,8 @@ import (
 	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
 	"net/http"
+	"context"
+	"time"
 )
 
 func (er *EmailRouter) GetAttachHandler(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +23,9 @@ func (er *EmailRouter) GetAttachHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	data, err := er.EmailUseCase.GetAttach(file.Path)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	data, err := er.EmailUseCase.GetAttach(ctx, file.Path)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_get_file")
 		return

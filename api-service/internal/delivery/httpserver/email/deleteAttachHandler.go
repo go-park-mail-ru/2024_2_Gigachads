@@ -5,6 +5,8 @@ import (
 	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
 	"net/http"
+	"context"
+	"time"
 )
 
 func (er *EmailRouter) DeleteAttachHandler(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +23,9 @@ func (er *EmailRouter) DeleteAttachHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = er.EmailUseCase.DeleteAttach(file.Path)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	err = er.EmailUseCase.DeleteAttach(ctx, file.Path)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_delete_file")
 		return

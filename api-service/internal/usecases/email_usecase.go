@@ -224,14 +224,14 @@ func (es *EmailService) InboxStatus(ctx context.Context, email string, frontLast
 	return nil, nil
 }
 
-func (es *EmailService) UploadAttach(fileContent []byte, filename string) (string, error) {
-	return es.EmailRepo.UploadAttach(fileContent, filename)
+func (es *EmailService) UploadAttach(ctx context.Context, fileContent []byte, filename string) (string, error) {
+	return es.EmailRepo.UploadAttach(ctx, fileContent, filename)
 }
 
-func (es *EmailService) GetAttach(path string) ([]byte, error) {
-	return es.EmailRepo.GetAttach(path)
+func (es *EmailService) GetAttach(ctx context.Context, path string) ([]byte, error) {
+	return es.EmailRepo.GetAttach(ctx, path)
 }
 
-func (es *EmailService) DeleteAttach(path string) error {
-	return es.EmailRepo.DeleteAttach(path)
+func (es *EmailService) DeleteAttach(ctx context.Context, path string) error {
+	return es.EmailRepo.DeleteAttach(ctx, path)
 }

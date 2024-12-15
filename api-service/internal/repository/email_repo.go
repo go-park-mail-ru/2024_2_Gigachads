@@ -855,7 +855,7 @@ func (er *EmailRepositoryService) SetTimestamp(ctx context.Context, email string
 	return nil
 }
 
-func (er *EmailRepositoryService) DeleteAttach(path string) error {
+func (er *EmailRepositoryService) DeleteAttach(ctx context.Context, path string) error {
 
 	path = utils.Sanitize(path)
 
@@ -891,7 +891,7 @@ func (er *EmailRepositoryService) DeleteAttach(path string) error {
 	return tx.Commit()
 }
 
-func (er *EmailRepositoryService) GetAttach(path string) ([]byte, error) {
+func (er *EmailRepositoryService) GetAttach(ctx context.Context, path string) ([]byte, error) {
 	path = utils.Sanitize(path)
 
 	data, err := os.ReadFile(path)
@@ -901,7 +901,7 @@ func (er *EmailRepositoryService) GetAttach(path string) ([]byte, error) {
 	return data, nil
 }
 
-func (er *EmailRepositoryService) UploadAttach(fileContent []byte, filename string) (string, error) {
+func (er *EmailRepositoryService) UploadAttach(ctx context.Context, fileContent []byte, filename string) (string, error) {
 
 	filedir, err := utils.GenerateHash()
 	if err != nil {
