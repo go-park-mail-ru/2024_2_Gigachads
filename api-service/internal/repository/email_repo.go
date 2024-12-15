@@ -837,7 +837,12 @@ func (er *EmailRepositoryService) GetTimestamp(ctx context.Context, email string
 		return time.Time{}, err
 	}
 	fmt.Println("get: ", timestring)
-	timestamp, _ := time.Parse("2006-01-02 15:04:05", timestring)
+	timestamp, err := time.Parse(time.RFC1123, timestring)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return time.Time{}, err
+	}
+	
 	fmt.Println("get: ", timestamp)
 	return timestamp, nil
 }
