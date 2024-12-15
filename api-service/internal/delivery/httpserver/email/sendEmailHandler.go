@@ -24,12 +24,16 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
 	if email.ParentID == 0 {
 		email.Sender_email = senderEmail
 		email.Sending_date = time.Now()
 		email.IsRead = false
 
-		err := er.EmailUseCase.SaveEmail(email)
+		err := er.EmailUseCase.SaveEmail(ctx, email)
 		if err != nil {
 			utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 			return
@@ -56,7 +60,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 			email.Sending_date = time.Now()
 			email.IsRead = false
 
-			err = er.EmailUseCase.SaveEmail(email)
+			err = er.EmailUseCase.SaveEmail(ctx, email)
 			if err != nil {
 				utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 				return
@@ -75,7 +79,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 			email.Sending_date = time.Now()
 			email.IsRead = false
 
-			err = er.EmailUseCase.SaveEmail(email)
+			err = er.EmailUseCase.SaveEmail(ctx, email)
 			if err != nil {
 				utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
 				return
