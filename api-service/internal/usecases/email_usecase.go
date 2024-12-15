@@ -6,6 +6,7 @@ import (
 	"time"
 	"errors"
 	"database/sql"
+	"path/filepath"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"mail/api-service/internal/models"
 	proto "mail/gen/go/smtp"
@@ -32,7 +33,16 @@ func (es *EmailService) Inbox(email string) ([]models.Email, error) {
 }
 
 func (es *EmailService) GetEmailByID(id int) (models.Email, error) {
-	return es.EmailRepo.GetEmailByID(id)
+	email, err :=  es.EmailRepo.GetEmailByID(id)
+	if err != nil {
+		return models.Email{}, err
+	}
+	for i, path := range email.Attachments {
+		_, file := filepath.Split(path)
+		email.Files[i].Path = path
+		email.Files[i].Name = file
+	}
+	return email, nil
 }
 
 func (es *EmailService) GetSentEmails(email string) ([]models.Email, error) {

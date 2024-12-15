@@ -15,6 +15,7 @@ type Email struct {
 	Sending_date time.Time `json:"date"`
 	Description  string    `json:"description"`
 	Attachments  []string  `json:"attachments"`
+	Files        []File    `json:"filenames"`
 }
 
 // type Draft struct {
@@ -44,7 +45,7 @@ type FilePath struct {
 
 type File struct {
 	Name string `json:"name"`
-	File []byte `json:"file"`
+	Path string `json:"path"`
 }
 
 type SmtpPop3Usecase interface {
