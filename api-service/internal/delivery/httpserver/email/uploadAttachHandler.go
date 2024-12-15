@@ -15,14 +15,14 @@ func (er *EmailRouter) UploadAttachHandler(w http.ResponseWriter, r *http.Reques
 		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	var reqfile models.File
-	err := json.NewDecoder(r.Body).Decode(&reqfile)
-	if err != nil {
-		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
-		return
-	}
+	// var reqfile models.File
+	// err := json.NewDecoder(r.Body).Decode(&reqfile)
+	// if err != nil {
+	// 	utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
+	// 	return
+	// }
 
-	err = r.ParseMultipartForm(10 * 1024 * 1024)
+	err := r.ParseMultipartForm(10 * 1024 * 1024)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "error_with_parsing_file")
 		return
@@ -33,7 +33,7 @@ func (er *EmailRouter) UploadAttachHandler(w http.ResponseWriter, r *http.Reques
 		}
 	}()
 
-	file, _, err := r.FormFile("avatar")
+	file, _, err := r.FormFile("file")
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "error_with_file")
 		return
@@ -51,7 +51,9 @@ func (er *EmailRouter) UploadAttachHandler(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	path, err := er.EmailUseCase.UploadAttach(fileContent, reqfile.Name)
+	name := r.FormValue("name")
+
+	path, err := er.EmailUseCase.UploadAttach(fileContent, name)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "error_with_upload_attach")
 		return

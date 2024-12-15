@@ -273,7 +273,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		return err
 	}
 
-	for _, path := range email.Attachments {
+	for _, path := range email.Attachments { //прирязать аттачи к письму
 		er.ConnectAttachToMessage(messageID, path)
 	}
 
@@ -749,7 +749,7 @@ func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
 		return err
 	}
 
-	for _, path := range email.Attachments {
+	for _, path := range email.Attachments { //прирязать аттачи к письму
 		er.ConnectAttachToMessage(messageID, path)
 	}
 
