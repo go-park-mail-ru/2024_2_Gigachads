@@ -253,29 +253,31 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		er.logger.Error(err.Error())
 		return err
 	}
-	var recipientFolderID int
-	err = tx.QueryRow(
-		`SELECT id FROM folder WHERE user_id = $1 AND name = 'Входящие'`,
-		recipientID,
-	).Scan(&recipientFolderID)
-	if err != nil {
-		er.logger.Error(err.Error())
-		return err
-	}
 
-	_, err = tx.Exec(
-		`INSERT INTO email_transaction 
-		(sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id, folder_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		email.Sender_email, email.Recipient,
-		email.Sending_date, email.IsRead, messageID,
-		parentID, recipientFolderID,
-	)
-	if err != nil {
-		er.logger.Error(err.Error())
-		return err
-	}
+	if recipientID.Valid {
+		var recipientFolderID int
+		err = tx.QueryRow(
+			`SELECT id FROM folder WHERE user_id = $1 AND name = 'Входящие'`,
+			recipientID.Int64,
+		).Scan(&recipientFolderID)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return err
+		}
 
+		_, err = tx.Exec(
+			`INSERT INTO email_transaction 
+			(sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id, folder_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+			email.Sender_email, email.Recipient,
+			email.Sending_date, email.IsRead, messageID,
+			parentID, recipientFolderID,
+		)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return err
+		}
+	}
 	err = tx.Commit()
 	if err != nil {
 		er.logger.Error(err.Error())
