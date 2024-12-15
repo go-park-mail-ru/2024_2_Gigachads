@@ -273,6 +273,10 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		return err
 	}
 
+	for _, path := range email.Attachments {
+		er.ConnectAttachToMessage(messageID, path)
+	}
+
 	return tx.Commit()
 }
 
@@ -745,6 +749,10 @@ func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
 		return err
 	}
 
+	for _, path := range email.Attachments {
+		er.ConnectAttachToMessage(messageID, path)
+	}
+
 	return tx.Commit()
 }
 
@@ -854,6 +862,8 @@ func (er *EmailRepositoryService) DeleteAttach(path string) error {
 }
 
 func (er *EmailRepositoryService) GetAttach(path string) ([]byte, error) {
+	path = utils.Sanitize(path)
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -897,4 +907,29 @@ func (er *EmailRepositoryService) UploadAttach(fileContent []byte, filename stri
 	}
 
 	return filePath, tx.Commit()
+}
+
+func (er *EmailRepositoryService) ConnectAttachToMessage(messageID int, path string) error {
+
+	path = utils.Sanitize(path)
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
+		`UPDATE attachment
+			SET message_id = $1
+			WHERE url = $2`,
+		messageID, path,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
+	return tx.Commit()
 }

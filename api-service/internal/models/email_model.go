@@ -101,4 +101,5 @@ type EmailRepository interface {
 	DeleteAttach(path string) error
 	GetAttach(path string) ([]byte, error)
 	UploadAttach(fileContent []byte, filename string) (string, error)
+	ConnectAttachToMessage(messageID int, path string) error
 }
