@@ -13,6 +13,7 @@ import (
 	"time"
 	"context"
 	"path/filepath"
+	"fmt"
 )
 
 type EmailRepositoryService struct {
@@ -935,6 +936,8 @@ func (er *EmailRepositoryService) ConnectAttachToMessage(messageID int, path str
 		return err
 	}
 	defer tx.Rollback()
+
+	fmt.Println("connect", messageID, " path:", path)
 
 	_, err = tx.Exec(
 		`UPDATE attachment

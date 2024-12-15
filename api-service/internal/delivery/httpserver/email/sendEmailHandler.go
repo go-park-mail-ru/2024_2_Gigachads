@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"fmt"
 )
 
 func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +23,6 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
-	fmt.Println(email.Attachments)
 
 	if email.ParentID == 0 {
 		// email := models.Email{
