@@ -34,4 +34,5 @@ func (er *EmailRouter) ConfigureEmailRouter(mux *mux.Router) {
 	mux.HandleFunc("/status", er.InboxStatusHandler).Methods("POST", "OPTIONS")
 	mux.HandleFunc("/attachment", er.DeleteAttachHandler).Methods("DELETE", "OPTIONS")
 	mux.HandleFunc("/getAttachment", er.GetAttachHandler).Methods("POST", "OPTIONS")
+	mux.HandleFunc("/attachment", er.UploadAttachHandler).Methods("POST", "OPTIONS")
 }

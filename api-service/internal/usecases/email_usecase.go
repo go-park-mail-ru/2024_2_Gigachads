@@ -203,7 +203,7 @@ func (es *EmailService) InboxStatus(ctx context.Context, email string, frontLast
 		return nil, err
 	}
 	if (frontLastModified.Before(lastModified)){
-		return es.EmailRepo.GetFolderEmails(email, "Входящие")
+		return es.EmailRepo.GetNewEmails(email, frontLastModified)
 	} else {
 		return nil, fmt.Errorf("not_modified")
 	}

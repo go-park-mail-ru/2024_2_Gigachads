@@ -400,6 +400,53 @@ func (er *EmailRepositoryService) GetFolderEmails(email string, folderName strin
 	return res, nil
 }
 
+func (er *EmailRepositoryService) GetNewEmails(email string, lastModified time.Time) ([]models.Email, error) {
+
+	email = utils.Sanitize(email)
+
+	rows, err := er.repo.Query(
+		`SELECT t.id, t.sender_email, t.recipient_email, m.title, 
+		 t.sending_date, t.isread, m.description
+		 FROM email_transaction AS t
+		 JOIN message AS m ON t.message_id = m.id
+		 JOIN folder AS f ON t.folder_id = f.id
+		 JOIN profile AS p ON f.user_id = p.id
+		 WHERE f.name = "Входящие"
+		 AND p.email = $1
+		 ORDER BY t.sending_date DESC`, email)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := make([]models.Email, 0)
+	for rows.Next() {
+		email := models.Email{}
+		err := rows.Scan(
+			&email.ID,
+			&email.Sender_email,
+			&email.Recipient,
+			&email.Title,
+			&email.Sending_date,
+			&email.IsRead,
+			&email.Description,
+		)
+		email.Sender_email = utils.Sanitize(email.Sender_email)
+		email.Recipient = utils.Sanitize(email.Recipient)
+		email.Title = utils.Sanitize(email.Title)
+		email.Description = utils.Sanitize(email.Description)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return nil, err
+		}
+		if lastModified.Before(email.Sending_date) {
+			res = append(res, email)
+		}
+	}
+	return res, nil
+}
+
 func (er *EmailRepositoryService) CreateFolder(email string, folderName string) error {
 
 	email = utils.Sanitize(email)

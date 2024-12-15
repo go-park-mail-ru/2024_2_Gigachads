@@ -87,6 +87,7 @@ type EmailRepository interface {
 	DeleteEmails(userEmail string, messageIDs []int) error
 	GetFolders(email string) ([]string, error)
 	GetFolderEmails(email string, folderName string) ([]Email, error)
+	GetNewEmails(email string, LastModified time.Time) ([]Email, error)
 	CreateFolder(email string, folderName string) error
 	DeleteFolder(email string, folderName string) error
 	RenameFolder(email string, folderName string, newFolderName string) error
