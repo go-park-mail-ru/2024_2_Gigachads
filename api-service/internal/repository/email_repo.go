@@ -173,6 +173,9 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 			er.logger.Error(err.Error())
 			return models.Email{}, err
 		}
+
+		fmt.Println("path: ", path)
+
 		path = utils.Sanitize(path)
 		email.Attachments = append(email.Attachments, path)
 	}
@@ -936,8 +939,6 @@ func (er *EmailRepositoryService) ConnectAttachToMessage(messageID int, path str
 		return err
 	}
 	defer tx.Rollback()
-
-	fmt.Println("connect", messageID, " path:", path)
 
 	_, err = tx.Exec(
 		`UPDATE attachment
