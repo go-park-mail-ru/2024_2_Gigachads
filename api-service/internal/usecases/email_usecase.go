@@ -211,9 +211,8 @@ func (es *EmailService) InboxStatus(ctx context.Context, email string, frontLast
 	return nil, nil
 }
 
-func (es *EmailService) UploadAttach(fileContent []byte) (string, error) {
-
-	return "", nil
+func (es *EmailService) UploadAttach(fileContent []byte, filename string) (string, error) {
+	return es.EmailRepo.UploadAttach(fileContent, filename)
 }
 
 func (es *EmailService) GetAttach(path string) ([]byte, error) {

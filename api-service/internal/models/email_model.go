@@ -42,6 +42,11 @@ type FilePath struct {
 	Path string `json:"path"`
 }
 
+type File struct {
+	Name string `json:"name"`
+	File []byte `json:"file"`
+}
+
 type SmtpPop3Usecase interface {
 	SendEmail(ctx context.Context, from string, to []string, subject string, body string) error
 	ForwardEmail(ctx context.Context, from string, to []string, originalEmail Email) error
@@ -68,7 +73,7 @@ type EmailUseCase interface {
 	UpdateDraft(email Draft) error
 	SendDraft(email Email) error
 	InboxStatus(ctx context.Context, email string, lastModified time.Time) ([]Email, error)
-	UploadAttach(fileContent []byte) (string, error)
+	UploadAttach(fileContent []byte, filename string) (string, error)
 	GetAttach(path string) ([]byte, error)
 	DeleteAttach(path string) error
 }
@@ -94,4 +99,5 @@ type EmailRepository interface {
 	SetTimestamp(ctx context.Context, email string) error
 	DeleteAttach(path string) error
 	GetAttach(path string) ([]byte, error)
+	UploadAttach(fileContent []byte, filename string) (string, error)
 }

@@ -215,3 +215,21 @@
 {"time":"2024-12-15T00:00:44.1479098+03:00","level":"INFO","msg":"loaded config"}
 {"time":"2024-12-15T00:00:44.1759898+03:00","level":"INFO","msg":"postgres connected"}
 {"time":"2024-12-15T00:00:44.2598275+03:00","level":"ERROR","msg":"dial tcp [::1]:6379: connectex: No connection could be made because the target machine actively refused it."}
+{"time":"2024-12-15T14:21:47.5367457+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-15T14:21:47.5591962+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-15T14:21:47.6500613+03:00","level":"ERROR","msg":"dial tcp [::1]:6379: connectex: No connection could be made because the target machine actively refused it."}
+{"time":"2024-12-15T14:22:27.4613788+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-15T14:22:27.4909209+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-15T14:22:27.5752882+03:00","level":"ERROR","msg":"dial tcp [::1]:6379: connectex: No connection could be made because the target machine actively refused it."}
+{"time":"2024-12-15T14:23:53.1940628+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-15T14:23:53.2215818+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-15T14:23:53.3077124+03:00","level":"ERROR","msg":"dial tcp [::1]:6379: connectex: No connection could be made because the target machine actively refused it."}
+{"time":"2024-12-15T14:27:07.077187+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-15T14:27:07.1059584+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-15T14:27:07.2046879+03:00","level":"ERROR","msg":"dial tcp [::1]:6379: connectex: No connection could be made because the target machine actively refused it."}
+{"time":"2024-12-15T14:40:24.8859946+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-15T14:40:24.9136612+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-15T14:40:24.9987732+03:00","level":"ERROR","msg":"dial tcp [::1]:6379: connectex: No connection could be made because the target machine actively refused it."}
+{"time":"2024-12-15T14:54:48.403196+03:00","level":"INFO","msg":"loaded config"}
+{"time":"2024-12-15T14:54:48.4326448+03:00","level":"INFO","msg":"postgres connected"}
+{"time":"2024-12-15T14:54:48.5395103+03:00","level":"ERROR","msg":"dial tcp [::1]:6379: connectex: No connection could be made because the target machine actively refused it."}

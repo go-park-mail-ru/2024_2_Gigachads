@@ -813,3 +813,41 @@ func (er *EmailRepositoryService) GetAttach(path string) ([]byte, error) {
 	}
 	return data, nil
 }
+
+func (er *EmailRepositoryService) UploadAttach(fileContent []byte, filename string) (string, error) {
+
+	if err := os.MkdirAll("./attachments", os.ModePerm); err != nil {
+		return "", err
+	}
+
+	filePath := "./attachments/" + filename
+
+	outFile, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer outFile.Close()
+	_, err = outFile.Write(fileContent)
+	if err != nil {
+		return "", err
+	}
+
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return "", err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
+		`INSERT INTO attachment(url)
+		 VALUES($1)`,
+		filePath,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return "", err
+	}
+
+	return filePath, tx.Commit()
+}
