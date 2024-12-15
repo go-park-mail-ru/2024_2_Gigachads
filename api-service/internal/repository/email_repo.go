@@ -300,14 +300,14 @@ func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
 		_, err = tx.Exec(
 			`UPDATE email_transaction
 				SET isread = TRUE
-				WHERE message_id = $1`,
+				WHERE id = $1`,
 			id,
 		)
 	} else {
 		_, err = tx.Exec(
 			`UPDATE email_transaction
 				SET isread = FALSE
-				WHERE message_id = $1`,
+				WHERE id = $1`,
 			id,
 		)
 	}
