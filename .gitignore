@@ -5,3 +5,4 @@ api-service/cmd/main
 auth-service/cmd/main
 smtp-service/cmd/main
 main
+log
