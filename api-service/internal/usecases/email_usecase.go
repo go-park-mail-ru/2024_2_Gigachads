@@ -38,14 +38,12 @@ func (es *EmailService) GetEmailByID(id int) (models.Email, error) {
 		return models.Email{}, err
 	}
 
-	for i, path := range email.Attachments {
-		fmt.Println(i, path)
+	for _, path := range email.Attachments {
+		var filebody models.File
 		file := filepath.Base(path)
-		fmt.Println("usecase 1")
-		email.Files[i].Path = path
-		fmt.Println("usecase 2")
-		email.Files[i].Name = file
-		fmt.Println("usecase 3")
+		filebody.Path = path
+		filebody.Name = file
+		email.Files = append(email.Files, filebody)
 	}
 	return email, nil
 }
