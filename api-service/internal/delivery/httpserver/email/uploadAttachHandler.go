@@ -52,6 +52,7 @@ func (er *EmailRouter) UploadAttachHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	name := r.FormValue("name")
+	name = utils.Sanitize(name)
 
 	path, err := er.EmailUseCase.UploadAttach(fileContent, name)
 	if err != nil {
