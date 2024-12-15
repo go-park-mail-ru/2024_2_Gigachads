@@ -426,7 +426,7 @@ func (er *EmailRepositoryService) GetNewEmails(email string, lastModified time.T
 		 JOIN message AS m ON t.message_id = m.id
 		 JOIN folder AS f ON t.folder_id = f.id
 		 JOIN profile AS p ON f.user_id = p.id
-		 WHERE f.name = "Входящие"
+		 WHERE f.name = 'Входящие'
 		 AND p.email = $1
 		 ORDER BY t.sending_date DESC`, email)
 	if err != nil {
