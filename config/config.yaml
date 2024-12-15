@@ -28,13 +28,13 @@ postgres:
     password: test
 
 smtp:
-    host: smtp.gmail.com
+    host: smtp.giga-mail.ru
     port: 587
     username: test
     password: test
 
 pop3:
-    host: pop.gmail.com
+    host: pop.giga-mail.ru
     port: 995
     username: test
     password: test 

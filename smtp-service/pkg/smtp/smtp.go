@@ -24,7 +24,11 @@ func NewSMTPClient(host, port, username, password string) *SMTPClient {
 		Port:     port,
 		Username: username,
 		Password: password,
-		UseTLS:   false,
+		UseTLS:   true,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: false,
+			ServerName:         host,
+		},
 	}
 }
 
