@@ -38,7 +38,6 @@ func (es *EmailService) GetEmailByID(id int) (models.Email, error) {
 		return models.Email{}, err
 	}
 	for i, path := range email.Attachments {
-		fmt.Println(i)
 		_, file := filepath.Split(path)
 		email.Files[i].Path = path
 		email.Files[i].Name = file

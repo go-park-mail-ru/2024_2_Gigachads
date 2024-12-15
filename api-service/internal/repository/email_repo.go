@@ -13,7 +13,6 @@ import (
 	"time"
 	"context"
 	"path/filepath"
-	"fmt"
 )
 
 type EmailRepositoryService struct {
@@ -173,8 +172,6 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 			er.logger.Error(err.Error())
 			return models.Email{}, err
 		}
-
-		fmt.Println("path: ", path)
 
 		path = utils.Sanitize(path)
 		email.Attachments = append(email.Attachments, path)
@@ -917,8 +914,8 @@ func (er *EmailRepositoryService) UploadAttach(fileContent []byte, filename stri
 	defer tx.Rollback()
 
 	_, err = tx.Exec(
-		`INSERT INTO attachment(url)
-		 VALUES($1)`,
+		`INSERT INTO attachment(message_id, url)
+		 VALUES(0, $1)`,
 		filePath,
 	)
 	if err != nil {
