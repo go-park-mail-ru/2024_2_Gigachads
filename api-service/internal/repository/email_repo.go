@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 	"context"
+	"path/filepath"
 )
 
 type EmailRepositoryService struct {
@@ -857,7 +858,13 @@ func (er *EmailRepositoryService) DeleteAttach(path string) error {
 		return err
 	}
 
+	dir, _ := filepath.Split(path)
+
 	err = os.Remove(path)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(dir)
 	if err != nil {
 		return err
 	}
