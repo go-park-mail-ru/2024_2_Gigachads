@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"time"
+	"encoding/json"
 )
 
 type Email struct {
@@ -37,6 +38,14 @@ type RenameFolder struct {
 
 type Timestamp struct {
 	LastModified time.Time `json:"date"`
+}
+
+func (u Timestamp) MarshalBinary() ([]byte, error) {
+	return json.Marshal(u)
+}
+
+func (u Timestamp) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, &u)
 }
 
 type FilePath struct {
