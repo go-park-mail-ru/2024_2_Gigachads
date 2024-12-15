@@ -13,6 +13,7 @@ import (
 	"time"
 	"context"
 	"path/filepath"
+	"fmt"
 )
 
 type EmailRepositoryService struct {
@@ -835,7 +836,9 @@ func (er *EmailRepositoryService) GetTimestamp(ctx context.Context, email string
 		er.logger.Error(err.Error())
 		return time.Time{}, err
 	}
+	fmt.Println("get: ", timestring)
 	timestamp, _ := time.Parse("2006-01-02 15:04:05", timestring)
+	fmt.Println("get: ", timestamp)
 	return timestamp, nil
 }
 
@@ -843,13 +846,13 @@ func (er *EmailRepositoryService) SetTimestamp(ctx context.Context, email string
 	
 	email = utils.Sanitize(email)
 	timestamp := time.Now()
-
+	fmt.Println("set: ", timestamp)
 	err := er.redis.Set(ctx, email, timestamp.String(), 0).Err()
 	if err != nil {
 		er.logger.Error(err.Error())
 		return err
 	}
-
+	fmt.Println("set: ", timestamp.String())
 	return nil
 }
 
