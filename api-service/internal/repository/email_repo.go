@@ -757,11 +757,17 @@ func (er *EmailRepositoryService) CreateDraft(email models.Email) error {
 		return err
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
 	for _, path := range email.Attachments { //прирязать аттачи к письму
 		er.ConnectAttachToMessage(messageID, path)
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (er *EmailRepositoryService) UpdateDraft(email models.Email) error {
@@ -808,11 +814,17 @@ func (er *EmailRepositoryService) UpdateDraft(email models.Email) error {
 		return err
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
 	for _, path := range email.Attachments { //прирязать аттачи к письму
 		er.ConnectAttachToMessage(messageID, path)
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (er *EmailRepositoryService) GetTimestamp(ctx context.Context, email string) (time.Time, error) {
