@@ -13,7 +13,6 @@ import (
 	"time"
 	"context"
 	"path/filepath"
-	"fmt"
 )
 
 type EmailRepositoryService struct {
@@ -829,28 +828,26 @@ func (er *EmailRepositoryService) UpdateDraft(email models.Email) error {
 }
 
 func (er *EmailRepositoryService) GetTimestamp(ctx context.Context, email string) (time.Time, error) {
-	fmt.Println("get email: ", email)
 	email = utils.Sanitize(email)
-	var timestamp models.Timestamp
 
-	err := er.redis.Get(ctx, email).Scan(&timestamp)
+	timestring, err := er.redis.Get(ctx, email).Result()
 	if err != nil {
 		er.logger.Error(err.Error())
 		return time.Time{}, err
 	}
-	fmt.Println("get timestamp: ", timestamp)
-	return timestamp.LastModified, nil
+	timestamp, _ := time.Parse("2006-01-02 15:04:05", timestring)
+	return timestamp, nil
 }
 
 func (er *EmailRepositoryService) SetTimestamp(ctx context.Context, email string) error {
-	fmt.Println("set email: ", email)
+	
 	email = utils.Sanitize(email)
-	timestamp := models.Timestamp{LastModified: time.Now()}
-	fmt.Println("set time: ", timestamp)
-	err := er.redis.Set(ctx, email, timestamp, 0).Err()
+	timestamp := time.Now()
+
+	err := er.redis.Set(ctx, email, timestamp.String(), 0).Err()
 	if err != nil {
 		er.logger.Error(err.Error())
-		return  err
+		return err
 	}
 
 	return nil
