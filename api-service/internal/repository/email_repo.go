@@ -838,7 +838,7 @@ func (er *EmailRepositoryService) GetTimestamp(ctx context.Context, email string
 		er.logger.Error(err.Error())
 		return time.Time{}, err
 	}
-
+	fmt.Println("get timestamp: ", timestamp)
 	return timestamp.LastModified, nil
 }
 
