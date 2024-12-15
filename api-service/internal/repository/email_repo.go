@@ -275,11 +275,17 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		return err
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+
 	for _, path := range email.Attachments { //прирязать аттачи к письму
 		er.ConnectAttachToMessage(messageID, path)
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (er *EmailRepositoryService) ChangeStatus(id int, status bool) error {
@@ -914,8 +920,8 @@ func (er *EmailRepositoryService) UploadAttach(fileContent []byte, filename stri
 	defer tx.Rollback()
 
 	_, err = tx.Exec(
-		`INSERT INTO attachment(message_id, url)
-		 VALUES(0, $1)`,
+		`INSERT INTO attachment(url)
+		 VALUES($1)`,
 		filePath,
 	)
 	if err != nil {
