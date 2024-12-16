@@ -35,7 +35,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 
 		err := er.EmailUseCase.SaveEmail(ctx, email)
 		if err != nil {
-			utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+			utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_save_email")
 			return
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
@@ -62,7 +62,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 
 			err = er.EmailUseCase.SaveEmail(ctx, email)
 			if err != nil {
-				utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+				utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_save_email")
 				return
 			}
 			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
@@ -81,7 +81,7 @@ func (er *EmailRouter) SendEmailHandler(w http.ResponseWriter, r *http.Request) 
 
 			err = er.EmailUseCase.SaveEmail(ctx, email)
 			if err != nil {
-				utils.ErrorResponse(w, r, http.StatusInternalServerError, err.Error())
+				utils.ErrorResponse(w, r, http.StatusInternalServerError, "failed_to_save_email")
 				return
 			}
 

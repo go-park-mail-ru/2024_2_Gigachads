@@ -55,11 +55,8 @@ func (es *EmailService) GetSentEmails(email string) ([]models.Email, error) {
 
 func (es *EmailService) SaveEmail(ctx context.Context, email models.Email) error {
 	err := es.EmailRepo.SaveEmail(email)
-	if err == sql.ErrNoRows {
-		return errors.New("email_not_found")
-	}
 	if err != nil {
-		return errors.New("failed_to_save_email")
+		return err
 	}
 	es.EmailRepo.SetTimestamp(ctx, email.Recipient)
 	return nil
