@@ -1,19 +1,20 @@
 package repository
 
 import (
-	"os"
+	"context"
 	"database/sql"
-	"github.com/redis/go-redis/v9"
 	"errors"
-	"github.com/lib/pq"
+	"fmt"
 	"mail/api-service/internal/models"
 	"mail/api-service/pkg/logger"
 	"mail/api-service/pkg/utils"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
-	"context"
-	"path/filepath"
-	"fmt"
+
+	"github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 )
 
 type EmailRepositoryService struct {
@@ -155,7 +156,6 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 		return models.Email{}, err
 	}
 
-	
 	rows, err := er.repo.Query(
 		`SELECT url
 		 FROM attachment
@@ -181,106 +181,105 @@ func (er *EmailRepositoryService) GetEmailByID(id int) (models.Email, error) {
 	return email, nil
 }
 func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
-    email.Sender_email = utils.Sanitize(email.Sender_email)
-    email.Recipient = utils.Sanitize(email.Recipient)
-    email.Title = utils.Sanitize(email.Title)
-    email.Description = utils.Sanitize(email.Description)
+	email.Sender_email = utils.Sanitize(email.Sender_email)
+	email.Recipient = utils.Sanitize(email.Recipient)
+	email.Title = utils.Sanitize(email.Title)
+	email.Description = utils.Sanitize(email.Description)
 
-    tx, err := er.repo.Begin()
-    if err != nil {
-        er.logger.Error(err.Error())
-        return err
-    }
-    defer tx.Rollback()
+	tx, err := er.repo.Begin()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	defer tx.Rollback()
 
-    var messageID int
-    err = tx.QueryRow(
-        `INSERT INTO message (title, description) 
+	var messageID int
+	err = tx.QueryRow(
+		`INSERT INTO message (title, description) 
         VALUES ($1, $2) RETURNING id`,
-        email.Title, email.Description,
-    ).Scan(&messageID)
-    if err != nil {
-        er.logger.Error(err.Error())
-        return err
-    }
+		email.Title, email.Description,
+	).Scan(&messageID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
 
-    var parentID interface{}
-    if email.ParentID == 0 {
-        parentID = nil
-    } else {
-        parentID = email.ParentID
-    }
-    var senderID int
-    err = tx.QueryRow(
-        `SELECT id FROM profile WHERE email = $1`,
-        email.Sender_email,
-    ).Scan(&senderID)
-    if err != nil {
-        er.logger.Error(err.Error())
-        return err
-    }
-    var senderFolderID int
-    err = tx.QueryRow(
-        `SELECT id FROM folder WHERE user_id = $1 AND name = 'Отправленные'`,
-        senderID,
-    ).Scan(&senderFolderID)
-    if err != nil {
-        er.logger.Error(err.Error())
-        return err
-    }
-    _, err = tx.Exec(
-        `INSERT INTO email_transaction 
+	var parentID interface{}
+	if email.ParentID == 0 {
+		parentID = nil
+	} else {
+		parentID = email.ParentID
+	}
+	var senderID int
+	err = tx.QueryRow(
+		`SELECT id FROM profile WHERE email = $1`,
+		email.Sender_email,
+	).Scan(&senderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	var senderFolderID int
+	err = tx.QueryRow(
+		`SELECT id FROM folder WHERE user_id = $1 AND name = 'Отправленные'`,
+		senderID,
+	).Scan(&senderFolderID)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	_, err = tx.Exec(
+		`INSERT INTO email_transaction 
         (sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id, folder_id)
         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        email.Sender_email, email.Recipient,
-        email.Sending_date, true/*email.IsRead*/, messageID,
-        parentID, senderFolderID,
-    )
-    if err != nil {
-        er.logger.Error(err.Error())
-        return err
-    }
-    var recipientID int
-    err = tx.QueryRow(
-        `SELECT id FROM profile WHERE email = $1`,
-        email.Recipient,
-    ).Scan(&recipientID)
-    if err != nil {
+		email.Sender_email, email.Recipient,
+		email.Sending_date, true /*email.IsRead*/, messageID,
+		parentID, senderFolderID,
+	)
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
+	var recipientID int
+	err = tx.QueryRow(
+		`SELECT id FROM profile WHERE email = $1`,
+		email.Recipient,
+	).Scan(&recipientID)
+	if err != nil {
 		if err != sql.ErrNoRows {
 			er.logger.Error(err.Error())
 			return err
 		}
-    }
-	else {
-        var recipientFolderID int
-        err = tx.QueryRow(
-            `SELECT id FROM folder WHERE user_id = $1 AND name = 'Входящие'`,
-            recipientID,
-        ).Scan(&recipientFolderID)
-        if err != nil {
-            er.logger.Error(err.Error())
-            return err
-        }
+	} else {
+		var recipientFolderID int
+		err = tx.QueryRow(
+			`SELECT id FROM folder WHERE user_id = $1 AND name = 'Входящие'`,
+			recipientID,
+		).Scan(&recipientFolderID)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return err
+		}
 
-        _, err = tx.Exec(
-            `INSERT INTO email_transaction 
+		_, err = tx.Exec(
+			`INSERT INTO email_transaction 
             (sender_email, recipient_email, sending_date, isread, message_id, parent_transaction_id, folder_id)
             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            email.Sender_email, email.Recipient,
-            email.Sending_date, email.IsRead, messageID,
-            parentID, recipientFolderID,
-        )
-        if err != nil {
-            er.logger.Error(err.Error())
-            return err
-        }
-    }
+			email.Sender_email, email.Recipient,
+			email.Sending_date, email.IsRead, messageID,
+			parentID, recipientFolderID,
+		)
+		if err != nil {
+			er.logger.Error(err.Error())
+			return err
+		}
+	}
 
-    err = tx.Commit()
-    if err != nil {
-        er.logger.Error(err.Error())
-        return err
-    }
+	err = tx.Commit()
+	if err != nil {
+		er.logger.Error(err.Error())
+		return err
+	}
 
 	for _, path := range email.Attachments { //прирязать аттачи к письму
 		er.ConnectAttachToMessage(messageID, path)
@@ -839,28 +838,27 @@ func (er *EmailRepositoryService) GetTimestamp(ctx context.Context, email string
 		er.logger.Error(err.Error())
 		return time.Time{}, err
 	}
-	
+
 	timestamp, err := time.Parse(time.DateTime, timestring)
 	if err != nil {
 		er.logger.Error(err.Error())
 		return time.Time{}, err
 	}
 
-	
 	return timestamp, nil
 }
 
 func (er *EmailRepositoryService) SetTimestamp(ctx context.Context, email string) error {
-	
+
 	email = utils.Sanitize(email)
 	timestamp := time.Now().Format(time.DateTime)
-	
+
 	err := er.redis.Set(ctx, email, timestamp, 0).Err()
 	if err != nil {
 		er.logger.Error(err.Error())
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -874,7 +872,6 @@ func (er *EmailRepositoryService) DeleteAttach(ctx context.Context, path string)
 		return err
 	}
 	defer tx.Rollback()
-
 
 	_, err = tx.Exec(
 		`DELETE FROM attachment 
@@ -917,7 +914,7 @@ func (er *EmailRepositoryService) UploadAttach(ctx context.Context, fileContent 
 		return "", err
 	}
 
-	if err := os.MkdirAll("./attachments/" + filedir, os.ModePerm); err != nil {
+	if err := os.MkdirAll("./attachments/"+filedir, os.ModePerm); err != nil {
 		return "", err
 	}
 
