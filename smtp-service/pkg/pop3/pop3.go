@@ -189,4 +189,6 @@ func parseEmail(raw string) (models.Email, error) {
     return email, nil
 }
 
-
+func (c *Pop3Client) Quit() error {
+	return nil
+}
