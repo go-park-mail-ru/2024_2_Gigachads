@@ -40,7 +40,7 @@ func (s *HTTPServer) configureRouters(cfg *config.Config, db *sql.DB, clients *g
 	eu := usecase.NewEmailService(er, *clients.SmtpConn)
 
 	router := mux.NewRouter()
-	router = router.PathPrefix("/").Subrouter()
+	router = router.PathPrefix("/api/").Subrouter()
 	router.Use(mw.PanicMiddleware)
 	router.Use(mw.NewLogMW(l).Handler)
 
