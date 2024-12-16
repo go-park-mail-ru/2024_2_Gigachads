@@ -28,13 +28,13 @@ postgres:
     password: test
 
 smtp:
-    host: 89.208.228.234
-    port: 8083
+    host: mail.giga-mail.ru
+    port: 25
     username: test
     password: test
 
 pop3:
-    host: 89.208.228.234
+    host: mail.giga-mail.ru
     port: 8084
     username: test
     password: test 
