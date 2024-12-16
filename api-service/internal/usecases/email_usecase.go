@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"errors"
-	"database/sql"
 	"path/filepath"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"mail/api-service/internal/models"
