@@ -459,7 +459,10 @@ func (er *EmailRepositoryService) GetNewEmails(email string, lastModified time.T
 			res = append(res, email)
 		}
 	}
-	return res, nil
+	if len(res) > 0 {
+		return res, nil
+	}
+	return nil, fmt.Errorf("not_modified")
 }
 
 func (er *EmailRepositoryService) CreateFolder(email string, folderName string) error {
