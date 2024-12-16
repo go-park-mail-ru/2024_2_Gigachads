@@ -34,11 +34,97 @@ func NewSMTPClient(host, port, username, password string) *SMTPClient {
 }
 
 func formatMessage(from string, to []string, subject, body string) string {
-	msg := "From: " + from + "\r\n" +
-		"To: " + strings.Join(to, ", ") + "\r\n" +
-		"Subject: " + subject + "\r\n\r\n" +
-		body
-	return msg
+    // Добавляем MIME заголовки
+    msg := fmt.Sprintf(`From: %s
+To: %s
+Subject: %s
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+Date: %s
+
+%s`, from, strings.Join(to, ", "), subject, time.Now().Format(time.RFC1123Z), body)
+
+    return msg
+}
+
+func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) error {
+    if len(to) == 0 {
+        return fmt.Errorf("список получателей пуст")
+    }
+
+    addr := fmt.Sprintf("%s:%s", c.Host, c.Port)
+    dialer := &net.Dialer{
+        Timeout:   30 * time.Second, 
+        KeepAlive: 30 * time.Second,
+    }
+
+    var conn net.Conn
+    var err error
+
+    if c.UseTLS {
+        conn, err = tls.DialWithDialer(dialer, "tcp", addr, c.TLSConfig)
+    } else {
+        conn, err = dialer.Dial("tcp", addr)
+    }
+
+    if err != nil {
+        return fmt.Errorf("ошибка подключения: %v", err)
+    }
+    defer conn.Close()
+
+    conn.SetDeadline(time.Now().Add(30 * time.Second)) 
+
+    client, err := smtp.NewClient(conn, c.Host)
+    if err != nil {
+        return fmt.Errorf("ошибка создания SMTP клиента: %v", err)
+    }
+    defer client.Quit()
+
+    if ok, _ := client.Extension("STARTTLS"); ok {
+        config := &tls.Config{
+            ServerName:         "mail.giga-mail.ru",
+            InsecureSkipVerify: true,
+        }
+        if err = client.StartTLS(config); err != nil {
+            return fmt.Errorf("ошибка STARTTLS: %v", err)
+        }
+    }
+
+    auth := smtp.PlainAuth("", c.Username, c.Password, c.Host)
+    if err = client.Auth(auth); err != nil {
+        return fmt.Errorf("ошибка аутентификации: %v", err)
+    }
+
+    if err = client.Mail(from); err != nil {
+        return fmt.Errorf("ошибка указания отправителя: %v", err)
+    }
+
+    for _, addr := range to {
+        if err = client.Rcpt(addr); err != nil {
+            return fmt.Errorf("ошибка указания получателя %s: %v", addr, err)
+        }
+    }
+
+    w, err := client.Data()
+    if err != nil {
+        return fmt.Errorf("ошибка начала отправки данных: %v", err)
+    }
+
+    msg := formatMessage(from, to, subject, body)
+    if _, err = fmt.Fprintf(w, msg); err != nil {
+        return fmt.Errorf("ошибка записи сообщения: %v", err)
+    }
+
+    if err = w.Close(); err != nil {
+        return fmt.Errorf("ошибка завершения отправки данных: %v", err)
+    }
+
+    if err = client.Quit(); err != nil {
+        return fmt.Errorf("ошибка завершения сессии: %v", err)
+    }
+
+    return nil
 }
 
 func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) error {
