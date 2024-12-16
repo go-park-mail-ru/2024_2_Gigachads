@@ -27,7 +27,7 @@ func NewSMTPClient(host, port, username, password string) *SMTPClient {
 		UseTLS:   true,
 		TLSConfig: &tls.Config{
 			ServerName:         "mail.giga-mail.ru",
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: false,
 			MinVersion:         tls.VersionTLS12,
 		},
 	}

@@ -31,7 +31,7 @@ func NewPop3Client(host, port, username, password string) *Pop3Client {
         UseTLS:   true,
         TLSConfig: &tls.Config{
             ServerName:         host,
-            InsecureSkipVerify: true,
+            InsecureSkipVerify: false,
             MinVersion:         tls.VersionTLS12,
         },
     }

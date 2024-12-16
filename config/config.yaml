@@ -29,13 +29,13 @@ postgres:
 
 smtp:
     host: 89.208.228.234
-    port: 587
+    port: 8083
     username: test
     password: test
 
 pop3:
     host: 89.208.228.234
-    port: 995
+    port: 8084
     username: test
     password: test 
 
