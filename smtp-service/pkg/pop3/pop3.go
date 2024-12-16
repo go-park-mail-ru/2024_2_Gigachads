@@ -28,6 +28,12 @@ func NewPop3Client(host, port, username, password string) *Pop3Client {
 		Port:     port,
 		Username: username,
 		Password: password,
+		UseTLS:   true,
+		TLSConfig: &tls.Config{
+			ServerName:         "mail.giga-mail.ru",
+			InsecureSkipVerify: true,
+			MinVersion:         tls.VersionTLS12,
+		},
 	}
 }
 
