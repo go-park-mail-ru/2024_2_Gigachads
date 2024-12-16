@@ -841,14 +841,14 @@ func (er *EmailRepositoryService) GetTimestamp(ctx context.Context, email string
 		er.logger.Error(err.Error())
 		return time.Time{}, err
 	}
-	fmt.Println("get: ", timestring)
+	
 	timestamp, err := time.Parse(time.DateTime, timestring)
 	if err != nil {
 		er.logger.Error(err.Error())
 		return time.Time{}, err
 	}
 
-	fmt.Println("get: ", timestamp)
+	
 	return timestamp, nil
 }
 
@@ -856,13 +856,13 @@ func (er *EmailRepositoryService) SetTimestamp(ctx context.Context, email string
 	
 	email = utils.Sanitize(email)
 	timestamp := time.Now().Format(time.DateTime)
-	fmt.Println("set: ", timestamp)
+	
 	err := er.redis.Set(ctx, email, timestamp, 0).Err()
 	if err != nil {
 		er.logger.Error(err.Error())
 		return err
 	}
-	fmt.Println("set: ", timestamp)
+	
 	return nil
 }
 
