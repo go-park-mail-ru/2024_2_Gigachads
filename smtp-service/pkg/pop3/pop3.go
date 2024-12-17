@@ -124,7 +124,7 @@ func (c *Pop3Client) FetchEmails(repo models.EmailRepositorySMTP) error {
       fmt.Printf("Ошибка парсинга письма %d: %v\n", i, err)
       continue
     }
-
+    
     err = repo.SaveEmail(parsedEmail)
     if err != nil {
       fmt.Printf("Ошибка сохранения письма %d: %v\n", i, err)

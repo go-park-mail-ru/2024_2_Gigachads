@@ -30,6 +30,9 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	}
 	defer tx.Rollback()
 
+	er.logger.Debug("title", "title", email.Title)
+	er.logger.Debug("description", "description", email.Description)
+
 	var messageID int
 	err = tx.QueryRow(
 		`INSERT INTO message (title, description) 
