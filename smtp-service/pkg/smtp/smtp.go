@@ -3,7 +3,7 @@ package smtp
 import (
   "fmt"
   "net/smtp"
-  "crypto/tls"
+  //"crypto/tls"
 )
 
 type SMTPClient struct {
@@ -38,12 +38,12 @@ func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) e
   defer client.Close()
 
   //Включаем STARTTLS (обязательно для mail.ru)
-  tlsConfig := &tls.Config{
-    ServerName: c.Host,
-  }
-  if err = client.StartTLS(tlsConfig); err != nil {
-    return fmt.Errorf("ошибка STARTTLS: %v", err)
-  }
+  // tlsConfig := &tls.Config{
+  //   ServerName: c.Host,
+  // }
+  // if err = client.StartTLS(tlsConfig); err != nil {
+  //   return fmt.Errorf("ошибка STARTTLS: %v", err)
+  // }
   if err = client.Hello(c.Host); err != nil {
 	return fmt.Errorf("ошибка приветствия SMTP сервера: %v", err)
   }
