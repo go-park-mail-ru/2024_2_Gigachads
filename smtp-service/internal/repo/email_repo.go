@@ -5,23 +5,17 @@ import (
 	"mail/api-service/pkg/logger"
 	"mail/api-service/pkg/utils"
 	"mail/smtp-service/internal/models"
-	"os"
-	"path/filepath"
-	"strconv"
-	"time"
 
-	"github.com/lib/pq"
-	"github.com/redis/go-redis/v9"
+	//"github.com/lib/pq"
 )
 
 type EmailRepositoryService struct {
 	repo   *sql.DB
-	redis  *redis.Client
 	logger logger.Logable
 }
 
-func NewEmailRepositoryService(db *sql.DB, r *redis.Client, l logger.Logable) *EmailRepositoryService {
-	return &EmailRepositoryService{repo: db, redis: r, logger: l}
+func NewEmailRepositoryService(db *sql.DB, l logger.Logable) *EmailRepositoryService {
+	return &EmailRepositoryService{repo: db, logger: l}
 }
 func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	email.Sender_email = utils.Sanitize(email.Sender_email)

@@ -12,8 +12,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
-	"runtime"
-	"reflect"
 
 	"github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
@@ -190,7 +188,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 
 	tx, err := er.repo.Begin()
 	if err != nil {
-		er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.SaveEmail).Pointer()).Name())
+		er.logger.Error(err.Error())
 		return err
 	}
 	defer tx.Rollback()
@@ -218,7 +216,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		email.Sender_email,
 	).Scan(&senderID)
 	if err != nil {
-		er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.SaveEmail).Pointer()).Name())
+		er.logger.Error(err.Error())
 		return err
 	}
 	var senderFolderID int
@@ -227,7 +225,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		senderID,
 	).Scan(&senderFolderID)
 	if err != nil {
-		er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.SaveEmail).Pointer()).Name())
+		er.logger.Error(err.Error())
 		return err
 	}
 	_, err = tx.Exec(
@@ -239,7 +237,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 		parentID, senderFolderID,
 	)
 	if err != nil {
-		er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.SaveEmail).Pointer()).Name())
+		er.logger.Error(err.Error())
 		return err
 	}
 	var recipientID int
@@ -249,7 +247,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	).Scan(&recipientID)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.SaveEmail).Pointer()).Name())
+			er.logger.Error(err.Error())
 			return err
 		}
 	} else {
@@ -259,7 +257,7 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 			recipientID,
 		).Scan(&recipientFolderID)
 		if err != nil {
-			er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.SaveEmail).Pointer()).Name())
+			er.logger.Error(err.Error())
 			return err
 		}
 
@@ -272,14 +270,14 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 			parentID, recipientFolderID,
 		)
 		if err != nil {
-			er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.SaveEmail).Pointer()).Name())
+			er.logger.Error(err.Error())
 			return err
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.SaveEmail).Pointer()).Name())
+		er.logger.Error(err.Error())
 		return err
 	}
 
@@ -958,7 +956,7 @@ func (er *EmailRepositoryService) ConnectAttachToMessage(messageID int, path str
 
 	tx, err := er.repo.Begin()
 	if err != nil {
-		er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.ConnectAttachToMessage).Pointer()).Name())
+		er.logger.Error(err.Error())
 		return err
 	}
 	defer tx.Rollback()
@@ -970,7 +968,7 @@ func (er *EmailRepositoryService) ConnectAttachToMessage(messageID int, path str
 		messageID, path,
 	)
 	if err != nil {
-		er.logger.Error(err.Error(), runtime.FuncForPC(reflect.ValueOf(er.ConnectAttachToMessage).Pointer()).Name())
+		er.logger.Error(err.Error())
 		return err
 	}
 
