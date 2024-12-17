@@ -28,16 +28,17 @@ postgres:
     password: test
 
 smtp:
-    host: mail.giga-mail.ru
-    port: 25
-    username: test
-    password: test
+    host: smtp.mail.ru
+    port: 465
+    username: kolya_tanev@mail.ru
+    password: WjA5d3AmeiF00QWyNCvu
 
 pop3:
-    host: mail.giga-mail.ru
-    port: 8084
-    username: test
-    password: test 
+    host: pop.mail.ru
+    port: 995
+    username: kolya_tanev@mail.ru
+    password: WjA5d3AmeiF00QWyNCvu
+
 
 redis:
     ip: localhost

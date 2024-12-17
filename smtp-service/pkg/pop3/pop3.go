@@ -1,194 +1,239 @@
 package pop3
 
 import (
-	"bufio"
-	"crypto/tls"
-	"fmt"
-	"mail/smtp-service/internal/models"
-	"net"
-	"strings"
-	"time"
+  "bufio"
+  "crypto/tls"
+  "fmt"
+  "mail/smtp-service/internal/models"
+  "net"
+  "strings"
+  "time"
 )
 
 type Pop3Client struct {
-    Host      string
-    Port      string
-    Username  string
-    Password  string
-    conn      net.Conn
-    reader    *bufio.Reader
-    writer    *bufio.Writer
-    UseTLS    bool
-    TLSConfig *tls.Config
+  Host     string
+  Port     string
+  Username string
+  Password string
+  conn     net.Conn
+  reader   *bufio.Reader
+  writer   *bufio.Writer
 }
 
 func NewPop3Client(host, port, username, password string) *Pop3Client {
-    return &Pop3Client{
-        Host:     host,
-        Port:     port,
-        Username: username,
-        Password: password,
-        UseTLS:   true,
-        TLSConfig: &tls.Config{
-            ServerName:         host,
-            InsecureSkipVerify: false,
-            MinVersion:         tls.VersionTLS12,
-        },
-    }
+  return &Pop3Client{
+    Host:     host,
+    Port:     port,
+    Username: username,
+    Password: password,
+  }
 }
 
 func (c *Pop3Client) Connect() error {
-    address := fmt.Sprintf("%s:%s", c.Host, c.Port)
-    
-    dialer := &net.Dialer{
-        Timeout:   30 * time.Second,
-        KeepAlive: 30 * time.Second,
-    }
+  addr := "pop.mail.ru:995"
 
-    var err error
-    if c.UseTLS {
-        c.conn, err = tls.DialWithDialer(dialer, "tcp", address, c.TLSConfig)
-    } else {
-        c.conn, err = dialer.Dial("tcp", address)
-    }
+  tlsConfig := &tls.Config{
+    ServerName:         "pop.mail.ru",
+    InsecureSkipVerify: true,
+  }
 
-    if err != nil {
-        return fmt.Errorf("ошибка подключения к POP3 серверу: %v", err)
-    }
+  conn, err := tls.Dial("tcp", addr, tlsConfig)
+  if err != nil {
+    return fmt.Errorf("ошибка подключения к POP3 серверу: %v", err)
+  }
 
-    c.reader = bufio.NewReader(c.conn)
-    c.writer = bufio.NewWriter(c.conn)
+  c.conn = conn
+  c.reader = bufio.NewReader(conn)
+  c.writer = bufio.NewWriter(conn)
 
-    _, err = c.readResponse()
-    if err != nil {
-        return err
-    }
+  // Устанавливаем таймаут чтения
+  c.conn.SetReadDeadline(time.Now().Add(30 * time.Second))
 
-    if err := c.sendCommand(fmt.Sprintf("USER %s", c.Username)); err != nil {
-        return err
-    }
-    if err := c.sendCommand(fmt.Sprintf("PASS %s", c.Password)); err != nil {
-        return err
-    }
+  // Читаем приветствие сервера
+  response, err := c.readResponse()
+  if err != nil {
+    c.conn.Close()
+    return fmt.Errorf("ошибка чтения приветствия: %v", err)
+  }
+  fmt.Printf("Приветствие сервера: %s\n", response)
 
-    return nil
+  // Отправляем USER
+  if err := c.sendCommand(fmt.Sprintf("USER %s", c.Username)); err != nil {
+    c.conn.Close()
+    return fmt.Errorf("ошибка отправки USER: %v", err)
+  }
+  response, err = c.readResponse()
+  if err != nil {
+    c.conn.Close()
+    return fmt.Errorf("ошибка ответа на USER: %v", err)
+  }
+  fmt.Printf("Ответ на USER: %s\n", response)
+
+  // Отправляем PASS
+  if err := c.sendCommand(fmt.Sprintf("PASS %s", c.Password)); err != nil {
+    c.conn.Close()
+    return fmt.Errorf("ошибка отправки PASS: %v", err)
+  }
+  response, err = c.readResponse()
+  if err != nil {
+    c.conn.Close()
+    return fmt.Errorf("ошибка ответа на PASS: %v", err)
+  }
+  fmt.Printf("Ответ на PASS: %s\n", response)
+
+  return nil
 }
 
 func (c *Pop3Client) FetchEmails(repo models.EmailRepositorySMTP) error {
-    // Получаем количество писем
-    err := c.sendCommand("STAT")
+  if c.conn == nil {
+    return fmt.Errorf("соединение не установлено")
+  }
+
+  c.conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+
+  if err := c.sendCommand("STAT"); err != nil {
+    return fmt.Errorf("ошибка отправки STAT: %v", err)
+  }
+
+  response, err := c.readResponse()
+  if err != nil {
+    return fmt.Errorf("ошибка чтения ответа STAT: %v", err)
+  }
+  fmt.Printf("Ответ на STAT: %s\n", response)
+
+  var count, size int
+  _, err = fmt.Sscanf(response, "+OK %d %d", &count, &size)
+  if err != nil {
+    return fmt.Errorf("ошибка парсинга STAT (%s): %v", response, err)
+  }
+
+  fmt.Printf("Найдено писем: %d, общий размер: %d байт\n", count, size)
+
+  for i := 1; i <= count; i++ {
+    // Обновляем таймаут для каждого письма
+    c.conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+
+    email, err := c.retrieveEmail(i)
     if err != nil {
-        return err
+      fmt.Printf("Ошибка получения письма %d: %v\n", i, err)
+      continue
     }
-    response, err := c.readResponse()
+
+    parsedEmail, err := parseEmail(email)
     if err != nil {
-        return err
+      fmt.Printf("Ошибка парсинга письма %d: %v\n", i, err)
+      continue
     }
 
-    var count int
-    _, err = fmt.Sscanf(response, "+OK %d", &count)
+    err = repo.SaveEmail(parsedEmail)
     if err != nil {
-        return fmt.Errorf("ошибка парсинга STAT: %v", err)
+      fmt.Printf("Ошибка сохранения письма %d: %v\n", i, err)
+      continue
     }
+  }
 
-    for i := 1; i <= count; i++ {
-        email, err := c.retrieveEmail(i)
-        if err != nil {
-            return err
-        }
-
-        parsedEmail, err := parseEmail(email)
-        if err != nil {
-            continue 
-        }
-
-        err = repo.SaveEmail(parsedEmail)
-        if err != nil {
-            return err
-        }
-    }
-
-    return nil
+  return nil
 }
 
 func (c *Pop3Client) retrieveEmail(msgNum int) (string, error) {
-    err := c.sendCommand(fmt.Sprintf("RETR %d", msgNum))
+  err := c.sendCommand(fmt.Sprintf("RETR %d", msgNum))
+  if err != nil {
+    return "", fmt.Errorf("ошибка отправки команды RETR: %v", err)
+  }
+
+  response, err := c.readResponse()
+  if err != nil {
+    return "", fmt.Errorf("ошибка чтения ответа на RETR: %v", err)
+  }
+  fmt.Printf("Ответ на RETR %d: %s\n", msgNum, response)
+
+  var builder strings.Builder
+  for {
+    c.conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+    
+    line, err := c.reader.ReadString('\n')
     if err != nil {
-        return "", err
+      return "", fmt.Errorf("ошибка чтения строки письма: %v", err)
     }
 
-    var builder strings.Builder
-    for {
-        line, err := c.reader.ReadString('\n')
-        if err != nil {
-            return "", err
-        }
 
-        line = strings.TrimRight(line, "\r\n")
-        if line == "." {
-            break
-        }
-        if strings.HasPrefix(line, "..") {
-            line = line[1:]
-        }
-        builder.WriteString(line)
-        builder.WriteString("\n")
+    line = strings.TrimRight(line, "\r\n")
+    if line == "." {
+      break
     }
+    if strings.HasPrefix(line, "..") {
+      line = line[1:]
+    }
+    builder.WriteString(line)
+    builder.WriteString("\n")
+  }
 
-    return builder.String(), nil
+  return builder.String(), nil
 }
 
 func (c *Pop3Client) sendCommand(command string) error {
-    _, err := fmt.Fprintf(c.conn, "%s\r\n", command)
-    if err != nil {
-        return err
-    }
-    return c.writer.Flush()
+  fmt.Printf("Отправка команды: %s\n", command)
+  _, err := fmt.Fprintf(c.conn, "%s\r\n", command)
+  if err != nil {
+    return fmt.Errorf("ошибка отправки команды: %v", err)
+  }
+  err = c.writer.Flush()
+  if err != nil {
+    return fmt.Errorf("ошибка flush: %v", err)
+  }
+  return nil
 }
 
 func (c *Pop3Client) readResponse() (string, error) {
-    response, err := c.reader.ReadString('\n')
-    if err != nil {
-        return "", err
-    }
-    response = strings.TrimRight(response, "\r\n")
+  response, err := c.reader.ReadString('\n')
+  if err != nil {
+    return "", fmt.Errorf("ошибка чтения ответа: %v", err)
+  }
+  response = strings.TrimRight(response, "\r\n")
 
-    if !strings.HasPrefix(response, "+OK") {
-        return "", fmt.Errorf("ошибка сервера: %s", response)
-    }
-    return response, nil
+  if !strings.HasPrefix(response, "+OK") {
+    return "", fmt.Errorf("ошибка сервера: %s", response)
+  }
+  return response, nil
 }
 
 func parseEmail(raw string) (models.Email, error) {
-    email := models.Email{
-        IsRead:       false,
-        Sending_date: time.Now(),
-    }
+  email := models.Email{
+    IsRead:       false,
+    Sending_date: time.Now(),
+  }
 
-    headers := strings.Split(raw, "\n\n")[0]
-    for _, line := range strings.Split(headers, "\n") {
-        if strings.HasPrefix(line, "From:") {
-            email.Sender_email = strings.TrimSpace(strings.TrimPrefix(line, "From:"))
-        } else if strings.HasPrefix(line, "To:") {
-            email.Recipient = strings.TrimSpace(strings.TrimPrefix(line, "To:"))
-        } else if strings.HasPrefix(line, "Subject:") {
-            email.Title = strings.TrimSpace(strings.TrimPrefix(line, "Subject:"))
-        } else if strings.HasPrefix(line, "Date:") {
-            dateStr := strings.TrimSpace(strings.TrimPrefix(line, "Date:"))
-            if date, err := time.Parse(time.RFC1123Z, dateStr); err == nil {
-                email.Sending_date = date
-            }
-        }
+  headers := strings.Split(raw, "\n\n")[0]
+  for _, line := range strings.Split(headers, "\n") {
+    if strings.HasPrefix(line, "From:") {
+      email.Sender_email = strings.TrimSpace(strings.TrimPrefix(line, "From:"))
+    } else if strings.HasPrefix(line, "To:") {
+      email.Recipient = strings.TrimSpace(strings.TrimPrefix(line, "To:"))
+    } else if strings.HasPrefix(line, "Subject:") {
+      email.Title = strings.TrimSpace(strings.TrimPrefix(line, "Subject:"))
+    } else if strings.HasPrefix(line, "Date:") {
+      dateStr := strings.TrimSpace(strings.TrimPrefix(line, "Date:"))
+      if date, err := time.Parse(time.RFC1123Z, dateStr); err == nil {
+        email.Sending_date = date
+      }
     }
+  }
 
-    parts := strings.SplitN(raw, "\n\n", 2)
-    if len(parts) > 1 {
-        email.Description = strings.TrimSpace(parts[1])
-    }
+  parts := strings.SplitN(raw, "\n\n", 2)
+  if len(parts) > 1 {
+    email.Description = strings.TrimSpace(parts[1])
+  }
 
-    return email, nil
+  return email, nil
 }
 
 func (c *Pop3Client) Quit() error {
-	return nil
+  if c.conn != nil {
+    if err := c.sendCommand("QUIT"); err != nil {
+      c.conn.Close()
+      return fmt.Errorf("ошибка отправки команды QUIT: %v", err)
+    }
+    return c.conn.Close()
+  }
+  return nil
 }

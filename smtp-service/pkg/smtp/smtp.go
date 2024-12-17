@@ -1,194 +1,90 @@
 package smtp
 
 import (
-	"crypto/tls"
-	"fmt"
-	"net"
-	"net/smtp"
-	"strings"
-	"time"
+  "crypto/tls"
+  "fmt"
+  "net/smtp"
 )
 
 type SMTPClient struct {
-	Host      string
-	Port      string
-	Username  string
-	Password  string
-	UseTLS    bool
-	TLSConfig *tls.Config
+  Host     string
+  Port     string
+  Username string
+  Password string
 }
 
 func NewSMTPClient(host, port, username, password string) *SMTPClient {
-	return &SMTPClient{
-		Host:     host,
-		Port:     port,
-		Username: username,
-		Password: password,
-		UseTLS:   true,
-		TLSConfig: &tls.Config{
-			ServerName:         "mail.giga-mail.ru",
-			InsecureSkipVerify: false,
-			MinVersion:         tls.VersionTLS12,
-		},
-	}
-}
-
-func formatMessage(from string, to []string, subject, body string) string {
-    // Добавляем MIME заголовки
-    msg := fmt.Sprintf(`From: %s
-To: %s
-Subject: %s
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-Date: %s
-
-%s`, from, strings.Join(to, ", "), subject, time.Now().Format(time.RFC1123Z), body)
-
-    return msg
+  return &SMTPClient{
+    Host:     host,
+    Port:     port,
+    Username: username,
+    Password: password,
+  }
 }
 
 func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) error {
-    if len(to) == 0 {
-        return fmt.Errorf("список получателей пуст")
+  if len(to) == 0 {
+    return fmt.Errorf("список получателей пуст")
+  }
+
+  // Используем SMTP сервер mail.ru
+  addr := "smtp.mail.ru:465"
+
+  // Создаем клиент
+  client, err := smtp.Dial(addr)
+  if err != nil {
+    return fmt.Errorf("ошибка подключения к SMTP серверу: %v", err)
+  }
+  defer client.Close()
+
+  // Включаем STARTTLS (обязательно для mail.ru)
+  tlsConfig := &tls.Config{
+    ServerName: "smtp.mail.ru",
+  }
+  if err = client.StartTLS(tlsConfig); err != nil {
+    return fmt.Errorf("ошибка STARTTLS: %v", err)
+  }
+
+  // Аутентификация (используем учетные данные mail.ru)
+  auth := smtp.PlainAuth("", c.Username, c.Password, "smtp.mail.ru")
+  if err = client.Auth(auth); err != nil {
+    return fmt.Errorf("ошибка аутентификации: %v", err)
+  }
+
+  // Отправитель
+  if err = client.Mail(from); err != nil {
+    return fmt.Errorf("ошибка указания отправителя: %v", err)
+  }
+
+  // Получатели
+  for _, addr := range to {
+    if err = client.Rcpt(addr); err != nil {
+      return fmt.Errorf("ошибка указания получателя: %v", err)
     }
+  }
 
-    addr := fmt.Sprintf("%s:%s", c.Host, c.Port)
-    dialer := &net.Dialer{
-        Timeout:   30 * time.Second, 
-        KeepAlive: 30 * time.Second,
-    }
+  // Отправка сообщения
+  w, err := client.Data()
+  if err != nil {
+    return fmt.Errorf("ошибка начала отправки данных: %v", err)
+  }
 
-    var conn net.Conn
-    var err error
+  msg := fmt.Sprintf("From: %s\r\n"+
+    "To: %s\r\n"+
+    "Subject: %s\r\n"+
+    "Content-Type: text/plain; charset=UTF-8\r\n"+
+    "\r\n"+
+    "%s", from, to[0], subject, body)
 
-    if c.UseTLS {
-        conn, err = tls.DialWithDialer(dialer, "tcp", addr, c.TLSConfig)
-    } else {
-        conn, err = dialer.Dial("tcp", addr)
-    }
+  _, err = w.Write([]byte(msg))
+  if err != nil {
+    return fmt.Errorf("ошибка записи сообщения: %v", err)
+  }
 
-    if err != nil {
-        return fmt.Errorf("ошибка подключения: %v", err)
-    }
-    defer conn.Close()
+  err = w.Close()
+  if err != nil {
+    return fmt.Errorf("ошибка завершения отправки: %v", err)
+  }
 
-    conn.SetDeadline(time.Now().Add(30 * time.Second)) 
-
-    client, err := smtp.NewClient(conn, c.Host)
-    if err != nil {
-        return fmt.Errorf("ошибка создания SMTP клиента: %v", err)
-    }
-    defer client.Quit()
-
-    if ok, _ := client.Extension("STARTTLS"); ok {
-        config := &tls.Config{
-            ServerName:         "mail.giga-mail.ru",
-            InsecureSkipVerify: true,
-        }
-        if err = client.StartTLS(config); err != nil {
-            return fmt.Errorf("ошибка STARTTLS: %v", err)
-        }
-    }
-
-    auth := smtp.PlainAuth("", c.Username, c.Password, c.Host)
-    if err = client.Auth(auth); err != nil {
-        return fmt.Errorf("ошибка аутентификации: %v", err)
-    }
-
-    if err = client.Mail(from); err != nil {
-        return fmt.Errorf("ошибка указания отправителя: %v", err)
-    }
-
-    for _, addr := range to {
-        if err = client.Rcpt(addr); err != nil {
-            return fmt.Errorf("ошибка указания получателя %s: %v", addr, err)
-        }
-    }
-
-    w, err := client.Data()
-    if err != nil {
-        return fmt.Errorf("ошибка начала отправки данных: %v", err)
-    }
-
-    msg := formatMessage(from, to, subject, body)
-    if _, err = fmt.Fprintf(w, msg); err != nil {
-        return fmt.Errorf("ошибка записи сообщения: %v", err)
-    }
-
-    if err = w.Close(); err != nil {
-        return fmt.Errorf("ошибка завершения отправки данных: %v", err)
-    }
-
-    if err = client.Quit(); err != nil {
-        return fmt.Errorf("ошибка завершения сессии: %v", err)
-    }
-
-    return nil
+  return client.Quit()
 }
-
-// func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) error {
-// 	if len(to) == 0 {
-// 		return fmt.Errorf("список получателей пуст")
-// 	}
-
-// 	addr := fmt.Sprintf("%s:%s", c.Host, c.Port)
-// 	dialer := &net.Dialer{
-// 		Timeout:   5 * time.Second,
-// 		KeepAlive: 5 * time.Second,
-// 	}
-
-// 	var conn net.Conn
-// 	var err error
-
-// 	if c.UseTLS {
-// 		conn, err = tls.DialWithDialer(dialer, "tcp", addr, c.TLSConfig)
-// 	} else {
-// 		conn, err = dialer.Dial("tcp", addr)
-// 	}
-
-// 	if err != nil {
-// 		return fmt.Errorf("ошибка подключения: %v", err)
-// 	}
-// 	defer conn.Close()
-
-// 	conn.SetDeadline(time.Now().Add(10 * time.Second))
-
-// 	client, err := smtp.NewClient(conn, c.Host)
-// 	if err != nil {
-// 		return fmt.Errorf("ошибка создания SMTP клиента: %v", err)
-// 	}
-// 	defer client.Quit()
-
-// 	auth := smtp.PlainAuth("", c.Username, c.Password, c.Host)
-// 	if err = client.Auth(auth); err != nil {
-// 		return fmt.Errorf("ошибка аутентификации: %v", err)
-// 	}
-
-// 	if err = client.Mail(from); err != nil {
-// 		return fmt.Errorf("ошибка указания отправителя: %v", err)
-// 	}
-
-// 	for _, addr := range to {
-// 		if err = client.Rcpt(addr); err != nil {
-// 			return fmt.Errorf("ошибка указания получателя: %v", err)
-// 		}
-// 	}
-
-// 	w, err := client.Data()
-// 	if err != nil {
-// 		return fmt.Errorf("ошибка начала отправки данных: %v", err)
-// 	}
-
-// 	msg := formatMessage(from, to, subject, body)
-// 	_, err = w.Write([]byte(msg))
-// 	if err != nil {
-// 		return fmt.Errorf("ошибка записи сообщения: %v", err)
-// 	}
-
-// 	if err = w.Close(); err != nil {
-// 		return fmt.Errorf("ошибка завершения отправки данных: %v", err)
-// 	}
-
-// 	return client.Quit()
-// }
