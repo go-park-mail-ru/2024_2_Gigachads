@@ -36,14 +36,16 @@ func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) e
   }
   defer client.Close()
 
-  // Включаем STARTTLS (обязательно для mail.ru)
-  // tlsConfig := &tls.Config{
-  //   ServerName: "smtp.mail.ru",
-  // }
-  // if err = client.StartTLS(tlsConfig); err != nil {
-  //   return fmt.Errorf("ошибка STARTTLS: %v", err)
-  // }
-
+  //Включаем STARTTLS (обязательно для mail.ru)
+  tlsConfig := &tls.Config{
+    ServerName: c.Host,
+  }
+  if err = client.StartTLS(tlsConfig); err != nil {
+    return fmt.Errorf("ошибка STARTTLS: %v", err)
+  }
+  if err = c.Hello(host); err != nil {
+	return fmt.Errorf("ошибка приветствия SMTP сервера: %v", err)
+  }
   // Аутентификация (используем учетные данные mail.ru)
   auth := smtp.PlainAuth("", c.Username, c.Password, c.Host)
   if err = client.Auth(auth); err != nil {
@@ -78,6 +80,11 @@ func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) e
   _, err = w.Write([]byte(msg))
   if err != nil {
     return fmt.Errorf("ошибка записи сообщения: %v", err)
+  }
+
+  err = smtp.SendMail(addr, auth, from, to, []byte(msg))
+  if err != nil {
+    return fmt.Errorf("ошибка отправки сообщения: %v", err)
   }
 
   err = w.Close()
