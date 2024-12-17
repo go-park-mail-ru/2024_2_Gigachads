@@ -30,8 +30,8 @@ func (er *EmailRepositoryService) SaveEmail(email models.Email) error {
 	}
 	defer tx.Rollback()
 
-	er.logger.Debug("title", "title", email.Title)
-	er.logger.Debug("description", "description", email.Description)
+	//er.logger.Info("title", "title", email.Title)
+	//er.logger.Info("description", "description", email.Description)
 
 	var messageID int
 	err = tx.QueryRow(
