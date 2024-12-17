@@ -1,7 +1,6 @@
 package smtp
 
 import (
-  "crypto/tls"
   "fmt"
   "net/smtp"
 )
@@ -28,7 +27,7 @@ func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) e
   }
 
   // Используем SMTP сервер mail.ru
-  addr := "smtp.mail.ru:465"
+  addr := c.Host+":"+c.Port
 
   // Создаем клиент
   client, err := smtp.Dial(addr)
@@ -38,15 +37,15 @@ func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) e
   defer client.Close()
 
   // Включаем STARTTLS (обязательно для mail.ru)
-  tlsConfig := &tls.Config{
-    ServerName: "smtp.mail.ru",
-  }
-  if err = client.StartTLS(tlsConfig); err != nil {
-    return fmt.Errorf("ошибка STARTTLS: %v", err)
-  }
+  // tlsConfig := &tls.Config{
+  //   ServerName: "smtp.mail.ru",
+  // }
+  // if err = client.StartTLS(tlsConfig); err != nil {
+  //   return fmt.Errorf("ошибка STARTTLS: %v", err)
+  // }
 
   // Аутентификация (используем учетные данные mail.ru)
-  auth := smtp.PlainAuth("", c.Username, c.Password, "smtp.mail.ru")
+  auth := smtp.PlainAuth("", c.Username, c.Password, c.Host)
   if err = client.Auth(auth); err != nil {
     return fmt.Errorf("ошибка аутентификации: %v", err)
   }
