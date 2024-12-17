@@ -2,7 +2,6 @@ package pop3
 
 import (
   "bufio"
-  "crypto/tls"
   "fmt"
   "mail/smtp-service/internal/models"
   "net"
@@ -30,14 +29,14 @@ func NewPop3Client(host, port, username, password string) *Pop3Client {
 }
 
 func (c *Pop3Client) Connect() error {
-  addr := "pop.mail.ru:995"
+  // addr := "pop.mail.ru:995"
 
-  tlsConfig := &tls.Config{
-    ServerName:         "pop.mail.ru",
-    InsecureSkipVerify: true,
-  }
+  // tlsConfig := &tls.Config{
+  //   ServerName:         "pop.mail.ru",
+  //   InsecureSkipVerify: true,
+  // }
 
-  conn, err := tls.Dial("tcp", addr, tlsConfig)
+  conn, err := net.Dial("tcp", c.Host+":"+c.Port)
   if err != nil {
     return fmt.Errorf("ошибка подключения к POP3 серверу: %v", err)
   }
@@ -124,7 +123,7 @@ func (c *Pop3Client) FetchEmails(repo models.EmailRepositorySMTP) error {
       fmt.Printf("Ошибка парсинга письма %d: %v\n", i, err)
       continue
     }
-    
+
     err = repo.SaveEmail(parsedEmail)
     if err != nil {
       fmt.Printf("Ошибка сохранения письма %d: %v\n", i, err)
