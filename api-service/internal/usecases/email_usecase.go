@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"errors"
-	"database/sql"
+	"time"
+	"path/filepath"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"mail/api-service/internal/models"
 	proto "mail/gen/go/smtp"
@@ -31,7 +31,19 @@ func (es *EmailService) Inbox(email string) ([]models.Email, error) {
 }
 
 func (es *EmailService) GetEmailByID(id int) (models.Email, error) {
-	return es.EmailRepo.GetEmailByID(id)
+	email, err :=  es.EmailRepo.GetEmailByID(id)
+		if err != nil {
+		return models.Email{}, err
+	}
+
+	for _, path := range email.Attachments {
+		var filebody models.File
+		file := filepath.Base(path)
+		filebody.Path = path
+		filebody.Name = file
+		email.Files = append(email.Files, filebody)
+	}
+	return email, nil
 }
 
 func (es *EmailService) GetSentEmails(email string) ([]models.Email, error) {
@@ -39,14 +51,12 @@ func (es *EmailService) GetSentEmails(email string) ([]models.Email, error) {
 	return es.EmailRepo.GetFolderEmails(email, "Отправленные")
 }
 
-func (s *EmailService) SaveEmail(email models.Email) error {
-	err := s.EmailRepo.SaveEmail(email)
-	if err == sql.ErrNoRows {
-		return errors.New("email_not_found")
-	}
+func (es *EmailService) SaveEmail(ctx context.Context, email models.Email) error {
+	err := es.EmailRepo.SaveEmail(email)
 	if err != nil {
-		return errors.New("failed_to_save_email")
+		return err
 	}
+	es.EmailRepo.SetTimestamp(ctx, email.Recipient)
 	return nil
 }
 
@@ -149,7 +159,7 @@ func (es *EmailService) CreateDraft(email models.Email) error {
 	return es.EmailRepo.CreateDraft(email)
 }
 
-func (es *EmailService) UpdateDraft(email models.Draft) error {
+func (es *EmailService) UpdateDraft(email models.Email) error {
 	return es.EmailRepo.UpdateDraft(email)
 }
 
@@ -172,6 +182,7 @@ func (es *EmailService) SendEmail(ctx context.Context, from string, to []string,
 		if err != nil {
 			return err
 		}
+		es.EmailRepo.SetTimestamp(ctx, to[i])
 	}
 	return nil
 }
@@ -183,6 +194,7 @@ func (es *EmailService) ForwardEmail(ctx context.Context, from string, to []stri
 		if err != nil {
 			return err
 		}
+		es.EmailRepo.SetTimestamp(ctx, to[i])
 	}
 	return nil
 }
@@ -190,5 +202,32 @@ func (es *EmailService) ForwardEmail(ctx context.Context, from string, to []stri
 func (es *EmailService) ReplyEmail(ctx context.Context, from string, to string, originalEmail models.Email, replyText string) error {
 	req := &proto.ReplyEmailRequest{ReplyText: replyText, SendingDate: timestamppb.New(originalEmail.Sending_date), Sender: originalEmail.Sender_email, From: from, To: to, Title: originalEmail.Title, Description: originalEmail.Description}
 	_, err := es.EmailMS.ReplyEmail(ctx, req)
+	es.EmailRepo.SetTimestamp(ctx, to)
 	return err
+}
+
+func (es *EmailService) InboxStatus(ctx context.Context, email string, frontLastModified time.Time) ([]models.Email, error) {
+	lastModified, err := es.EmailRepo.GetTimestamp(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if (frontLastModified.Before(lastModified)){
+		return es.EmailRepo.GetNewEmails(email, frontLastModified)
+	} else {
+		return nil, fmt.Errorf("not_modified")
+	}
+
+	return nil, nil
+}
+
+func (es *EmailService) UploadAttach(ctx context.Context, fileContent []byte, filename string) (string, error) {
+	return es.EmailRepo.UploadAttach(ctx, fileContent, filename)
+}
+
+func (es *EmailService) GetAttach(ctx context.Context, path string) ([]byte, error) {
+	return es.EmailRepo.GetAttach(ctx, path)
+}
+
+func (es *EmailService) DeleteAttach(ctx context.Context, path string) error {
+	return es.EmailRepo.DeleteAttach(ctx, path)
 }

@@ -16,6 +16,7 @@ func (er *EmailRouter) SingleEmailHandler(w http.ResponseWriter, r *http.Request
 		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
 		return
 	}
+	email := ctxEmail.(string)
 
 	vars := mux.Vars(r)
 	strid, ok := vars["id"]
@@ -33,6 +34,11 @@ func (er *EmailRouter) SingleEmailHandler(w http.ResponseWriter, r *http.Request
 	mail, err := er.EmailUseCase.GetEmailByID(id)
 	if err != nil {
 		utils.ErrorResponse(w, r, http.StatusInternalServerError, "email_not_found")
+		return
+	}
+
+	if mail.Sender_email != email && mail.Recipient != email {
+		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 

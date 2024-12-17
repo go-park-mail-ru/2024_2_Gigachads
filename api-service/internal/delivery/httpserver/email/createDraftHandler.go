@@ -2,7 +2,6 @@ package email
 
 import (
 	"encoding/json"
-	"mail/api-service/internal/delivery/converters"
 	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
 	"net/http"
@@ -18,22 +17,16 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 	}
 	senderEmail := ctxEmail.(string)
 
-	var req converters.SendEmailRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var email models.Email
+	if err := json.NewDecoder(r.Body).Decode(&email); err != nil {
 		utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 
-	if req.ParentId == 0 {
-		email := models.Email{
-			Sender_email: senderEmail,
-			Recipient:    req.Recipient,
-			Title:        req.Title,
-			Description:  req.Description,
-			Sending_date: time.Now(),
-			IsRead:       false,
-			ParentID:     0,
-		}
+	if email.ParentID == 0 {
+		email.Sender_email = senderEmail
+		email.Sending_date = time.Now()
+		email.IsRead = false
 
 		err := er.EmailUseCase.CreateDraft(email)
 		if err != nil {
@@ -42,22 +35,17 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 		}
 
 	} else {
-		originalEmail, err := er.EmailUseCase.GetEmailByID(req.ParentId)
+		originalEmail, err := er.EmailUseCase.GetEmailByID(email.ParentID)
 		if err != nil {
 			utils.ErrorResponse(w, r, http.StatusBadRequest, "parent_email_not_found")
 			return
 		}
 
-		if strings.HasPrefix(req.Title, "Re:") {
-			email := models.Email{
-				Sender_email: senderEmail,
-				Recipient:    originalEmail.Sender_email,
-				Title:        req.Title,
-				Description:  req.Description,
-				Sending_date: time.Now(),
-				IsRead:       false,
-				ParentID:     req.ParentId,
-			}
+		if strings.HasPrefix(email.Title, "Re:") {
+			email.Sender_email = senderEmail
+			email.Recipient = originalEmail.Sender_email
+			email.Sending_date = time.Now()
+			email.IsRead = false
 
 			err = er.EmailUseCase.CreateDraft(email)
 			if err != nil {
@@ -65,16 +53,10 @@ func (er *EmailRouter) CreateDraftHandler(w http.ResponseWriter, r *http.Request
 				return
 			}
 
-		} else if strings.HasPrefix(req.Title, "Fwd:") {
-			email := models.Email{
-				Sender_email: senderEmail,
-				Recipient:    req.Recipient,
-				Title:        req.Title,
-				Description:  req.Description,
-				Sending_date: time.Now(),
-				IsRead:       false,
-				ParentID:     req.ParentId,
-			}
+		} else if strings.HasPrefix(email.Title, "Fwd:") {
+			email.Sender_email = senderEmail
+			email.Sending_date = time.Now()
+			email.IsRead = false
 
 			err = er.EmailUseCase.CreateDraft(email)
 			if err != nil {

@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   description: API for GigaMail
   title: GigaMail
-  version: '1.5'
+  version: '1.7'
 host: 89.208.228.234
 basePath: /api/v1
 paths:
@@ -389,6 +389,132 @@ paths:
           description: Something failed
           schema:
             $ref: '#/definitions/error'
+  
+  /getAttachment:
+    post:
+      description: Get email's attachments
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Get attachment by path
+      parameters:
+        - description: путь файла (получаешь при вызове post)
+          name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/file_path'
+      responses:
+        '200':
+          description: File added
+          schema:
+            $ref: '#/definitions/file'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to get files
+          schema:
+            $ref: '#/definitions/error'
+  
+  /attachment:
+    post:
+      description: Add attachment
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Add attachment
+      parameters:
+        - description: binary file
+          name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/file'
+      responses:
+        '200':
+          description: File added
+          schema:
+            $ref: '#/definitions/file_path'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to add file
+          schema:
+            $ref: '#/definitions/error'
+            
+    delete:
+      description: Delete attachment
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Delete attachment
+      parameters:
+        - description: путь файла (получаешь при вызове post)
+          name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/file_path'
+      responses:
+        '200':
+          description: File deleted
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to delete file
+          schema:
+            $ref: '#/definitions/error'
+            
+  /status:
+    post:
+      description: status
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - mail
+      summary: Get new inbox if it changed
+      parameters:
+      - name: data
+        in: body
+        description: timestamp
+        required: true
+        schema:
+          $ref: '#/definitions/timestamp'
+          
+      responses:
+        '200':
+          description: new inbox
+          schema:
+            $ref: '#/definitions/mailList'
+        '400':
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/error'
+        '500':
+          description: Failed to get timestamp
+          schema:
+            $ref: '#/definitions/error'
+        '304':
+          description: not modified
+          schema:
+            $ref: '#/definitions/error'
     
   /getfolder:
     post:
@@ -653,6 +779,10 @@ definitions:
       description:
         description: Text of the email
         type: string
+      attachments:
+        type: array
+        items:
+          type: string
     
   email_response:
     type: object
@@ -674,6 +804,10 @@ definitions:
       isRead:
         description: Status of email read
         type: boolean
+      attachments:
+        type: array
+        items:
+          type: string
         
         
   
@@ -814,4 +948,25 @@ definitions:
         type: string
       description:
         description: Text of the email
+        type: string
+
+  timestamp:
+    type: object
+    properties:
+      date:
+        description: Datetime of sending
+        type: string
+        
+  file:
+    type: object
+    properties:
+      file:
+        type: string
+        format: binary
+          
+  file_path:
+    type: object
+    properties:
+      path:
+        description: file path
         type: string

@@ -1,38 +1,47 @@
 httpserver: 
-    ip: 89.208.228.234
+    ip: localhost
     port: 8080
     allowed_ips_by_cors:
+        - https://89.208.228.234
         - http://89.208.228.234
+        - http://localhost
+        - https://localhost
+        - https://giga-mail.ru
+        - http://giga-mail.ru
+        - http://localhost:3000
+        - https://localhost:3000
+
 
 authserver:
-    ip: 89.208.228.234
+    ip: localhost
     port: 8081
 
 smtpserver:
-    ip: 89.208.228.234
+    ip: localhost
     port: 8082
 
 postgres:
-    ip: 89.208.228.234
+    ip: localhost
     port: 5432
     dbname: test
     user: test
     password: test
 
 smtp:
-    host: smtp.gmail.com
-    port: 587
-    username: test
-    password: test
+    host: mail.giga-mail.ru
+    port: 25
+    username: mailuser
+    password: admin
 
 pop3:
-    host: pop.gmail.com
-    port: 995
-    username: test
-    password: test 
+    host: mail.giga-mail.ru
+    port: 110
+    username: mailuser
+    password: admin
+
 
 redis:
-    ip: 89.208.228.234
+    ip: localhost
     port: 6379
     dbnum: 0
     user: test
