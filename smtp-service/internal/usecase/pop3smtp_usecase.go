@@ -36,15 +36,16 @@ func (s *SmtpPop3ServiceServer) SendEmail(ctx context.Context, request *proto.Se
 
 func (s *SmtpPop3ServiceServer) ForwardEmail(ctx context.Context, request *proto.ForwardEmailRequest) (*proto.ForwardEmailReply, error) {
 	forwardSubject := "Fwd: " + request.GetTitle()
-	forwardBody := fmt.Sprintf(`
----------- Forwarded message ---------
-From: %s
-Date: %s
-Subject: %s
+	forwardBody := request.GetDescription()
+// 	forwardBody := fmt.Sprintf(`
+// ---------- Forwarded message ---------
+// From: %s
+// Date: %s
+// Subject: %s
 
-%s
-`, request.Sender, request.GetSendingDate().AsTime().Format(time.RFC1123),
-		request.GetTitle(), request.GetDescription())
+// %s
+// `, request.Sender, request.GetSendingDate().AsTime().Format(time.RFC1123),
+// 		request.GetTitle(), request.GetDescription())
 	to := []string{request.GetTo()}
 	return &proto.ForwardEmailReply{}, s.SMTPRepo.SendEmail(request.GetFrom(), to, forwardSubject, forwardBody)
 }

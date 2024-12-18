@@ -188,8 +188,28 @@ func (es *EmailService) SendEmail(ctx context.Context, from string, to []string,
 }
 
 func (es *EmailService) ForwardEmail(ctx context.Context, from string, to []string, originalEmail models.Email) error {
+
+	var text string
+	mail := originalEmail
+	text += originalEmail.Description
+	for mail.ParentID != 0 {
+		mail, err := es.EmailRepo.GetEmailByID(mail.ParentID)
+		if err == nil {
+			forwardBody := fmt.Sprintf(`
+			---------- Forwarded message ---------
+			From: %s
+			Date: %s
+			Subject: %s
+
+			%s
+			`, mail.Sender_email, mail.Sending_date.Format(time.RFC1123),
+					mail.Title, mail.Description)
+			text += "\n" + forwardBody
+		}
+	}
+
 	for i := range to {
-		req := &proto.ForwardEmailRequest{SendingDate: timestamppb.New(originalEmail.Sending_date), Sender: originalEmail.Sender_email, From: from, To: to[i], Title: originalEmail.Title, Description: originalEmail.Description}
+		req := &proto.ForwardEmailRequest{SendingDate: timestamppb.New(originalEmail.Sending_date), Sender: originalEmail.Sender_email, From: from, To: to[i], Title: originalEmail.Title, Description: text}
 		_, err := es.EmailMS.ForwardEmail(ctx, req)
 		if err != nil {
 			return err
