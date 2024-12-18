@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"log/slog"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -124,4 +126,37 @@ func TestLoggerMethods(t *testing.T) {
 			assert.NotEmpty(t, buf.String(), "Log output should not be empty")
 		})
 	}
+}
+
+func TestMockLogger_Debug(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+
+	mockLogger.EXPECT().Debug("Debug message").Times(1)
+
+	mockLogger.Debug("Debug message")
+}
+
+func TestMockLogger_Warn(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+
+	mockLogger.EXPECT().Warn("Warning message").Times(1)
+
+	mockLogger.Warn("Warning message")
+}
+
+func TestMockLogger_Error(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+
+	mockLogger.EXPECT().Error("Error message").Times(1)
+
+	mockLogger.Error("Error message")
 }

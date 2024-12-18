@@ -18,7 +18,6 @@ func CORS(next http.Handler, cfg *config.Config) http.Handler {
 			}
 		}
 
-		// Устанавливаем заголовок только если origin разрешен
 		if allowedOrigin != "" {
 			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 		}

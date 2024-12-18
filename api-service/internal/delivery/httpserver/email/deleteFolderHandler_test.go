@@ -5,21 +5,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	models2 "mail/api-service/internal/models"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-
-	"mail/api-service/internal/delivery/httpserver/email/mocks"
 )
 
 func TestEmailRouter_DeleteFolderHandler(t *testing.T) {
 	tests := []struct {
 		name        string
-		input       models2.Folder
+		input       models.Folder
 		setupAuth   bool
 		mockSetup   func(*mocks.MockEmailUseCase)
 		wantStatus  int
@@ -29,7 +28,7 @@ func TestEmailRouter_DeleteFolderHandler(t *testing.T) {
 	}{
 		{
 			name: "успешное удаление папки",
-			input: models2.Folder{
+			input: models.Folder{
 				Name: "TestFolder",
 			},
 			setupAuth: true,
@@ -47,26 +46,26 @@ func TestEmailRouter_DeleteFolderHandler(t *testing.T) {
 			wantBody:   "unauthorized",
 		},
 		{
-			name: "ошибка удаления папки",
-			input: models2.Folder{
-				Name: "TestFolder",
-			},
-			setupAuth: true,
-			mockSetup: func(m *mocks.MockEmailUseCase) {
-				m.EXPECT().
-					DeleteFolder("test@example.com", "TestFolder").
-					Return(errors.New("error"))
-			},
-			wantStatus: http.StatusInternalServerError,
-			wantBody:   "error_with_deleting_folder",
-		},
-		{
 			name:        "некорректный JSON",
 			rawInput:    `{"name": }`,
 			setupAuth:   true,
 			useRawInput: true,
 			wantStatus:  http.StatusBadRequest,
 			wantBody:    "invalid_json",
+		},
+		{
+			name: "ошибка при удалении папки",
+			input: models.Folder{
+				Name: "TestFolder",
+			},
+			setupAuth: true,
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					DeleteFolder("test@example.com", "TestFolder").
+					Return(errors.New("db error"))
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   "error_with_deleting_folder",
 		},
 	}
 
@@ -83,10 +82,12 @@ func TestEmailRouter_DeleteFolderHandler(t *testing.T) {
 			router := NewEmailRouter(mockEmailUseCase)
 
 			var reqBody []byte
+			var err error
 			if tt.useRawInput {
 				reqBody = []byte(tt.rawInput)
 			} else {
-				reqBody, _ = json.Marshal(tt.input)
+				reqBody, err = json.Marshal(tt.input)
+				assert.NoError(t, err)
 			}
 
 			req := httptest.NewRequest(http.MethodDelete, "/folders", bytes.NewBuffer(reqBody))
@@ -100,13 +101,13 @@ func TestEmailRouter_DeleteFolderHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			router.DeleteFolderHandler(w, req)
 
-			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
+			assert.Equal(t, tt.wantStatus, w.Code)
 
 			if tt.wantBody != "" {
-				var response models2.Error
+				var response models.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantBody, response.Body, "Unexpected response body")
+				assert.Equal(t, tt.wantBody, response.Body)
 			}
 		})
 	}

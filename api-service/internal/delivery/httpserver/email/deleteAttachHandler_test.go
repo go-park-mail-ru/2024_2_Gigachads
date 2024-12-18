@@ -6,18 +6,20 @@ import (
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
+func TestEmailRouter_DeleteAttachHandler(t *testing.T) {
 	tests := []struct {
 		name        string
-		input       DeleteEmailsRequest
+		input       models.FilePath
 		setupAuth   bool
 		mockSetup   func(*mocks.MockEmailUseCase)
 		wantStatus  int
@@ -26,18 +28,17 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 		rawInput    string
 	}{
 		{
-			name: "успешное удаление писем",
-			input: DeleteEmailsRequest{
-				IDs:    []string{"1", "2", "3"},
-				Folder: "Inbox",
+			name: "успешное удаление вложения",
+			input: models.FilePath{
+				Path: "/path/to/file.pdf",
 			},
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					DeleteEmails("test@example.com", []int{1, 2, 3}).
+					DeleteAttach(gomock.Any(), "/path/to/file.pdf").
 					Return(nil)
 			},
-			wantStatus: http.StatusNoContent,
+			wantStatus: http.StatusOK,
 		},
 		{
 			name:       "неавторизованный запрос",
@@ -47,46 +48,60 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 		},
 		{
 			name:        "некорректный JSON",
-			rawInput:    `{"ids": [1,2,3], "folder": }`,
+			rawInput:    `{"path": }`,
 			setupAuth:   true,
 			useRawInput: true,
 			wantStatus:  http.StatusBadRequest,
-			wantBody:    "неверный формат данных",
+			wantBody:    "invalid_json",
 		},
 		{
-			name: "пустой список ID",
-			input: DeleteEmailsRequest{
-				IDs:    []string{},
-				Folder: "Inbox",
-			},
-			setupAuth:  true,
-			wantStatus: http.StatusBadRequest,
-			wantBody:   "список ID пуст",
-		},
-		{
-			name: "некорректный формат ID",
-			input: DeleteEmailsRequest{
-				IDs:    []string{"1", "abc", "3"},
-				Folder: "Inbox",
-			},
-			setupAuth:  true,
-			wantStatus: http.StatusBadRequest,
-			wantBody:   "неверный формат ID",
-		},
-		{
-			name: "ошибка при удалении писем",
-			input: DeleteEmailsRequest{
-				IDs:    []string{"1", "2", "3"},
-				Folder: "Inbox",
+			name: "ошибка при удалении файла",
+			input: models.FilePath{
+				Path: "/path/to/file.pdf",
 			},
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					DeleteEmails("test@example.com", []int{1, 2, 3}).
-					Return(errors.New("db error"))
+					DeleteAttach(gomock.Any(), "/path/to/file.pdf").
+					Return(errors.New("failed to delete file"))
 			},
 			wantStatus: http.StatusInternalServerError,
-			wantBody:   "ошибка при удалении писем",
+			wantBody:   "failed_to_delete_file",
+		},
+		{
+			name: "пустой путь к файлу",
+			input: models.FilePath{
+				Path: "",
+			},
+			setupAuth: true,
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					DeleteAttach(gomock.Any(), "").
+					Return(errors.New("invalid file path"))
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   "failed_to_delete_file",
+		},
+		{
+			name: "таймаут операции",
+			input: models.FilePath{
+				Path: "/path/to/file.pdf",
+			},
+			setupAuth: true,
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					DeleteAttach(gomock.Any(), "/path/to/file.pdf").
+					DoAndReturn(func(ctx context.Context, path string) error {
+						select {
+						case <-ctx.Done():
+							return ctx.Err()
+						case <-time.After(6 * time.Second):
+							return nil
+						}
+					})
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   "failed_to_delete_file",
 		},
 	}
 
@@ -111,7 +126,7 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			req := httptest.NewRequest(http.MethodDelete, "/emails", bytes.NewBuffer(reqBody))
+			req := httptest.NewRequest(http.MethodDelete, "/attachments", bytes.NewBuffer(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			if tt.setupAuth {
@@ -120,14 +135,12 @@ func TestEmailRouter_DeleteEmailsHandler(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			router.DeleteEmailsHandler(w, req)
+			router.DeleteAttachHandler(w, req)
 
 			assert.Equal(t, tt.wantStatus, w.Code)
 
 			if tt.wantBody != "" {
-				var response struct {
-					Body string `json:"body"`
-				}
+				var response models.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantBody, response.Body)

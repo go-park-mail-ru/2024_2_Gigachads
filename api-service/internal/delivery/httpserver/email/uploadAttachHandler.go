@@ -1,13 +1,13 @@
 package email
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"mail/api-service/internal/models"
 	"mail/api-service/pkg/utils"
 	"net/http"
-	"errors"
-	"io"
-	"context"
 	"time"
 )
 
@@ -17,12 +17,6 @@ func (er *EmailRouter) UploadAttachHandler(w http.ResponseWriter, r *http.Reques
 		utils.ErrorResponse(w, r, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	// var reqfile models.File
-	// err := json.NewDecoder(r.Body).Decode(&reqfile)
-	// if err != nil {
-	// 	utils.ErrorResponse(w, r, http.StatusBadRequest, "invalid_json")
-	// 	return
-	// }
 
 	err := r.ParseMultipartForm(10 * 1024 * 1024)
 	if err != nil {

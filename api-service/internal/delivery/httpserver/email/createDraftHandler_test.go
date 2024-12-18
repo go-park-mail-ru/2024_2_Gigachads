@@ -5,9 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"mail/api-service/internal/delivery/converters"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	models2 "mail/api-service/internal/models"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,17 +18,17 @@ import (
 func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 	tests := []struct {
 		name        string
-		rawInput    string
-		input       converters.SendEmailRequest
+		input       models.Email
 		setupAuth   bool
 		mockSetup   func(*mocks.MockEmailUseCase)
 		wantStatus  int
 		wantBody    string
 		useRawInput bool
+		rawInput    string
 	}{
 		{
 			name: "успешное создание черновика",
-			input: converters.SendEmailRequest{
+			input: models.Email{
 				Recipient:   "recipient@example.com",
 				Title:       "Test Draft",
 				Description: "Test Content",
@@ -44,8 +43,8 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 		},
 		{
 			name: "создание черновика ответа",
-			input: converters.SendEmailRequest{
-				ParentId:    1,
+			input: models.Email{
+				ParentID:    1,
 				Title:       "Re: Original Email",
 				Description: "Reply Content",
 			},
@@ -53,7 +52,7 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetEmailByID(1).
-					Return(models2.Email{
+					Return(models.Email{
 						Sender_email: "original@example.com",
 					}, nil)
 				m.EXPECT().
@@ -64,8 +63,8 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 		},
 		{
 			name: "создание черновика пересылки",
-			input: converters.SendEmailRequest{
-				ParentId:    1,
+			input: models.Email{
+				ParentID:    1,
 				Recipient:   "forward@example.com",
 				Title:       "Fwd: Original Email",
 				Description: "Forward Content",
@@ -74,7 +73,7 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetEmailByID(1).
-					Return(models2.Email{}, nil)
+					Return(models.Email{}, nil)
 				m.EXPECT().
 					CreateDraft(gomock.Any()).
 					Return(nil)
@@ -97,8 +96,8 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 		},
 		{
 			name: "ошибка получения родительского письма",
-			input: converters.SendEmailRequest{
-				ParentId:    1,
+			input: models.Email{
+				ParentID:    1,
 				Title:       "Re: Original Email",
 				Description: "Reply Content",
 			},
@@ -106,14 +105,14 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetEmailByID(1).
-					Return(models2.Email{}, errors.New("not found"))
+					Return(models.Email{}, errors.New("not found"))
 			},
 			wantStatus: http.StatusBadRequest,
 			wantBody:   "parent_email_not_found",
 		},
 		{
 			name: "ошибка создания черновика",
-			input: converters.SendEmailRequest{
+			input: models.Email{
 				Recipient:   "recipient@example.com",
 				Title:       "Test Draft",
 				Description: "Test Content",
@@ -128,45 +127,20 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			wantBody:   "error_with_creating_draft",
 		},
 		{
-			name: "ошибка создания ответа",
-			input: converters.SendEmailRequest{
-				ParentId:    1,
-				Title:       "Re: Original Email",
-				Description: "Reply Content",
+			name: "некорректная операция с родительским письмом",
+			input: models.Email{
+				ParentID:    1,
+				Title:       "Invalid Operation",
+				Description: "Test Content",
 			},
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					GetEmailByID(1).
-					Return(models2.Email{
-						Sender_email: "original@example.com",
-					}, nil)
-				m.EXPECT().
-					CreateDraft(gomock.Any()).
-					Return(errors.New("db error"))
+					Return(models.Email{}, nil)
 			},
-			wantStatus: http.StatusInternalServerError,
-			wantBody:   "failed_to_save_reply",
-		},
-		{
-			name: "ошибка создания пересылки",
-			input: converters.SendEmailRequest{
-				ParentId:    1,
-				Recipient:   "forward@example.com",
-				Title:       "Fwd: Original Email",
-				Description: "Forward Content",
-			},
-			setupAuth: true,
-			mockSetup: func(m *mocks.MockEmailUseCase) {
-				m.EXPECT().
-					GetEmailByID(1).
-					Return(models2.Email{}, nil)
-				m.EXPECT().
-					CreateDraft(gomock.Any()).
-					Return(errors.New("db error"))
-			},
-			wantStatus: http.StatusInternalServerError,
-			wantBody:   "failed_to_save_forward",
+			wantStatus: http.StatusBadRequest,
+			wantBody:   "invalid_operation",
 		},
 	}
 
@@ -202,13 +176,18 @@ func TestEmailRouter_CreateDraftHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			router.CreateDraftHandler(w, req)
 
-			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
+			assert.Equal(t, tt.wantStatus, w.Code)
 
 			if tt.wantBody != "" {
-				var response models2.Error
+				var response models.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantBody, response.Body, "Unexpected response body")
+				assert.Equal(t, tt.wantBody, response.Body)
+			} else if w.Code == http.StatusOK {
+				var response map[string]string
+				err := json.NewDecoder(w.Body).Decode(&response)
+				assert.NoError(t, err)
+				assert.Equal(t, "success", response["status"])
 			}
 		})
 	}

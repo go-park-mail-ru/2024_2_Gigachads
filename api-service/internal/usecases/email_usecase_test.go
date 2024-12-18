@@ -2,664 +2,936 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"mail/api-service/internal/models"
 	"testing"
 	"time"
 
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/api-service/internal/models"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	proto "mail/gen/go/smtp"
 )
 
-type MockEmailRepository struct {
-	mock.Mock
+func TestEmailService_UploadAttach(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	ctx := context.Background()
+	fileContent := []byte("test file content")
+	filename := "test.txt"
+	expectedPath := "/path/to/file/test.txt"
+
+	tests := []struct {
+		name          string
+		setupMock     func()
+		expectedPath  string
+		expectedError error
+	}{
+		{
+			name: "Успешная загрузка файла",
+			setupMock: func() {
+				mockRepo.EXPECT().
+					UploadAttach(ctx, fileContent, filename).
+					Return(expectedPath, nil)
+			},
+			expectedPath:  expectedPath,
+			expectedError: nil,
+		},
+		{
+			name: "Ошибка при загрузке",
+			setupMock: func() {
+				mockRepo.EXPECT().
+					UploadAttach(ctx, fileContent, filename).
+					Return("", errors.New("ошибка загрузки"))
+			},
+			expectedPath:  "",
+			expectedError: errors.New("ошибка загрузки"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+
+			path, err := emailService.UploadAttach(ctx, fileContent, filename)
+
+			assert.Equal(t, tt.expectedPath, path)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
 }
 
-func (m *MockEmailRepository) Inbox(email string) ([]models.Email, error) {
-	args := m.Called(email)
-	return args.Get(0).([]models.Email), args.Error(1)
+func TestEmailService_GetAttach(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	ctx := context.Background()
+	path := "/path/to/file/test.txt"
+	expectedContent := []byte("test file content")
+
+	tests := []struct {
+		name            string
+		setupMock       func()
+		expectedContent []byte
+		expectedError   error
+	}{
+		{
+			name: "Успешное получение файла",
+			setupMock: func() {
+				mockRepo.EXPECT().
+					GetAttach(ctx, path).
+					Return(expectedContent, nil)
+			},
+			expectedContent: expectedContent,
+			expectedError:   nil,
+		},
+		{
+			name: "Ошибка при получениыи файла",
+			setupMock: func() {
+				mockRepo.EXPECT().
+					GetAttach(ctx, path).
+					Return(nil, errors.New("файл не найден"))
+			},
+			expectedContent: nil,
+			expectedError:   errors.New("файл не найден"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+
+			content, err := emailService.GetAttach(ctx, path)
+
+			assert.Equal(t, tt.expectedContent, content)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
 }
 
-func (m *MockEmailRepository) GetEmailByID(id int) (models.Email, error) {
-	args := m.Called(id)
-	return args.Get(0).(models.Email), args.Error(1)
+func TestEmailService_DeleteAttach(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	ctx := context.Background()
+	path := "/path/to/file/test.txt"
+
+	tests := []struct {
+		name          string
+		setupMock     func()
+		expectedError error
+	}{
+		{
+			name: "Успешное удаление файла",
+			setupMock: func() {
+				mockRepo.EXPECT().
+					DeleteAttach(ctx, path).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Ошибка при удалении файла",
+			setupMock: func() {
+				mockRepo.EXPECT().
+					DeleteAttach(ctx, path).
+					Return(errors.New("ошибка удаления"))
+			},
+			expectedError: errors.New("ошибка удаления"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+
+			err := emailService.DeleteAttach(ctx, path)
+
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
 }
 
-func (m *MockEmailRepository) GetSentEmails(email string) ([]models.Email, error) {
-	args := m.Called(email)
-	return args.Get(0).([]models.Email), args.Error(1)
-}
+func TestEmailService_InboxStatus(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-func (m *MockEmailRepository) SaveEmail(email models.Email) error {
-	args := m.Called(email)
-	return args.Error(0)
-}
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
 
-func (m *MockEmailRepository) ChangeStatus(id int, status bool) error {
-	args := m.Called(id, status)
-	return args.Error(0)
-}
-
-func (m *MockEmailRepository) DeleteEmails(email string, ids []int) error {
-	args := m.Called(email, ids)
-	return args.Error(0)
-}
-
-func (m *MockEmailRepository) GetFolders(email string) ([]string, error) {
-	args := m.Called(email)
-	return args.Get(0).([]string), args.Error(1)
-}
-
-func (m *MockEmailRepository) GetFolderEmails(email string, folder string) ([]models.Email, error) {
-	args := m.Called(email, folder)
-	return args.Get(0).([]models.Email), args.Error(1)
-}
-
-func (m *MockEmailRepository) CreateFolder(email string, folder string) error {
-	args := m.Called(email, folder)
-	return args.Error(0)
-}
-
-func (m *MockEmailRepository) DeleteFolder(email string, folder string) error {
-	args := m.Called(email, folder)
-	return args.Error(0)
-}
-
-func (m *MockEmailRepository) RenameFolder(email string, folder string, newFolder string) error {
-	args := m.Called(email, folder, newFolder)
-	return args.Error(0)
-}
-
-func (m *MockEmailRepository) CheckFolder(email string, folder string) (bool, error) {
-	args := m.Called(email, folder)
-	return args.Bool(0), args.Error(1)
-}
-
-func (m *MockEmailRepository) ChangeEmailFolder(id int, email string, folder string) error {
-	args := m.Called(id, email, folder)
-	return args.Error(0)
-}
-
-func (m *MockEmailRepository) CreateDraft(email models.Email) error {
-	args := m.Called(email)
-	return args.Error(0)
-}
-
-func (m *MockEmailRepository) UpdateDraft(draft models.Draft) error {
-	args := m.Called(draft)
-	return args.Error(0)
-}
-
-func (m *MockEmailRepository) GetMessageFolder(id int) (string, error) {
-	args := m.Called(id)
-	return args.String(0), args.Error(1)
-}
-
-type MockSmtpPop3ServiceClient struct {
-	mock.Mock
-}
-
-func (m *MockSmtpPop3ServiceClient) SendEmail(ctx context.Context, req *proto.SendEmailRequest, opts ...grpc.CallOption) (*proto.SendEmailReply, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).(*proto.SendEmailReply), args.Error(1)
-}
-
-func (m *MockSmtpPop3ServiceClient) ForwardEmail(ctx context.Context, req *proto.ForwardEmailRequest, opts ...grpc.CallOption) (*proto.ForwardEmailReply, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).(*proto.ForwardEmailReply), args.Error(1)
-}
-
-func (m *MockSmtpPop3ServiceClient) ReplyEmail(ctx context.Context, req *proto.ReplyEmailRequest, opts ...grpc.CallOption) (*proto.ReplyEmailReply, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).(*proto.ReplyEmailReply), args.Error(1)
-}
-
-func (m *MockSmtpPop3ServiceClient) FetchEmailsViaPOP3(ctx context.Context, req *proto.FetchEmailsViaPOP3Request, opts ...grpc.CallOption) (*proto.FetchEmailsViaPOP3Reply, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).(*proto.FetchEmailsViaPOP3Reply), args.Error(1)
-}
-
-func TestEmailService_Inbox(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
-
+	ctx := context.Background()
+	email := "test@mail.ru"
+	frontLastModified := time.Now().Add(-time.Hour)
+	lastModified := time.Now()
 	expectedEmails := []models.Email{{ID: 1}, {ID: 2}}
-	mockRepo.On("GetFolderEmails", "test@test.com", "Входящие").Return(expectedEmails, nil)
-
-	emails, err := service.Inbox("test@test.com")
-	assert.NoError(t, err)
-	assert.Equal(t, expectedEmails, emails)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestEmailService_GetEmailByID(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
-
-	expectedEmail := models.Email{ID: 1}
-	mockRepo.On("GetEmailByID", 1).Return(expectedEmail, nil)
-
-	email, err := service.GetEmailByID(1)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedEmail, email)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestEmailService_DeleteEmails(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
 
 	tests := []struct {
-		name      string
-		email     string
-		ids       []int
-		folder    string
-		expectErr bool
+		name           string
+		setupMock      func()
+		expectedEmails []models.Email
+		expectedError  error
 	}{
 		{
-			name:   "Delete from trash",
-			email:  "test@test.com",
-			ids:    []int{1},
-			folder: "Корзина",
+			name: "Есть новые письма",
+			setupMock: func() {
+				mockRepo.EXPECT().GetTimestamp(ctx, email).Return(lastModified, nil)
+				mockRepo.EXPECT().GetNewEmails(email, frontLastModified).Return(expectedEmails, nil)
+			},
+			expectedEmails: expectedEmails,
+			expectedError:  nil,
 		},
 		{
-			name:   "Move to trash",
-			email:  "test@test.com",
-			ids:    []int{1},
-			folder: "Входящие",
+			name: "Нет новых писем",
+			setupMock: func() {
+				mockRepo.EXPECT().GetTimestamp(ctx, email).Return(frontLastModified, nil)
+			},
+			expectedEmails: nil,
+			expectedError:  fmt.Errorf("not_modified"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRepo.On("GetMessageFolder", tt.ids[0]).Return(tt.folder, nil).Once()
-			if tt.folder == "Корзина" {
-				mockRepo.On("DeleteEmails", tt.email, tt.ids).Return(nil).Once()
-			} else {
-				mockRepo.On("ChangeEmailFolder", tt.ids[0], tt.email, "Корзина").Return(nil).Once()
-			}
+			tt.setupMock()
 
-			err := service.DeleteEmails(tt.email, tt.ids)
-			if tt.expectErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
+			emails, err := emailService.InboxStatus(ctx, email, frontLastModified)
+
+			assert.Equal(t, tt.expectedEmails, emails)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }
 
-func TestEmailService_SendEmail(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
+func TestEmailService_CreateFolder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	ctx := context.Background()
-	from := "sender@test.com"
-	to := []string{"recipient1@test.com", "recipient2@test.com"}
-	subject := "Test Subject"
-	body := "Test Body"
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	email := "test@mail.ru"
+	folderName := "Новая папка"
 
 	tests := []struct {
-		name    string
-		mockErr error
+		name          string
+		setupMock     func()
+		expectedError error
 	}{
 		{
-			name:    "Success send",
-			mockErr: nil,
+			name: "Успешное создание папки",
+			setupMock: func() {
+				mockRepo.EXPECT().CheckFolder(email, folderName).Return(false, nil)
+				mockRepo.EXPECT().CreateFolder(email, folderName).Return(nil)
+			},
+			expectedError: nil,
 		},
 		{
-			name:    "Error sending email",
-			mockErr: fmt.Errorf("smtp error"),
+			name: "Папка уже существует",
+			setupMock: func() {
+				mockRepo.EXPECT().CheckFolder(email, folderName).Return(true, nil)
+			},
+			expectedError: fmt.Errorf("folder_already_exists"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// В случае ошибки, мы ожидаем только один вызов, так как функция должна прервать выполнение
-			expectedCalls := len(to)
-			if tt.mockErr != nil {
-				expectedCalls = 1
-			}
-
-			for i := 0; i < expectedCalls; i++ {
-				req := &proto.SendEmailRequest{
-					From:    from,
-					To:      to[i],
-					Subject: subject,
-					Body:    body,
-				}
-				mockClient.On("SendEmail", ctx, req).Return(&proto.SendEmailReply{}, tt.mockErr).Once()
-			}
-
-			err := service.SendEmail(ctx, from, to, subject, body)
-			if tt.mockErr != nil {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-			mockClient.AssertExpectations(t)
+			tt.setupMock()
+			err := emailService.CreateFolder(email, folderName)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }
 
-func TestEmailService_ForwardEmail(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
+func TestEmailService_DeleteFolder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	ctx := context.Background()
-	from := "sender@test.com"
-	to := []string{"recipient1@test.com", "recipient2@test.com"}
-	originalEmail := models.Email{
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	email := "test@mail.ru"
+
+	tests := []struct {
+		name          string
+		folderName    string
+		setupMock     func()
+		expectedError error
+	}{
+		{
+			name:       "Успешное удаление папки",
+			folderName: "Тестовая папка",
+			setupMock: func() {
+				mockRepo.EXPECT().DeleteFolder(email, "Тестовая папка").Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:          "Попытка удаления системной папки",
+			folderName:    "Входящие",
+			expectedError: fmt.Errorf("unable_to_delete_folder"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setupMock != nil {
+				tt.setupMock()
+			}
+			err := emailService.DeleteFolder(email, tt.folderName)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
+}
+
+func TestEmailService_RenameFolder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	email := "test@mail.ru"
+	oldName := "Старое название"
+	newName := "Новое название"
+
+	tests := []struct {
+		name          string
+		oldName       string
+		setupMock     func()
+		expectedError error
+	}{
+		{
+			name:    "Успешное переименование папки",
+			oldName: oldName,
+			setupMock: func() {
+				mockRepo.EXPECT().CheckFolder(email, newName).Return(false, nil)
+				mockRepo.EXPECT().RenameFolder(email, oldName, newName).Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:          "Попытка переименования системной папки",
+			oldName:       "Входящие",
+			expectedError: fmt.Errorf("unable_to_rename_folder"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setupMock != nil {
+				tt.setupMock()
+			}
+			err := emailService.RenameFolder(email, tt.oldName, newName)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
+}
+
+func TestEmailService_ChangeEmailFolder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	email := "test@mail.ru"
+	messageID := 1
+	folderName := "Новая папка"
+
+	tests := []struct {
+		name          string
+		setupMock     func()
+		expectedError error
+	}{
+		{
+			name: "Успешное перемещение письма",
+			setupMock: func() {
+				mockRepo.EXPECT().ChangeEmailFolder(messageID, email, folderName).Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Ошибка при перемещении",
+			setupMock: func() {
+				mockRepo.EXPECT().ChangeEmailFolder(messageID, email, folderName).Return(fmt.Errorf("ошибка перемещения"))
+			},
+			expectedError: fmt.Errorf("ошибка перемещения"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+			err := emailService.ChangeEmailFolder(messageID, email, folderName)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
+}
+
+func TestEmailService_CreateDraft(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	draftEmail := models.Email{
 		ID:           1,
-		Sender_email: "original@test.com",
-		Title:        "Original Subject",
-		Description:  "Original Body",
-		Sending_date: time.Now(),
+		Sender_email: "test@mail.ru",
+		Title:        "Черновик",
 	}
 
 	tests := []struct {
-		name    string
-		mockErr error
+		name          string
+		setupMock     func()
+		expectedError error
 	}{
 		{
-			name:    "Success forward",
-			mockErr: nil,
-		},
-		{
-			name:    "Error forwarding email",
-			mockErr: fmt.Errorf("smtp error"),
+			name: "Успешное создание черновика",
+			setupMock: func() {
+				mockRepo.EXPECT().CreateDraft(draftEmail).Return(nil)
+			},
+			expectedError: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// В случае ошибки, мы ожидаем только один вызов
-			expectedCalls := len(to)
-			if tt.mockErr != nil {
-				expectedCalls = 1
-			}
-
-			for i := 0; i < expectedCalls; i++ {
-				req := &proto.ForwardEmailRequest{
-					From:        from,
-					To:          to[i],
-					Sender:      originalEmail.Sender_email,
-					Title:       originalEmail.Title,
-					Description: originalEmail.Description,
-					SendingDate: timestamppb.New(originalEmail.Sending_date),
-				}
-				mockClient.On("ForwardEmail", ctx, req).Return(&proto.ForwardEmailReply{}, tt.mockErr).Once()
-			}
-
-			err := service.ForwardEmail(ctx, from, to, originalEmail)
-			if tt.mockErr != nil {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-			mockClient.AssertExpectations(t)
+			tt.setupMock()
+			err := emailService.CreateDraft(draftEmail)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }
 
-func TestEmailService_ReplyEmail(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
+func TestEmailService_UpdateDraft(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	ctx := context.Background()
-	from := "sender@test.com"
-	to := "recipient@test.com"
-	replyText := "Reply text"
-	originalEmail := models.Email{
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	draftEmail := models.Email{
 		ID:           1,
-		Sender_email: "original@test.com",
-		Title:        "Original Subject",
-		Description:  "Original Body",
-		Sending_date: time.Now(),
+		Sender_email: "test@mail.ru",
+		Title:        "Обновленный черновик",
 	}
 
 	tests := []struct {
-		name    string
-		mockErr error
+		name          string
+		setupMock     func()
+		expectedError error
 	}{
 		{
-			name:    "Success reply",
-			mockErr: nil,
-		},
-		{
-			name:    "Error replying to email",
-			mockErr: fmt.Errorf("smtp error"),
+			name: "Успешное обновление черновика",
+			setupMock: func() {
+				mockRepo.EXPECT().UpdateDraft(draftEmail).Return(nil)
+			},
+			expectedError: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := &proto.ReplyEmailRequest{
-				From:        from,
-				To:          to,
-				Sender:      originalEmail.Sender_email,
-				Title:       originalEmail.Title,
-				Description: originalEmail.Description,
-				SendingDate: timestamppb.New(originalEmail.Sending_date),
-				ReplyText:   replyText,
-			}
-			mockClient.On("ReplyEmail", ctx, req).Return(&proto.ReplyEmailReply{}, tt.mockErr).Once()
-
-			err := service.ReplyEmail(ctx, from, to, originalEmail, replyText)
-			if tt.mockErr != nil {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-			mockClient.AssertExpectations(t)
+			tt.setupMock()
+			err := emailService.UpdateDraft(draftEmail)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }
 
 func TestEmailService_SendDraft(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	email := models.Email{
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	draftEmail := models.Email{
 		ID:           1,
-		Sender_email: "sender@test.com",
-		Recipient:    "recipient@test.com",
-		Title:        "Draft Subject",
-		Description:  "Draft Body",
+		Sender_email: "test@mail.ru",
+		Title:        "Черновик для отправки",
 	}
 
 	tests := []struct {
 		name          string
-		mockGetErr    error
-		mockDeleteErr error
-		mockSaveErr   error
-		expectedError bool
+		setupMock     func()
+		expectedError error
 	}{
 		{
-			name:          "Success send draft",
-			mockGetErr:    nil,
-			mockDeleteErr: nil,
-			mockSaveErr:   nil,
-			expectedError: false,
+			name: "Успешная отправка черновика",
+			setupMock: func() {
+				mockRepo.EXPECT().GetEmailByID(draftEmail.ID).Return(draftEmail, nil)
+				mockRepo.EXPECT().DeleteEmails(draftEmail.Sender_email, []int{draftEmail.ID}).Return(nil)
+				mockRepo.EXPECT().SaveEmail(draftEmail).Return(nil)
+			},
+			expectedError: nil,
 		},
 		{
-			name:          "Error getting draft",
-			mockGetErr:    fmt.Errorf("db error"),
-			mockDeleteErr: nil,
-			mockSaveErr:   nil,
-			expectedError: true,
-		},
-		{
-			name:          "Error deleting draft",
-			mockGetErr:    nil,
-			mockDeleteErr: fmt.Errorf("db error"),
-			mockSaveErr:   nil,
-			expectedError: true,
-		},
-		{
-			name:          "Error saving email",
-			mockGetErr:    nil,
-			mockDeleteErr: nil,
-			mockSaveErr:   fmt.Errorf("db error"),
-			expectedError: true,
+			name: "Ошибка при получении черновика",
+			setupMock: func() {
+				mockRepo.EXPECT().GetEmailByID(draftEmail.ID).Return(models.Email{}, fmt.Errorf("черновик не найден"))
+			},
+			expectedError: fmt.Errorf("черновик не найден"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRepo.On("GetEmailByID", email.ID).Return(email, tt.mockGetErr).Once()
-			if tt.mockGetErr == nil {
-				mockRepo.On("DeleteEmails", email.Sender_email, []int{email.ID}).Return(tt.mockDeleteErr).Once()
-				if tt.mockDeleteErr == nil {
-					mockRepo.On("SaveEmail", email).Return(tt.mockSaveErr).Once()
-				}
-			}
-
-			err := service.SendDraft(email)
-			if tt.expectedError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-			mockRepo.AssertExpectations(t)
+			tt.setupMock()
+			err := emailService.SendDraft(draftEmail)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }
 
-func TestEmailService_Folders(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
-
-	email := "test@test.com"
-	defaultFolders := []string{"Входящие", "Отправленные", "Спам", "Черновики", "Корзина"}
-
-	t.Run("Existing folders", func(t *testing.T) {
-		mockRepo.On("GetFolders", email).Return(defaultFolders, nil).Times(2)
-
-		folders, err := service.GetFolders(email)
-		assert.NoError(t, err)
-		assert.Equal(t, defaultFolders, folders)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("Create default folders", func(t *testing.T) {
-		mockRepo.On("GetFolders", email).Return([]string{}, nil).Once()
-
-		for _, folder := range defaultFolders {
-			mockRepo.On("CreateFolder", email, folder).Return(nil).Once()
-		}
-
-		mockRepo.On("GetFolders", email).Return(defaultFolders, nil).Once()
-
-		folders, err := service.GetFolders(email)
-		assert.NoError(t, err)
-		assert.Equal(t, defaultFolders, folders)
-		mockRepo.AssertExpectations(t)
-	})
-}
-
-func TestEmailService_FolderOperations(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
-
-	t.Run("Create folder", func(t *testing.T) {
-		mockRepo.On("CheckFolder", "test@test.com", "NewFolder").Return(false, nil)
-		mockRepo.On("CreateFolder", "test@test.com", "NewFolder").Return(nil)
-
-		err := service.CreateFolder("test@test.com", "NewFolder")
-		assert.NoError(t, err)
-	})
-
-	t.Run("Delete folder", func(t *testing.T) {
-		mockRepo.On("DeleteFolder", "test@test.com", "CustomFolder").Return(nil)
-
-		err := service.DeleteFolder("test@test.com", "CustomFolder")
-		assert.NoError(t, err)
-
-		err = service.DeleteFolder("test@test.com", "Входящие")
-		assert.Error(t, err)
-	})
-
-	t.Run("Rename folder", func(t *testing.T) {
-		mockRepo.On("CheckFolder", "test@test.com", "NewName").Return(false, nil)
-		mockRepo.On("RenameFolder", "test@test.com", "OldName", "NewName").Return(nil)
-
-		err := service.RenameFolder("test@test.com", "OldName", "NewName")
-		assert.NoError(t, err)
-
-		err = service.RenameFolder("test@test.com", "Входящие", "NewName")
-		assert.Error(t, err)
-	})
-}
-
-func TestEmailService_GetSentEmails(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
-
-	expectedEmails := []models.Email{
-		{ID: 1, Sender_email: "test@test.com", Recipient: "recipient1@test.com"},
-		{ID: 2, Sender_email: "test@test.com", Recipient: "recipient2@test.com"},
-	}
-
-	mockRepo.On("GetFolderEmails", "test@test.com", "Отправленные").Return(expectedEmails, nil)
-
-	emails, err := service.GetSentEmails("test@test.com")
-	assert.NoError(t, err)
-	assert.Equal(t, expectedEmails, emails)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestEmailService_SaveEmail(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
-
-	email := models.Email{
-		ID:           1,
-		Sender_email: "test@test.com",
-		Recipient:    "recipient@test.com",
-		Title:        "Test Email",
-		Description:  "Test Content",
-		Sending_date: time.Now(),
-	}
-
-	mockRepo.On("SaveEmail", email).Return(nil)
-
-	err := service.SaveEmail(email)
-	assert.NoError(t, err)
-	mockRepo.AssertExpectations(t)
-}
-
 func TestEmailService_ChangeStatus(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
 
 	tests := []struct {
-		name      string
-		id        int
-		status    bool
-		mockError error
+		name          string
+		id            int
+		status        bool
+		setupMock     func()
+		expectedError error
 	}{
 		{
-			name:      "Mark as read",
-			id:        1,
-			status:    true,
-			mockError: nil,
+			name:   "Успешное изменение статуса на прочитанное",
+			id:     1,
+			status: true,
+			setupMock: func() {
+				mockRepo.EXPECT().ChangeStatus(1, true).Return(nil)
+			},
+			expectedError: nil,
 		},
 		{
-			name:      "Mark as unread",
-			id:        2,
-			status:    false,
-			mockError: nil,
-		},
-		{
-			name:      "Error changing status",
-			id:        3,
-			status:    true,
-			mockError: fmt.Errorf("database error"),
+			name:   "Ошибка при изменении статуса",
+			id:     2,
+			status: false,
+			setupMock: func() {
+				mockRepo.EXPECT().ChangeStatus(2, false).Return(fmt.Errorf("ошибка изменения статуса"))
+			},
+			expectedError: fmt.Errorf("ошибка изменения статуса"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRepo.On("ChangeStatus", tt.id, tt.status).Return(tt.mockError).Once()
+			tt.setupMock()
+			err := emailService.ChangeStatus(tt.id, tt.status)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
+}
 
-			err := service.ChangeStatus(tt.id, tt.status)
-			if tt.mockError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.mockError, err)
-			} else {
-				assert.NoError(t, err)
-			}
-			mockRepo.AssertExpectations(t)
+func TestEmailService_DeleteEmails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	userEmail := "test@mail.ru"
+	messageIDs := []int{1, 2}
+
+	tests := []struct {
+		name          string
+		setupMock     func()
+		expectedError error
+	}{
+		{
+			name: "Успешное удаление писем из корзины",
+			setupMock: func() {
+				mockRepo.EXPECT().GetMessageFolder(messageIDs[0]).Return("Корзина", nil)
+				mockRepo.EXPECT().DeleteEmails(userEmail, messageIDs).Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Перемещение писем в корзину",
+			setupMock: func() {
+				mockRepo.EXPECT().GetMessageFolder(messageIDs[0]).Return("Входящие", nil)
+				mockRepo.EXPECT().ChangeEmailFolder(messageIDs[0], userEmail, "Корзина").Return(nil)
+				mockRepo.EXPECT().GetMessageFolder(messageIDs[1]).Return("Входящие", nil)
+				mockRepo.EXPECT().ChangeEmailFolder(messageIDs[1], userEmail, "Корзина").Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Ошибка при получении папки",
+			setupMock: func() {
+				mockRepo.EXPECT().GetMessageFolder(messageIDs[0]).Return("", fmt.Errorf("ошибка получения папки"))
+			},
+			expectedError: fmt.Errorf("ошибка получения папки"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+			err := emailService.DeleteEmails(userEmail, messageIDs)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
+}
+
+func TestEmailService_GetFolders(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	email := "test@mail.ru"
+	existingFolders := []string{"Входящие", "Отправленные", "Спам", "Черновики", "Корзина"}
+
+	tests := []struct {
+		name            string
+		setupMock       func()
+		expectedFolders []string
+		expectedError   error
+	}{
+		{
+			name: "Создание системных папок для нового пользователя",
+			setupMock: func() {
+				mockRepo.EXPECT().GetFolders(email).Return([]string{}, nil)
+				mockRepo.EXPECT().CreateFolder(email, "Входящие").Return(nil)
+				mockRepo.EXPECT().CreateFolder(email, "Отправленные").Return(nil)
+				mockRepo.EXPECT().CreateFolder(email, "Спам").Return(nil)
+				mockRepo.EXPECT().CreateFolder(email, "Черновики").Return(nil)
+				mockRepo.EXPECT().CreateFolder(email, "Корзина").Return(nil)
+				mockRepo.EXPECT().GetFolders(email).Return(existingFolders, nil)
+			},
+			expectedFolders: existingFolders,
+			expectedError:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+			folders, err := emailService.GetFolders(email)
+			assert.Equal(t, tt.expectedFolders, folders)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }
 
 func TestEmailService_GetFolderEmails(t *testing.T) {
-	mockRepo := new(MockEmailRepository)
-	mockClient := new(MockSmtpPop3ServiceClient)
-	service := NewEmailService(mockRepo, mockClient)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	email := "test@mail.ru"
+	emails := []models.Email{
+		{
+			ID:           1,
+			Sender_email: "sender@mail.ru",
+			Recipient:    "test@mail.ru",
+			Title:        "Test Email",
+		},
+	}
+
+	sentEmails := []models.Email{
+		{
+			ID:           2,
+			Sender_email: "test@mail.ru",
+			Recipient:    "recipient@mail.ru",
+			Title:        "Sent Email",
+		},
+	}
 
 	tests := []struct {
-		name       string
-		email      string
-		folder     string
-		mockEmails []models.Email
-		expected   []models.Email
-		mockError  error
+		name           string
+		folderName     string
+		setupMock      func()
+		expectedEmails []models.Email
+		expectedError  error
 	}{
 		{
-			name:   "Get inbox emails",
-			email:  "test@test.com",
-			folder: "Входящие",
-			mockEmails: []models.Email{
-				{ID: 1, Sender_email: "sender@test.com", Recipient: "test@test.com"},
-				{ID: 2, Sender_email: "sender2@test.com", Recipient: "test@test.com"},
+			name:       "Получение писем из папки Входящие",
+			folderName: "Входящие",
+			setupMock: func() {
+				mockRepo.EXPECT().GetFolderEmails(email, "Входящие").Return(emails, nil)
 			},
-			expected: []models.Email{
-				{ID: 1, Sender_email: "sender@test.com", Recipient: "test@test.com"},
-				{ID: 2, Sender_email: "sender2@test.com", Recipient: "test@test.com"},
-			},
+			expectedEmails: emails,
+			expectedError:  nil,
 		},
 		{
-			name:   "Get sent emails",
-			email:  "test@test.com",
-			folder: "Отправленные",
-			mockEmails: []models.Email{
-				{ID: 1, Sender_email: "test@test.com", Recipient: "recipient@test.com"},
-				{ID: 2, Sender_email: "test@test.com", Recipient: "recipient2@test.com"},
+			name:       "Получение писем из папки Отправленные",
+			folderName: "Отправленные",
+			setupMock: func() {
+				mockRepo.EXPECT().GetFolderEmails(email, "Отправленные").Return(sentEmails, nil)
 			},
-			expected: []models.Email{
-				{ID: 1, Sender_email: "recipient@test.com", Recipient: "test@test.com"},
-				{ID: 2, Sender_email: "recipient2@test.com", Recipient: "test@test.com"},
+			expectedEmails: []models.Email{
+				{
+					ID:           2,
+					Sender_email: "recipient@mail.ru",
+					Recipient:    "test@mail.ru",
+					Title:        "Sent Email",
+				},
 			},
+			expectedError: nil,
 		},
 		{
-			name:   "Get draft emails",
-			email:  "test@test.com",
-			folder: "Черновики",
-			mockEmails: []models.Email{
-				{ID: 1, Sender_email: "test@test.com", Recipient: "draft@test.com"},
+			name:       "Ошибка при получении писем",
+			folderName: "Входящие",
+			setupMock: func() {
+				mockRepo.EXPECT().GetFolderEmails(email, "Входящие").Return(nil, fmt.Errorf("ошибка получения писем"))
 			},
-			expected: []models.Email{
-				{ID: 1, Sender_email: "draft@test.com", Recipient: "test@test.com"},
-			},
+			expectedEmails: nil,
+			expectedError:  fmt.Errorf("ошибка получения писем"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRepo.On("GetFolderEmails", tt.email, tt.folder).Return(tt.mockEmails, tt.mockError).Once()
+			tt.setupMock()
+			emails, err := emailService.GetFolderEmails(email, tt.folderName)
+			assert.Equal(t, tt.expectedEmails, emails)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
+}
 
-			emails, err := service.GetFolderEmails(tt.email, tt.folder)
-			if tt.mockError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.mockError, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, len(tt.expected), len(emails))
+func TestEmailService_Inbox(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-				for i := range emails {
-					assert.Equal(t, tt.expected[i].Sender_email, emails[i].Sender_email)
-					assert.Equal(t, tt.expected[i].Recipient, emails[i].Recipient)
-				}
-			}
-			mockRepo.AssertExpectations(t)
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	email := "test@mail.ru"
+	expectedEmails := []models.Email{
+		{
+			ID:           1,
+			Sender_email: "sender1@mail.ru",
+			Recipient:    "test@mail.ru",
+			Title:        "Test Email 1",
+		},
+		{
+			ID:           2,
+			Sender_email: "sender2@mail.ru",
+			Recipient:    "test@mail.ru",
+			Title:        "Test Email 2",
+		},
+	}
+
+	tests := []struct {
+		name           string
+		setupMock      func()
+		expectedEmails []models.Email
+		expectedError  error
+	}{
+		{
+			name: "Успешное получение входящих писем",
+			setupMock: func() {
+				mockRepo.EXPECT().GetFolderEmails(email, "Входящие").Return(expectedEmails, nil)
+			},
+			expectedEmails: expectedEmails,
+			expectedError:  nil,
+		},
+		{
+			name: "Ошибка при получении входящих писем",
+			setupMock: func() {
+				mockRepo.EXPECT().GetFolderEmails(email, "Входящие").Return(nil, fmt.Errorf("ошибка получения писем"))
+			},
+			expectedEmails: nil,
+			expectedError:  fmt.Errorf("ошибка получения писем"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+			emails, err := emailService.Inbox(email)
+			assert.Equal(t, tt.expectedEmails, emails)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
+}
+
+func TestEmailService_GetEmailByID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	emailID := 1
+	expectedEmail := models.Email{
+		ID:           1,
+		Sender_email: "sender@mail.ru",
+		Recipient:    "test@mail.ru",
+		Title:        "Test Email",
+		Attachments:  []string{"/path/to/file/test.txt"},
+	}
+
+	expectedEmailWithFiles := models.Email{
+		ID:           1,
+		Sender_email: "sender@mail.ru",
+		Recipient:    "test@mail.ru",
+		Title:        "Test Email",
+		Attachments:  []string{"/path/to/file/test.txt"},
+		Files: []models.File{
+			{
+				Path: "/path/to/file/test.txt",
+				Name: "test.txt",
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		setupMock     func()
+		expectedEmail models.Email
+		expectedError error
+	}{
+		{
+			name: "Успешное получение письма",
+			setupMock: func() {
+				mockRepo.EXPECT().GetEmailByID(emailID).Return(expectedEmail, nil)
+			},
+			expectedEmail: expectedEmailWithFiles,
+			expectedError: nil,
+		},
+		{
+			name: "Ошибка при получении письма",
+			setupMock: func() {
+				mockRepo.EXPECT().GetEmailByID(emailID).Return(models.Email{}, fmt.Errorf("письмо не найдено"))
+			},
+			expectedEmail: models.Email{},
+			expectedError: fmt.Errorf("письмо не найдено"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+			email, err := emailService.GetEmailByID(emailID)
+			assert.Equal(t, tt.expectedEmail, email)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
+}
+
+func TestEmailService_GetSentEmails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	email := "test@mail.ru"
+	expectedEmails := []models.Email{
+		{
+			ID:           1,
+			Sender_email: "test@mail.ru",
+			Recipient:    "recipient1@mail.ru",
+			Title:        "Sent Email 1",
+		},
+		{
+			ID:           2,
+			Sender_email: "test@mail.ru",
+			Recipient:    "recipient2@mail.ru",
+			Title:        "Sent Email 2",
+		},
+	}
+
+	tests := []struct {
+		name           string
+		setupMock      func()
+		expectedEmails []models.Email
+		expectedError  error
+	}{
+		{
+			name: "Успешное получение отправленных писем",
+			setupMock: func() {
+				mockRepo.EXPECT().GetFolderEmails(email, "Отправленные").Return(expectedEmails, nil)
+			},
+			expectedEmails: expectedEmails,
+			expectedError:  nil,
+		},
+		{
+			name: "Ошибка при получении отправленных писем",
+			setupMock: func() {
+				mockRepo.EXPECT().GetFolderEmails(email, "Отправленные").Return(nil, fmt.Errorf("ошибка получения писем"))
+			},
+			expectedEmails: nil,
+			expectedError:  fmt.Errorf("ошибка получения писем"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+			emails, err := emailService.GetSentEmails(email)
+			assert.Equal(t, tt.expectedEmails, emails)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
+}
+
+func TestEmailService_SaveEmail(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEmailRepository(ctrl)
+	emailService := EmailService{EmailRepo: mockRepo}
+
+	ctx := context.Background()
+	email := models.Email{
+		ID:           1,
+		Sender_email: "sender@mail.ru",
+		Recipient:    "test@mail.ru",
+		Title:        "Test Email",
+	}
+
+	tests := []struct {
+		name          string
+		setupMock     func()
+		expectedError error
+	}{
+		{
+			name: "Успешное сохранение письма",
+			setupMock: func() {
+				mockRepo.EXPECT().SaveEmail(email).Return(nil)
+				mockRepo.EXPECT().SetTimestamp(ctx, email.Recipient)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Ошибка при сохранении письма",
+			setupMock: func() {
+				mockRepo.EXPECT().SaveEmail(email).Return(fmt.Errorf("ошибка сохранения"))
+			},
+			expectedError: fmt.Errorf("ошибка сохранения"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+			err := emailService.SaveEmail(ctx, email)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }

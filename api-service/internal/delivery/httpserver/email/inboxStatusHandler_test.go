@@ -16,34 +16,35 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEmailRouter_FolderEmailsHandler(t *testing.T) {
+func TestEmailRouter_InboxStatusHandler(t *testing.T) {
 	testTime := time.Date(2024, 3, 15, 12, 0, 0, 0, time.UTC)
+	lastModified := time.Date(2024, 3, 14, 12, 0, 0, 0, time.UTC)
 
 	tests := []struct {
 		name       string
 		setupAuth  bool
-		folder     models.Folder
+		timestamp  models.Timestamp
 		mockSetup  func(*mocks.MockEmailUseCase)
 		wantStatus int
 		wantBody   interface{}
 		rawInput   string
 	}{
 		{
-			name:      "успешное получение писем из папки",
+			name:      "успешное получение обновлений",
 			setupAuth: true,
-			folder: models.Folder{
-				Name: "Inbox",
+			timestamp: models.Timestamp{
+				LastModified: lastModified,
 			},
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					GetFolderEmails("test@example.com", "Inbox").
+					InboxStatus(gomock.Any(), "test@example.com", lastModified).
 					Return([]models.Email{
 						{
 							ID:           1,
 							Sender_email: "sender@example.com",
 							Recipient:    "test@example.com",
-							Title:        "Test Subject",
-							Description:  "Test Body",
+							Title:        "New Email",
+							Description:  "New Content",
 							Sending_date: testTime,
 							IsRead:       false,
 						},
@@ -55,8 +56,8 @@ func TestEmailRouter_FolderEmailsHandler(t *testing.T) {
 					ID:           1,
 					Sender_email: "sender@example.com",
 					Recipient:    "test@example.com",
-					Title:        "Test Subject",
-					Description:  "Test Body",
+					Title:        "New Email",
+					Description:  "New Content",
 					Sending_date: testTime,
 					IsRead:       false,
 				},
@@ -82,35 +83,21 @@ func TestEmailRouter_FolderEmailsHandler(t *testing.T) {
 			},
 		},
 		{
-			name:      "ошибка при получении писем",
+			name:      "нет изменений",
 			setupAuth: true,
-			folder: models.Folder{
-				Name: "Custom",
+			timestamp: models.Timestamp{
+				LastModified: lastModified,
 			},
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					GetFolderEmails("test@example.com", "Custom").
-					Return(nil, errors.New("database error"))
+					InboxStatus(gomock.Any(), "test@example.com", lastModified).
+					Return(nil, errors.New("not modified"))
 			},
-			wantStatus: http.StatusInternalServerError,
+			wantStatus: http.StatusNotModified,
 			wantBody: models.Error{
-				Status: http.StatusInternalServerError,
-				Body:   "email_not_found",
+				Status: http.StatusNotModified,
+				Body:   "not_modified",
 			},
-		},
-		{
-			name:      "пустой список писем",
-			setupAuth: true,
-			folder: models.Folder{
-				Name: "Empty",
-			},
-			mockSetup: func(m *mocks.MockEmailUseCase) {
-				m.EXPECT().
-					GetFolderEmails("test@example.com", "Empty").
-					Return([]models.Email{}, nil)
-			},
-			wantStatus: http.StatusOK,
-			wantBody:   []models.Email{},
 		},
 	}
 
@@ -130,12 +117,12 @@ func TestEmailRouter_FolderEmailsHandler(t *testing.T) {
 			var err error
 			if tt.rawInput != "" {
 				reqBody = []byte(tt.rawInput)
-			} else if tt.folder.Name != "" {
-				reqBody, err = json.Marshal(tt.folder)
+			} else {
+				reqBody, err = json.Marshal(tt.timestamp)
 				assert.NoError(t, err)
 			}
 
-			req := httptest.NewRequest(http.MethodPost, "/getfolder", bytes.NewBuffer(reqBody))
+			req := httptest.NewRequest(http.MethodPost, "/inbox/status", bytes.NewBuffer(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			if tt.setupAuth {
@@ -144,26 +131,21 @@ func TestEmailRouter_FolderEmailsHandler(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			router.FolderEmailsHandler(w, req)
+			router.InboxStatusHandler(w, req)
 
 			assert.Equal(t, tt.wantStatus, w.Code)
 
-			var response interface{}
 			if tt.wantStatus == http.StatusOK {
 				var emails []models.Email
 				err := json.NewDecoder(w.Body).Decode(&emails)
 				assert.NoError(t, err)
-				response = emails
+				assert.Equal(t, tt.wantBody, emails)
+				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
 			} else {
 				var errResponse models.Error
 				err := json.NewDecoder(w.Body).Decode(&errResponse)
 				assert.NoError(t, err)
-				response = errResponse
-			}
-
-			assert.Equal(t, tt.wantBody, response)
-			if tt.wantStatus == http.StatusOK {
-				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+				assert.Equal(t, tt.wantBody, errResponse)
 			}
 		})
 	}

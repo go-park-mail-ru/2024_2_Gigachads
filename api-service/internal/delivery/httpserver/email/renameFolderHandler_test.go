@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	models2 "mail/api-service/internal/models"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,22 +17,21 @@ import (
 
 func TestEmailRouter_RenameFolderHandler(t *testing.T) {
 	tests := []struct {
-		name        string
-		input       models2.RenameFolder
-		setupAuth   bool
-		mockSetup   func(*mocks.MockEmailUseCase)
-		wantStatus  int
-		wantBody    string
-		useRawInput bool
-		rawInput    string
+		name       string
+		setupAuth  bool
+		folder     models.RenameFolder
+		mockSetup  func(*mocks.MockEmailUseCase)
+		wantStatus int
+		wantBody   interface{}
+		rawInput   string
 	}{
 		{
-			name: "успешное переименование папки",
-			input: models2.RenameFolder{
+			name:      "успешное переименование папки",
+			setupAuth: true,
+			folder: models.RenameFolder{
 				Name:    "OldFolder",
 				NewName: "NewFolder",
 			},
-			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					RenameFolder("test@example.com", "OldFolder", "NewFolder").
@@ -44,30 +43,38 @@ func TestEmailRouter_RenameFolderHandler(t *testing.T) {
 			name:       "неавторизованный запрос",
 			setupAuth:  false,
 			wantStatus: http.StatusUnauthorized,
-			wantBody:   "unauthorized",
+			wantBody: models.Error{
+				Status: http.StatusUnauthorized,
+				Body:   "unauthorized",
+			},
 		},
 		{
-			name:        "некорректный JSON",
-			setupAuth:   true,
-			useRawInput: true,
-			rawInput:    `{"name": "Old", "newName":}`,
-			wantStatus:  http.StatusBadRequest,
-			wantBody:    "invalid_json",
+			name:       "некорректный JSON в запросе",
+			setupAuth:  true,
+			rawInput:   "{invalid json",
+			wantStatus: http.StatusBadRequest,
+			wantBody: models.Error{
+				Status: http.StatusBadRequest,
+				Body:   "invalid_json",
+			},
 		},
 		{
-			name: "ошибка переименования",
-			input: models2.RenameFolder{
+			name:      "ошибка при переименовании папки",
+			setupAuth: true,
+			folder: models.RenameFolder{
 				Name:    "OldFolder",
 				NewName: "NewFolder",
 			},
-			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					RenameFolder("test@example.com", "OldFolder", "NewFolder").
-					Return(errors.New("error"))
+					Return(errors.New("rename error"))
 			},
 			wantStatus: http.StatusInternalServerError,
-			wantBody:   "error_with_rename_folder",
+			wantBody: models.Error{
+				Status: http.StatusInternalServerError,
+				Body:   "error_with_rename_folder",
+			},
 		},
 	}
 
@@ -84,13 +91,15 @@ func TestEmailRouter_RenameFolderHandler(t *testing.T) {
 			router := NewEmailRouter(mockEmailUseCase)
 
 			var reqBody []byte
-			if tt.useRawInput {
+			var err error
+			if tt.rawInput != "" {
 				reqBody = []byte(tt.rawInput)
 			} else {
-				reqBody, _ = json.Marshal(tt.input)
+				reqBody, err = json.Marshal(tt.folder)
+				assert.NoError(t, err)
 			}
 
-			req := httptest.NewRequest(http.MethodPut, "/folders/rename", bytes.NewBuffer(reqBody))
+			req := httptest.NewRequest(http.MethodPut, "/renamefolder", bytes.NewBuffer(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			if tt.setupAuth {
@@ -101,13 +110,15 @@ func TestEmailRouter_RenameFolderHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			router.RenameFolderHandler(w, req)
 
-			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
+			assert.Equal(t, tt.wantStatus, w.Code)
 
-			if tt.wantBody != "" {
-				var response models2.Error
-				err := json.NewDecoder(w.Body).Decode(&response)
+			if tt.wantStatus != http.StatusOK {
+				var errResponse models.Error
+				err := json.NewDecoder(w.Body).Decode(&errResponse)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantBody, response.Body, "Unexpected error body")
+				assert.Equal(t, tt.wantBody, errResponse)
+			} else {
+				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
 			}
 		})
 	}

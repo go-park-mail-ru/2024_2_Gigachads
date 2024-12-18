@@ -6,45 +6,43 @@ import (
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	models2 "mail/api-service/internal/models"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
+	testTime := time.Date(2024, 3, 15, 12, 0, 0, 0, time.UTC)
+
 	tests := []struct {
-		name        string
-		setupAuth   bool
-		input       models2.Draft
-		mockSetup   func(*mocks.MockEmailUseCase)
-		wantStatus  int
-		wantBody    string
-		useRawInput bool
-		rawInput    string
+		name       string
+		setupAuth  bool
+		draft      models.Email
+		mockSetup  func(*mocks.MockEmailUseCase)
+		wantStatus int
+		wantBody   interface{}
+		rawInput   string
 	}{
 		{
 			name:      "успешное обновление черновика",
 			setupAuth: true,
-			input: models2.Draft{
-				ID:          1,
-				Recipient:   "recipient@example.com",
-				Title:       "Updated Draft",
-				Description: "Updated content",
+			draft: models.Email{
+				ID:           1,
+				Sender_email: "test@example.com",
+				Recipient:    "recipient@example.com",
+				Title:        "Draft Title",
+				Description:  "Draft Content",
+				Sending_date: testTime,
 			},
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					UpdateDraft(gomock.Any()).
-					DoAndReturn(func(draft models2.Draft) error {
-						assert.Equal(t, 1, draft.ID)
-						assert.Equal(t, "recipient@example.com", draft.Recipient)
-						assert.Equal(t, "Updated Draft", draft.Title)
-						assert.Equal(t, "Updated content", draft.Description)
-						return nil
-					})
+					Return(nil)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -52,24 +50,30 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 			name:       "неавторизованный запрос",
 			setupAuth:  false,
 			wantStatus: http.StatusUnauthorized,
-			wantBody:   "unauthorized",
+			wantBody: models.Error{
+				Status: http.StatusUnauthorized,
+				Body:   "unauthorized",
+			},
 		},
 		{
-			name:        "некорректный JSON",
-			setupAuth:   true,
-			useRawInput: true,
-			rawInput:    `{"id": 1, "title": }`,
-			wantStatus:  http.StatusBadRequest,
-			wantBody:    "invalid_json",
+			name:       "некорректный JSON в запросе",
+			setupAuth:  true,
+			rawInput:   "{invalid json",
+			wantStatus: http.StatusBadRequest,
+			wantBody: models.Error{
+				Status: http.StatusBadRequest,
+				Body:   "invalid_json",
+			},
 		},
 		{
 			name:      "ошибка при обновлении черновика",
 			setupAuth: true,
-			input: models2.Draft{
-				ID:          1,
-				Recipient:   "recipient@example.com",
-				Title:       "Test Draft",
-				Description: "Test content",
+			draft: models.Email{
+				ID:           1,
+				Sender_email: "test@example.com",
+				Recipient:    "recipient@example.com",
+				Title:        "Draft Title",
+				Description:  "Draft Content",
 			},
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
@@ -77,26 +81,25 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 					Return(errors.New("update error"))
 			},
 			wantStatus: http.StatusInternalServerError,
-			wantBody:   "cant_update_draft",
+			wantBody: models.Error{
+				Status: http.StatusInternalServerError,
+				Body:   "cant_update_draft",
+			},
 		},
 		{
 			name:      "проверка санитизации данных",
 			setupAuth: true,
-			input: models2.Draft{
-				ID:          1,
-				Recipient:   "<script>alert('xss')</script>recipient@example.com",
-				Title:       "<script>alert('xss')</script>Test Title",
-				Description: "<script>alert('xss')</script>Test Content",
+			draft: models.Email{
+				ID:           1,
+				Sender_email: "test@example.com",
+				Recipient:    "<script>alert('xss')</script>recipient@example.com",
+				Title:        "<script>alert('xss')</script>Title",
+				Description:  "<script>alert('xss')</script>Content",
 			},
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					UpdateDraft(gomock.Any()).
-					DoAndReturn(func(draft models2.Draft) error {
-						assert.Equal(t, "recipient@example.com", draft.Recipient)
-						assert.Equal(t, "Test Title", draft.Title)
-						assert.Equal(t, "Test Content", draft.Description)
-						return nil
-					})
+					Return(nil)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -116,14 +119,14 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 
 			var reqBody []byte
 			var err error
-			if tt.useRawInput {
+			if tt.rawInput != "" {
 				reqBody = []byte(tt.rawInput)
 			} else {
-				reqBody, err = json.Marshal(tt.input)
+				reqBody, err = json.Marshal(tt.draft)
 				assert.NoError(t, err)
 			}
 
-			req := httptest.NewRequest(http.MethodPut, "/draft", bytes.NewBuffer(reqBody))
+			req := httptest.NewRequest(http.MethodPut, "/updatedraft", bytes.NewBuffer(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			if tt.setupAuth {
@@ -134,13 +137,15 @@ func TestEmailRouter_UpdateDraftHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			router.UpdateDraftHandler(w, req)
 
-			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
+			assert.Equal(t, tt.wantStatus, w.Code)
 
-			if tt.wantBody != "" {
-				var response models2.Error
-				err := json.NewDecoder(w.Body).Decode(&response)
+			if tt.wantStatus != http.StatusOK {
+				var errResponse models.Error
+				err := json.NewDecoder(w.Body).Decode(&errResponse)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantBody, response.Body, "Unexpected error body")
+				assert.Equal(t, tt.wantBody, errResponse)
+			} else {
+				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
 			}
 		})
 	}

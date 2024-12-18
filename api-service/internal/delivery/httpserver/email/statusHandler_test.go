@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
 	"mail/api-service/internal/models"
 	"net/http"
@@ -15,284 +16,139 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEmailStatusHandler_Success(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	status := Status{Status: true}
-	emailID := "1"
-
-	statusJSON, _ := json.Marshal(status)
-	req := httptest.NewRequest(http.MethodPut, "/email/"+emailID+"/status", bytes.NewBuffer(statusJSON))
-
-	vars := map[string]string{
-		"id": emailID,
-	}
-	req = mux.SetURLVars(req, vars)
-
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-
-	mockEmailUseCase.EXPECT().ChangeStatus(1, true).Return(nil)
-
-	router.EmailStatusHandler(rr, req)
-
-	assert.Equal(t, http.StatusOK, rr.Code)
-}
-
-func TestEmailStatusHandler_Unauthorized(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	status := Status{Status: true}
-	emailID := "1"
-
-	statusJSON, _ := json.Marshal(status)
-	req := httptest.NewRequest(http.MethodPut, "/email/"+emailID+"/status", bytes.NewBuffer(statusJSON))
-
-	vars := map[string]string{
-		"id": emailID,
-	}
-	req = mux.SetURLVars(req, vars)
-
-	rr := httptest.NewRecorder()
-
-	router.EmailStatusHandler(rr, req)
-
-	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "unauthorized", response.Body)
-}
-
-func TestEmailStatusHandler_InvalidID(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	status := Status{Status: true}
-	emailID := "invalid"
-
-	statusJSON, _ := json.Marshal(status)
-	req := httptest.NewRequest(http.MethodPut, "/email/"+emailID+"/status", bytes.NewBuffer(statusJSON))
-
-	vars := map[string]string{
-		"id": emailID,
-	}
-	req = mux.SetURLVars(req, vars)
-
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-
-	router.EmailStatusHandler(rr, req)
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "invalid_path", response.Body)
-}
-
-func TestEmailStatusHandler_ErrorChangingStatus(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	status := Status{Status: true}
-	emailID := "1"
-
-	statusJSON, _ := json.Marshal(status)
-	req := httptest.NewRequest(http.MethodPut, "/email/"+emailID+"/status", bytes.NewBuffer(statusJSON))
-
-	vars := map[string]string{
-		"id": emailID,
-	}
-	req = mux.SetURLVars(req, vars)
-
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-
-	mockEmailUseCase.EXPECT().ChangeStatus(1, true).Return(assert.AnError)
-
-	router.EmailStatusHandler(rr, req)
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "invalid_status", response.Body)
-}
-
-func TestEmailStatusHandler_InvalidJSON(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	invalidJSON := []byte(`{"status": invalid}`)
-	req := httptest.NewRequest(http.MethodPut, "/email/1/status", bytes.NewBuffer(invalidJSON))
-
-	vars := map[string]string{
-		"id": "1",
-	}
-	req = mux.SetURLVars(req, vars)
-
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-
-	router.EmailStatusHandler(rr, req)
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "invalid_json", response.Body)
-}
-
-func TestEmailStatusHandler_MissingID(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	status := Status{Status: true}
-	statusJSON, _ := json.Marshal(status)
-
-	req := httptest.NewRequest(http.MethodPut, "/email/status", bytes.NewBuffer(statusJSON))
-	req = mux.SetURLVars(req, map[string]string{})
-
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-
-	router.EmailStatusHandler(rr, req)
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "invalid_path", response.Body)
-}
-
-func TestEmailStatusHandler_EmptyBody(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	req := httptest.NewRequest(http.MethodPut, "/email/1/status", nil)
-
-	vars := map[string]string{
-		"id": "1",
-	}
-	req = mux.SetURLVars(req, vars)
-
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-
-	router.EmailStatusHandler(rr, req)
-
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-
-	var response models.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "invalid_json", response.Body)
-}
-
-func TestEmailStatusHandler_DifferentStatuses(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	testCases := []struct {
-		name      string
-		status    bool
-		expectErr bool
-		mockSetup func()
+func TestEmailRouter_EmailStatusHandler(t *testing.T) {
+	tests := []struct {
+		name       string
+		setupAuth  bool
+		emailID    string
+		status     Status
+		mockSetup  func(*mocks.MockEmailUseCase)
+		wantStatus int
+		wantBody   interface{}
+		rawInput   string
 	}{
 		{
-			name:      "Valid Read Status",
-			status:    true,
-			expectErr: false,
-			mockSetup: func() {
-				mockEmailUseCase.EXPECT().ChangeStatus(1, true).Return(nil)
+			name:      "успешное изменение статуса",
+			setupAuth: true,
+			emailID:   "1",
+			status: Status{
+				Status: true,
+			},
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					ChangeStatus(1, true).
+					Return(nil)
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "неавторизованный запрос",
+			setupAuth:  false,
+			emailID:    "1",
+			wantStatus: http.StatusUnauthorized,
+			wantBody: models.Error{
+				Status: http.StatusUnauthorized,
+				Body:   "unauthorized",
 			},
 		},
 		{
-			name:      "Valid Unread Status",
-			status:    false,
-			expectErr: false,
-			mockSetup: func() {
-				mockEmailUseCase.EXPECT().ChangeStatus(1, false).Return(nil)
+			name:       "некорректный ID письма",
+			setupAuth:  true,
+			emailID:    "invalid",
+			wantStatus: http.StatusBadRequest,
+			wantBody: models.Error{
+				Status: http.StatusBadRequest,
+				Body:   "invalid_path",
 			},
 		},
 		{
-			name:      "Invalid Status",
-			status:    false,
-			expectErr: true,
-			mockSetup: func() {
-				mockEmailUseCase.EXPECT().ChangeStatus(1, false).Return(assert.AnError)
+			name:       "отсутствующий ID в пути",
+			setupAuth:  true,
+			wantStatus: http.StatusBadRequest,
+			wantBody: models.Error{
+				Status: http.StatusBadRequest,
+				Body:   "invalid_path",
+			},
+		},
+		{
+			name:       "некорректный JSON в запросе",
+			setupAuth:  true,
+			emailID:    "1",
+			rawInput:   "{invalid json",
+			wantStatus: http.StatusBadRequest,
+			wantBody: models.Error{
+				Status: http.StatusBadRequest,
+				Body:   "invalid_json",
+			},
+		},
+		{
+			name:      "ошибка при изменении статуса",
+			setupAuth: true,
+			emailID:   "1",
+			status: Status{
+				Status: true,
+			},
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					ChangeStatus(1, true).
+					Return(errors.New("status change error"))
+			},
+			wantStatus: http.StatusBadRequest,
+			wantBody: models.Error{
+				Status: http.StatusBadRequest,
+				Body:   "invalid_status",
 			},
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			status := Status{Status: tc.status}
-			statusJSON, _ := json.Marshal(status)
-			req := httptest.NewRequest(http.MethodPut, "/email/1/status", bytes.NewBuffer(statusJSON))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-			vars := map[string]string{
-				"id": "1",
+			mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
+			if tt.mockSetup != nil {
+				tt.mockSetup(mockEmailUseCase)
+			}
+
+			router := NewEmailRouter(mockEmailUseCase)
+
+			var reqBody []byte
+			var err error
+			if tt.rawInput != "" {
+				reqBody = []byte(tt.rawInput)
+			} else {
+				reqBody, err = json.Marshal(tt.status)
+				assert.NoError(t, err)
+			}
+
+			req := httptest.NewRequest(http.MethodPut, "/status/"+tt.emailID, bytes.NewBuffer(reqBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			// Настройка маршрутизации с параметрами
+			vars := map[string]string{}
+			if tt.emailID != "" {
+				vars["id"] = tt.emailID
 			}
 			req = mux.SetURLVars(req, vars)
 
-			ctx := context.WithValue(req.Context(), "email", "test@example.com")
-			req = req.WithContext(ctx)
+			if tt.setupAuth {
+				ctx := context.WithValue(req.Context(), "email", "test@example.com")
+				req = req.WithContext(ctx)
+			}
 
-			rr := httptest.NewRecorder()
+			w := httptest.NewRecorder()
+			router.EmailStatusHandler(w, req)
 
-			tc.mockSetup()
+			assert.Equal(t, tt.wantStatus, w.Code)
 
-			router.EmailStatusHandler(rr, req)
-
-			if tc.expectErr {
-				assert.Equal(t, http.StatusBadRequest, rr.Code)
+			if tt.wantStatus != http.StatusOK {
+				var errResponse models.Error
+				err := json.NewDecoder(w.Body).Decode(&errResponse)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantBody, errResponse)
 			} else {
-				assert.Equal(t, http.StatusOK, rr.Code)
+				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
 			}
 		})
 	}

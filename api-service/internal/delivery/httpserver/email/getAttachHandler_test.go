@@ -1,6 +1,7 @@
 package email
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -14,28 +15,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEmailRouter_FoldersHandler(t *testing.T) {
+func TestEmailRouter_GetAttachHandler(t *testing.T) {
 	tests := []struct {
 		name       string
 		setupAuth  bool
+		filePath   models.FilePath
 		mockSetup  func(*mocks.MockEmailUseCase)
 		wantStatus int
 		wantBody   interface{}
+		rawInput   string
+		wantData   []byte
 	}{
 		{
-			name:      "успешное получение папок",
+			name:      "успешное получение файла",
 			setupAuth: true,
+			filePath: models.FilePath{
+				Path: "test/path/file.txt",
+			},
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					GetFolders("test@example.com").
-					Return([]string{"Inbox", "Sent", "Custom"}, nil)
+					GetAttach(gomock.Any(), "test/path/file.txt").
+					Return([]byte("test file content"), nil)
 			},
 			wantStatus: http.StatusOK,
-			wantBody: []string{
-				"Inbox",
-				"Sent",
-				"Custom",
-			},
+			wantData:   []byte("test file content"),
 		},
 		{
 			name:       "неавторизованный запрос",
@@ -47,29 +50,31 @@ func TestEmailRouter_FoldersHandler(t *testing.T) {
 			},
 		},
 		{
-			name:      "ошибка при получении папок",
+			name:       "некорректный JSON в запросе",
+			setupAuth:  true,
+			rawInput:   "{invalid json",
+			wantStatus: http.StatusBadRequest,
+			wantBody: models.Error{
+				Status: http.StatusBadRequest,
+				Body:   "invalid_json",
+			},
+		},
+		{
+			name:      "ошибка при получении файла",
 			setupAuth: true,
+			filePath: models.FilePath{
+				Path: "test/path/nonexistent.txt",
+			},
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
-					GetFolders("test@example.com").
-					Return(nil, errors.New("database error"))
+					GetAttach(gomock.Any(), "test/path/nonexistent.txt").
+					Return(nil, errors.New("file not found"))
 			},
 			wantStatus: http.StatusInternalServerError,
 			wantBody: models.Error{
 				Status: http.StatusInternalServerError,
-				Body:   "error_with_getting_folders",
+				Body:   "failed_to_get_file",
 			},
-		},
-		{
-			name:      "пустой список папок",
-			setupAuth: true,
-			mockSetup: func(m *mocks.MockEmailUseCase) {
-				m.EXPECT().
-					GetFolders("test@example.com").
-					Return([]string{}, nil)
-			},
-			wantStatus: http.StatusOK,
-			wantBody:   []string{},
 		},
 	}
 
@@ -85,33 +90,36 @@ func TestEmailRouter_FoldersHandler(t *testing.T) {
 
 			router := NewEmailRouter(mockEmailUseCase)
 
-			req := httptest.NewRequest(http.MethodGet, "/folder", nil)
+			var reqBody []byte
+			var err error
+			if tt.rawInput != "" {
+				reqBody = []byte(tt.rawInput)
+			} else {
+				reqBody, err = json.Marshal(tt.filePath)
+				assert.NoError(t, err)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/getattach", bytes.NewBuffer(reqBody))
+			req.Header.Set("Content-Type", "application/json")
+
 			if tt.setupAuth {
 				ctx := context.WithValue(req.Context(), "email", "test@example.com")
 				req = req.WithContext(ctx)
 			}
 
 			w := httptest.NewRecorder()
-			router.FoldersHandler(w, req)
+			router.GetAttachHandler(w, req)
 
 			assert.Equal(t, tt.wantStatus, w.Code)
 
-			var response interface{}
 			if tt.wantStatus == http.StatusOK {
-				var folders []string
-				err := json.NewDecoder(w.Body).Decode(&folders)
-				assert.NoError(t, err)
-				response = folders
+				assert.Equal(t, "multipart/form-data", w.Header().Get("Content-Type"))
+				assert.Equal(t, tt.wantData, w.Body.Bytes())
 			} else {
 				var errResponse models.Error
 				err := json.NewDecoder(w.Body).Decode(&errResponse)
 				assert.NoError(t, err)
-				response = errResponse
-			}
-
-			assert.Equal(t, tt.wantBody, response)
-			if tt.wantStatus == http.StatusOK {
-				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+				assert.Equal(t, tt.wantBody, errResponse)
 			}
 		})
 	}

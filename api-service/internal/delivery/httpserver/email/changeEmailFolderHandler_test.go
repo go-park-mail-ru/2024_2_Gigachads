@@ -1,14 +1,14 @@
 package email
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	models2 "mail/api-service/internal/models"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -20,7 +20,7 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 	tests := []struct {
 		name       string
 		emailID    string
-		input      models2.Folder
+		folder     models.Folder
 		setupAuth  bool
 		mockSetup  func(*mocks.MockEmailUseCase)
 		wantStatus int
@@ -29,7 +29,7 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 		{
 			name:    "успешное изменение папки",
 			emailID: "1",
-			input: models2.Folder{
+			folder: models.Folder{
 				Name: "NewFolder",
 			},
 			setupAuth: true,
@@ -41,19 +41,16 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 			wantStatus: http.StatusOK,
 		},
 		{
-			name:    "неавторизованный запрос",
-			emailID: "1",
-			input: models2.Folder{
-				Name: "NewFolder",
-			},
+			name:       "неавторизованный запрос",
+			emailID:    "1",
 			setupAuth:  false,
 			wantStatus: http.StatusUnauthorized,
 			wantBody:   "unauthorized",
 		},
 		{
-			name:    "некорректный ID папки",
+			name:    "некорректный ID письма",
 			emailID: "invalid",
-			input: models2.Folder{
+			folder: models.Folder{
 				Name: "NewFolder",
 			},
 			setupAuth:  true,
@@ -61,19 +58,26 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 			wantBody:   "invalid_path",
 		},
 		{
-			name:    "ошибка изменения папки",
+			name:    "ошибка при изменении папки",
 			emailID: "1",
-			input: models2.Folder{
+			folder: models.Folder{
 				Name: "NewFolder",
 			},
 			setupAuth: true,
 			mockSetup: func(m *mocks.MockEmailUseCase) {
 				m.EXPECT().
 					ChangeEmailFolder(1, "test@example.com", "NewFolder").
-					Return(errors.New("error"))
+					Return(errors.New("db error"))
 			},
 			wantStatus: http.StatusInternalServerError,
 			wantBody:   "cant_change_name",
+		},
+		{
+			name:       "некорректный JSON в запросе",
+			emailID:    "1",
+			setupAuth:  true,
+			wantStatus: http.StatusBadRequest,
+			wantBody:   "invalid_json",
 		},
 	}
 
@@ -89,30 +93,42 @@ func TestEmailRouter_ChangeEmailFolderHandler(t *testing.T) {
 
 			router := NewEmailRouter(mockEmailUseCase)
 
-			// Создаем новый роутер mux
-			r := mux.NewRouter()
-			r.HandleFunc("/emails/{id}/folder", router.ChangeEmailFolderHandler).Methods("PUT")
+			var reqBody string
+			if tt.folder.Name != "" {
+				folderJSON, err := json.Marshal(tt.folder)
+				assert.NoError(t, err)
+				reqBody = string(folderJSON)
+			} else {
+				reqBody = "invalid json"
+			}
 
-			body, _ := json.Marshal(tt.input)
-			req := httptest.NewRequest(http.MethodPut, "/emails/"+tt.emailID+"/folder", bytes.NewBuffer(body))
+			req := httptest.NewRequest(http.MethodPut, "/emails/"+tt.emailID+"/folder", strings.NewReader(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
+			vars := map[string]string{
+				"id": tt.emailID,
+			}
+			req = mux.SetURLVars(req, vars)
+
 			if tt.setupAuth {
-				ctx := context.WithValue(req.Context(), "email", "test@example.com")
-				req = req.WithContext(ctx)
+				req = req.WithContext(NewContextWithEmail(req.Context(), "test@example.com"))
 			}
 
 			w := httptest.NewRecorder()
-			r.ServeHTTP(w, req)
+			router.ChangeEmailFolderHandler(w, req)
 
-			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
+			assert.Equal(t, tt.wantStatus, w.Code)
 
 			if tt.wantBody != "" {
-				var response models2.Error
+				var response models.Error
 				err := json.NewDecoder(w.Body).Decode(&response)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantBody, response.Body, "Unexpected response body")
+				assert.Equal(t, tt.wantBody, response.Body)
 			}
 		})
 	}
+}
+
+func NewContextWithEmail(ctx context.Context, email string) context.Context {
+	return context.WithValue(ctx, "email", email)
 }

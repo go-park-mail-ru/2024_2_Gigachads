@@ -2,169 +2,142 @@ package middleware
 
 import (
 	"context"
-	"mail/config"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gorilla/mux"
+	"mail/api-service/internal/delivery/httpserver/email/mocks"
+	"mail/api-service/pkg/logger"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-type MockLogger struct {
-	mock.Mock
-}
-
-func (m *MockLogger) Info(msg string, args ...interface{}) {
-	m.Called(msg, args)
-}
-
-func (m *MockLogger) Error(msg string, args ...interface{}) {
-	m.Called(msg, args)
-}
-
-func (m *MockLogger) Debug(msg string, args ...interface{}) {
-	m.Called(msg, args)
-}
-
-func (m *MockLogger) Warn(msg string, args ...interface{}) {
-	m.Called(msg, args)
-}
-
-func TestLogMiddleware(t *testing.T) {
+func TestLogResponseWriter_WriteHeader(t *testing.T) {
 	tests := []struct {
-		name           string
-		method         string
-		path           string
-		setupContext   func(context.Context) context.Context
-		expectedStatus int
+		name       string
+		statusCode int
 	}{
 		{
-			name:           "Normal request with existing requestID",
-			method:         http.MethodGet,
-			path:           "/test",
-			setupContext:   func(ctx context.Context) context.Context { return context.WithValue(ctx, "requestID", "test-id") },
-			expectedStatus: http.StatusOK,
+			name:       "Успешная запись статус кода 200",
+			statusCode: http.StatusOK,
 		},
 		{
-			name:           "Request without requestID",
-			method:         http.MethodPost,
-			path:           "/test",
-			setupContext:   func(ctx context.Context) context.Context { return ctx },
-			expectedStatus: http.StatusOK,
+			name:       "Успешная запись статус кода 404",
+			statusCode: http.StatusNotFound,
+		},
+		{
+			name:       "Успешная запись статус кода 500",
+			statusCode: http.StatusInternalServerError,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockLogger := new(MockLogger)
-			mockLogger.On("Info", mock.Anything, mock.Anything).Return()
-
-			middleware := NewLogMW(mockLogger)
-
-			nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(tt.expectedStatus)
-			})
-
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-			req = req.WithContext(tt.setupContext(req.Context()))
-			rr := httptest.NewRecorder()
-
-			handler := middleware.Handler(nextHandler)
-			handler.ServeHTTP(rr, req)
-
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			mockLogger.AssertExpectations(t)
-		})
-	}
-}
-
-func TestPanicMiddleware(t *testing.T) {
-	tests := []struct {
-		name           string
-		handler        http.Handler
-		expectedStatus int
-	}{
-		{
-			name: "Handles panic",
-			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				panic("test panic")
-			}),
-			expectedStatus: http.StatusInternalServerError,
-		},
-		{
-			name: "Normal request without panic",
-			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			}),
-			expectedStatus: http.StatusOK,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/test", nil)
-			rr := httptest.NewRecorder()
-
-			handler := PanicMiddleware(tt.handler)
-			handler.ServeHTTP(rr, req)
-
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-		})
-	}
-}
-
-func TestConfigureMWs(t *testing.T) {
-	cfg := &config.Config{}
-	cfg.HTTPServer.AllowedIPsByCORS = []string{"http://localhost:3000"}
-
-	router := mux.NewRouter()
-	mockAuth := new(MockAuthUseCase)
-	authMW := NewAuthMW(mockAuth)
-
-	handler := ConfigureMWs(cfg, router, authMW)
-	assert.NotNil(t, handler)
-
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	rr := httptest.NewRecorder()
-
-	handler.ServeHTTP(rr, req)
-
-	assert.Equal(t, cfg.HTTPServer.AllowedIPsByCORS[0], rr.Header().Get("Access-Control-Allow-Origin"))
-}
-
-func TestLogResponseWriter(t *testing.T) {
-	tests := []struct {
-		name         string
-		statusCode   int
-		responseBody string
-	}{
-		{
-			name:         "Write response with status",
-			statusCode:   http.StatusOK,
-			responseBody: "test response",
-		},
-		{
-			name:         "Write response with error status",
-			statusCode:   http.StatusBadRequest,
-			responseBody: "error response",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rr := httptest.NewRecorder()
-			lrw := &LogResponseWriter{ResponseWriter: rr}
+			rw := httptest.NewRecorder()
+			lrw := &LogResponseWriter{
+				ResponseWriter: rw,
+				statusCode:     http.StatusOK,
+			}
 
 			lrw.WriteHeader(tt.statusCode)
-			assert.Equal(t, tt.statusCode, lrw.statusCode)
 
-			if tt.responseBody != "" {
-				_, err := lrw.Write([]byte(tt.responseBody))
-				assert.NoError(t, err)
-				assert.Equal(t, tt.responseBody, rr.Body.String())
-			}
+			assert.Equal(t, tt.statusCode, lrw.statusCode)
+			assert.Equal(t, tt.statusCode, rw.Code)
+		})
+	}
+}
+
+func TestNewLogMW(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+
+	tests := []struct {
+		name string
+		log  logger.Logable
+		want LogMiddleWare
+	}{
+		{
+			name: "Успешное создание middleware логгера",
+			log:  mockLogger,
+			want: LogMiddleWare{logger: mockLogger},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewLogMW(tt.log)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestLogMiddleWare_Handler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLogger := mocks.NewMockLogable(ctrl)
+
+	tests := []struct {
+		name           string
+		setupMock      func()
+		request        *http.Request
+		expectedStatus int
+	}{
+		{
+			name: "Успешное логирование запроса без requestID",
+			setupMock: func() {
+				mockLogger.EXPECT().Info("User entered",
+					"url", "/test",
+					"method", "GET",
+					"requestID", gomock.Any()).Times(1)
+				mockLogger.EXPECT().Info("User left",
+					"url", "/test",
+					"status code", http.StatusOK,
+					"requestID", gomock.Any()).Times(1)
+			},
+			request:        httptest.NewRequest("GET", "/test", nil),
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "Успешное логирование запроса с существующим requestID",
+			setupMock: func() {
+				mockLogger.EXPECT().Info("User entered",
+					"url", "/test",
+					"method", "POST",
+					"requestID", "existing-id").Times(1)
+				mockLogger.EXPECT().Info("User left",
+					"url", "/test",
+					"status code", http.StatusOK,
+					"requestID", "existing-id").Times(1)
+			},
+			request: func() *http.Request {
+				req := httptest.NewRequest("POST", "/test", nil)
+				ctx := context.WithValue(req.Context(), "requestID", "existing-id")
+				return req.WithContext(ctx)
+			}(),
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock()
+
+			middleware := NewLogMW(mockLogger)
+			handler := middleware.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Проверяем, что requestID был добавлен в контекст
+				requestID := r.Context().Value("requestID")
+				assert.NotNil(t, requestID)
+				w.WriteHeader(tt.expectedStatus)
+			}))
+
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, tt.request)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
 }

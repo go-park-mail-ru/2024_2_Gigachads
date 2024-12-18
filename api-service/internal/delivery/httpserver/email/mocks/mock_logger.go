@@ -43,6 +43,12 @@ func (m *MockLogable) Debug(arg0 string, arg1 ...any) {
 	m.ctrl.Call(m, "Debug", varargs...)
 }
 
+// Debug indicates an expected call of Debug.
+func (mr *MockLogableMockRecorder) Debug(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Debug", reflect.TypeOf((*MockLogable)(nil).Debug), varargs...)
+}
 
 // Error mocks base method.
 func (m *MockLogable) Error(arg0 string, arg1 ...any) {
@@ -88,3 +94,9 @@ func (m *MockLogable) Warn(arg0 string, arg1 ...any) {
 	m.ctrl.Call(m, "Warn", varargs...)
 }
 
+// Warn indicates an expected call of Warn.
+func (mr *MockLogableMockRecorder) Warn(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warn", reflect.TypeOf((*MockLogable)(nil).Warn), varargs...)
+}

@@ -1,13 +1,8 @@
 package email
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	models2 "mail/api-service/internal/models"
-	"net/http"
-	"net/http/httptest"
+	"mail/api-service/internal/models"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -15,138 +10,117 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func addEmailToContext(r *http.Request, email string) *http.Request {
-	ctx := context.WithValue(r.Context(), "email", email)
-	return r.WithContext(ctx)
+func TestNewEmailRouter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
+	router := NewEmailRouter(mockEmailUseCase)
+
+	assert.NotNil(t, router)
+	assert.Equal(t, mockEmailUseCase, router.EmailUseCase)
 }
 
-const testEmail = "test@example.com"
+func TestEmailRouter_ConfigureEmailRouter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-func TestEmailRouter_FoldersWithUser(t *testing.T) {
-	tests := []struct {
-		name       string
-		setupAuth  bool
-		mockSetup  func(*mocks.MockEmailUseCase)
-		endpoint   string
-		method     string
-		body       interface{}
-		wantStatus int
-		wantBody   string
-		wantData   interface{}
-	}{
-		{
-			name:      "получение списка папок авторизованного пользователя",
-			setupAuth: true,
-			mockSetup: func(m *mocks.MockEmailUseCase) {
-				m.EXPECT().
-					GetFolders(testEmail).
-					Return([]string{"Inbox", "Sent"}, nil)
-			},
-			endpoint:   "/folder",
-			method:     http.MethodGet,
-			wantStatus: http.StatusOK,
-			wantData:   []string{"Inbox", "Sent"},
+	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
+	router := NewEmailRouter(mockEmailUseCase)
+	muxRouter := mux.NewRouter()
+
+	router.ConfigureEmailRouter(muxRouter)
+
+	expectedRoutes := map[string][]string{
+		"/email/inbox":       {"GET", "OPTIONS"},
+		"/email/sent":        {"GET", "OPTIONS"},
+		"/email/{id}":        {"GET", "OPTIONS"},
+		"/email/{id}/status": {"PUT", "OPTIONS"},
+		"/email/{id}/folder": {"PUT", "OPTIONS"},
+		"/getfolder":         {"POST", "OPTIONS"},
+		"/draft/send":        {"POST", "OPTIONS"},
+		"/status":            {"POST", "OPTIONS"},
+		"/getAttachment":     {"POST", "OPTIONS"},
+		"/email": {
+			"POST", "OPTIONS", "DELETE", "OPTIONS",
 		},
-		{
-			name:       "неавторизованный запрос",
-			setupAuth:  false,
-			endpoint:   "/folder",
-			method:     http.MethodGet,
-			wantStatus: http.StatusUnauthorized,
-			wantBody:   "unauthorized",
+		"/folder": {
+			"GET", "OPTIONS", "PUT", "OPTIONS", "POST", "OPTIONS", "DELETE", "OPTIONS",
 		},
-		{
-			name:      "создание новой папки",
-			setupAuth: true,
-			mockSetup: func(m *mocks.MockEmailUseCase) {
-				m.EXPECT().
-					CreateFolder(testEmail, "NewFolder").
-					Return(nil)
-			},
-			endpoint:   "/folder",
-			method:     http.MethodPost,
-			body:       models2.Folder{Name: "NewFolder"},
-			wantStatus: http.StatusOK,
+		"/draft": {
+			"POST", "OPTIONS", "PUT", "OPTIONS",
 		},
-		{
-			name:      "удаление папки",
-			setupAuth: true,
-			mockSetup: func(m *mocks.MockEmailUseCase) {
-				m.EXPECT().
-					DeleteFolder(testEmail, "OldFolder").
-					Return(nil)
-			},
-			endpoint:   "/folder",
-			method:     http.MethodDelete,
-			body:       models2.Folder{Name: "OldFolder"},
-			wantStatus: http.StatusOK,
-		},
-		{
-			name:      "переименование папки",
-			setupAuth: true,
-			mockSetup: func(m *mocks.MockEmailUseCase) {
-				m.EXPECT().
-					RenameFolder(testEmail, "OldFolder", "NewFolder").
-					Return(nil)
-			},
-			endpoint:   "/folder",
-			method:     http.MethodPut,
-			body:       models2.RenameFolder{Name: "OldFolder", NewName: "NewFolder"},
-			wantStatus: http.StatusOK,
+		"/attachment": {
+			"DELETE", "OPTIONS", "POST", "OPTIONS",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+	foundRoutes := make(map[string][]string)
+	err := muxRouter.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		pathTemplate, err := route.GetPathTemplate()
+		if err != nil {
+			return nil
+		}
 
-			mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-			if tt.mockSetup != nil {
-				tt.mockSetup(mockEmailUseCase)
-			}
+		methods, err := route.GetMethods()
+		if err != nil {
+			return nil
+		}
 
-			router := mux.NewRouter()
-			emailRouter := NewEmailRouter(mockEmailUseCase)
-			emailRouter.ConfigureEmailRouter(router)
+		if foundRoutes[pathTemplate] == nil {
+			foundRoutes[pathTemplate] = []string{}
+		}
+		foundRoutes[pathTemplate] = append(foundRoutes[pathTemplate], methods...)
+		return nil
+	})
 
-			var reqBody []byte
-			var err error
-			if tt.body != nil {
-				reqBody, err = json.Marshal(tt.body)
-				assert.NoError(t, err)
-			}
+	assert.NoError(t, err)
 
-			req := httptest.NewRequest(tt.method, tt.endpoint, bytes.NewBuffer(reqBody))
-			if tt.body != nil {
-				req.Header.Set("Content-Type", "application/json")
-			}
-
-			if tt.setupAuth {
-				req = addEmailToContext(req, testEmail)
-			}
-
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
-
-			assert.Equal(t, tt.wantStatus, w.Code, "Unexpected status code")
-
-			if tt.wantBody != "" {
-				var response models2.Error
-				err := json.NewDecoder(w.Body).Decode(&response)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.wantBody, response.Body, "Unexpected error body")
-			}
-
-			if tt.wantData != nil {
-				switch v := tt.wantData.(type) {
-				case []string:
-					var folders []string
-					err := json.NewDecoder(w.Body).Decode(&folders)
-					assert.NoError(t, err)
-					assert.ElementsMatch(t, v, folders, "Unexpected folders")
-				}
-			}
+	for path, expectedMethods := range expectedRoutes {
+		t.Run(path, func(t *testing.T) {
+			foundMethods, exists := foundRoutes[path]
+			assert.True(t, exists, "Маршрут %s не найден", path)
+			assert.ElementsMatch(t, expectedMethods, foundMethods,
+				"Методы для маршрута %s не совпадают.\nОжидалось: %v\nПолучено: %v",
+				path, expectedMethods, foundMethods)
 		})
 	}
+}
+
+func TestEmailRouter_WithSmtpPop3UseCase(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
+	mockSmtpPop3UseCase := mocks.NewMockSmtpPop3Usecase(ctrl)
+
+	router := NewEmailRouter(mockEmailUseCase)
+	router.SmtpPop3UseCase = mockSmtpPop3UseCase
+
+	assert.NotNil(t, router)
+	assert.Equal(t, mockEmailUseCase, router.EmailUseCase)
+	assert.Equal(t, mockSmtpPop3UseCase, router.SmtpPop3UseCase)
+}
+
+func TestEmailRouter_Dependencies(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("проверка зависимостей", func(t *testing.T) {
+		mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
+		router := NewEmailRouter(mockEmailUseCase)
+
+		assert.Implements(t, (*models.EmailUseCase)(nil), router.EmailUseCase)
+	})
+
+	t.Run("проверка опциональных зависимостей", func(t *testing.T) {
+		mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
+		mockSmtpPop3UseCase := mocks.NewMockSmtpPop3Usecase(ctrl)
+
+		router := NewEmailRouter(mockEmailUseCase)
+		router.SmtpPop3UseCase = mockSmtpPop3UseCase
+
+		assert.Implements(t, (*models.EmailUseCase)(nil), router.EmailUseCase)
+		assert.Implements(t, (*models.SmtpPop3Usecase)(nil), router.SmtpPop3UseCase)
+	})
 }

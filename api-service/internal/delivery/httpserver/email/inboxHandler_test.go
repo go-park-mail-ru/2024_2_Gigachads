@@ -3,81 +3,154 @@ package email
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"mail/api-service/internal/delivery/httpserver/email/mocks"
-	models2 "mail/api-service/internal/models"
+	"mail/api-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInboxHandler_Success(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func TestEmailRouter_InboxHandler(t *testing.T) {
+	testTime := time.Date(2024, 3, 15, 12, 0, 0, 0, time.UTC)
 
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	emails := []models2.Email{
+	tests := []struct {
+		name       string
+		setupAuth  bool
+		mockSetup  func(*mocks.MockEmailUseCase)
+		wantStatus int
+		wantBody   interface{}
+	}{
 		{
-			ID:           1,
-			Sender_email: "sender@example.com",
-			Title:        "Test Email 1",
-			Description:  "Test Description 1",
+			name:      "успешное получение входящих писем",
+			setupAuth: true,
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					Inbox("test@example.com").
+					Return([]models.Email{
+						{
+							ID:           1,
+							Sender_email: "sender@example.com",
+							Recipient:    "test@example.com",
+							Title:        "Test Email",
+							Description:  "Test Content",
+							Sending_date: testTime,
+							IsRead:       false,
+						},
+						{
+							ID:           2,
+							Sender_email: "another@example.com",
+							Recipient:    "test@example.com",
+							Title:        "Another Email",
+							Description:  "Another Content",
+							Sending_date: testTime,
+							IsRead:       true,
+						},
+					}, nil)
+			},
+			wantStatus: http.StatusOK,
+			wantBody: []models.Email{
+				{
+					ID:           1,
+					Sender_email: "sender@example.com",
+					Recipient:    "test@example.com",
+					Title:        "Test Email",
+					Description:  "Test Content",
+					Sending_date: testTime,
+					IsRead:       false,
+				},
+				{
+					ID:           2,
+					Sender_email: "another@example.com",
+					Recipient:    "test@example.com",
+					Title:        "Another Email",
+					Description:  "Another Content",
+					Sending_date: testTime,
+					IsRead:       true,
+				},
+			},
 		},
 		{
-			ID:           2,
-			Sender_email: "sender@example.com",
-			Title:        "Test Email 2",
-			Description:  "Test Description 2",
+			name:       "неавторизованный запрос",
+			setupAuth:  false,
+			wantStatus: http.StatusUnauthorized,
+			wantBody: models.Error{
+				Status: http.StatusUnauthorized,
+				Body:   "unauthorized",
+			},
+		},
+		{
+			name:      "пустой список входящих",
+			setupAuth: true,
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					Inbox("test@example.com").
+					Return([]models.Email{}, nil)
+			},
+			wantStatus: http.StatusOK,
+			wantBody:   []models.Email{},
+		},
+		{
+			name:      "ошибка при получении входящих",
+			setupAuth: true,
+			mockSetup: func(m *mocks.MockEmailUseCase) {
+				m.EXPECT().
+					Inbox("test@example.com").
+					Return(nil, errors.New("database error"))
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantBody: models.Error{
+				Status: http.StatusInternalServerError,
+				Body:   "cant_get_inbox",
+			},
 		},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/inbox", nil)
-	ctx := context.WithValue(req.Context(), "email", "test@example.com")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	mockEmailUseCase.EXPECT().
-		Inbox("test@example.com").
-		Return(emails, nil)
+			mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
+			if tt.mockSetup != nil {
+				tt.mockSetup(mockEmailUseCase)
+			}
 
-	router.InboxHandler(rr, req)
+			router := NewEmailRouter(mockEmailUseCase)
 
-	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+			req := httptest.NewRequest(http.MethodGet, "/inbox", nil)
 
-	var response []models2.Email
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, len(emails), len(response))
+			if tt.setupAuth {
+				ctx := context.WithValue(req.Context(), "email", "test@example.com")
+				req = req.WithContext(ctx)
+			}
 
-	for i := range emails {
-		assert.Equal(t, emails[i].ID, response[i].ID)
-		assert.Equal(t, emails[i].Sender_email, response[i].Sender_email)
-		assert.Equal(t, emails[i].Title, response[i].Title)
-		assert.Equal(t, emails[i].Description, response[i].Description)
+			w := httptest.NewRecorder()
+			router.InboxHandler(w, req)
+
+			assert.Equal(t, tt.wantStatus, w.Code)
+
+			var response interface{}
+			if tt.wantStatus == http.StatusOK {
+				var emails []models.Email
+				err := json.NewDecoder(w.Body).Decode(&emails)
+				assert.NoError(t, err)
+				response = emails
+			} else {
+				var errResponse models.Error
+				err := json.NewDecoder(w.Body).Decode(&errResponse)
+				assert.NoError(t, err)
+				response = errResponse
+			}
+
+			assert.Equal(t, tt.wantBody, response)
+			if tt.wantStatus == http.StatusOK {
+				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+			}
+		})
 	}
-}
-
-func TestInboxHandler_Unauthorized(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEmailUseCase := mocks.NewMockEmailUseCase(ctrl)
-	router := NewEmailRouter(mockEmailUseCase)
-
-	req := httptest.NewRequest(http.MethodGet, "/inbox", nil)
-	rr := httptest.NewRecorder()
-
-	router.InboxHandler(rr, req)
-
-	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-
-	var response models2.Error
-	err := json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, "unauthorized", response.Body)
 }
