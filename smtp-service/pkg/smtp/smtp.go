@@ -36,9 +36,11 @@ func (c *SMTPClient) SendEmail(from string, to []string, subject, body string) e
 
   addr := c.Host+":"+c.Port
 
-  err := smtp.SendMail(addr, nil, from, to[0], []byte(msg))
-
-
+  err := smtp.SendMail(addr, nil, from, to, []byte(msg))
+  if err != nil {
+    return fmt.Errorf("ошибка отправки сообщения: %v", err)
+  }
+  return nil
   // // Создаем клиент
   // client, err := smtp.Dial(addr)
   // if err != nil {
