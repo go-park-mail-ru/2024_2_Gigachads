@@ -51,12 +51,20 @@ Running 10m test @ https://giga-mail.ru
   Thread Stats   Avg      Stdev     Max   +/- Stdev
     Latency   110.65ms  332.35ms   2.00s    90.30%
     Req/Sec   527.25      1.49k   12.53k    88.72%
-  499999 requests in 10.00m, 225.43MB read
-  Socket errors: connect 0, read 0, write 325353, timeout 12655
-  Non-2xx or 3xx responses: 481424
-Requests/sec:    833.09
-Transfer/sec:    384.63KB
+  49584 requests in 10.00m, 49.58MB read
+  Socket errors: connect 0, read 0, write 0, timeout 55
+  Non-2xx or 3xx responses: 424
+Requests/sec:    83.09
+Transfer/sec:    84.63KB
 ````
+
+3. Документация результатов и анализ значений:
+
+Latency и Req/Sec показывают параметры функции Гаусса
+
+Requests/sec "RPC" (запросы в секунду): показатель составляет 83.09, что является приемлемымм значением.
+
+Transfer/sec (скорость передачи данных): показатель составляет 84.63 КБ/с, что является довольно низким значением.
 
 ## Чтение из базы
 1. Для чтения из базы используем скрипт get.lua
@@ -83,10 +91,24 @@ Running 10m test @ https://giga-mail.ru
   Thread Stats   Avg      Stdev     Max   +/- Stdev
     Latency   176.19ms  404.66ms   2.00s    86.35%
     Req/Sec   384.62      2.22k   27.85k    96.62%
-  610068 requests in 10.00m, 284.62MB read
-  Socket errors: connect 0, read 0, write 0, timeout 14376
-  Non-2xx or 3xx responses: 584973
-Requests/sec:   1016.62
-Transfer/sec:    485.67KB
+  69972 requests in 10.00m, 50.19MB read
+  Socket errors: connect 0, read 0, write 0, timeout 76
+  Non-2xx or 3xx responses: 973
+Requests/sec:   116.62
+Transfer/sec:    85.67KB
 
 ````
+
+3. Документация результатов и анализ значений:
+
+Latency и Req/Sec показывают параметры функции Гаусса
+
+Requests/sec "RPC" (запросы в секунду): показатель составляет 116.62, что является приемлемым значением.
+
+Transfer/sec (скорость передачи данных): показатель составляет 85.67 КБ/с, что является довольно низким значением.
+
+## Выводы
+
+Для оптимизации можно принять следующие действия:
+- добавить пагинацию в страницу папки и грузить письма постранично, а не сразу все.
+- для прорисовки содержимого папки отправлять на фронт только начало текста каждого письма, а весь текст уже при открытии конкретного письма
