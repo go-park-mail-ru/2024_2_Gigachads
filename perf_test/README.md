@@ -69,13 +69,15 @@ Transfer/sec (скорость передачи данных): показате�
 ## Чтение из базы
 1. Для чтения из базы используем скрипт get.lua
 ````
-    local wrk = require "wrk"
+local wrk = require "wrk"
 
-    wrk.method = "GET"
-    wrk.headers["Content-Type"] = "application/json"
-    wrk.headers["Cookie"] = "email=b7698ba355803ae8ac44993d9283e47"
+wrk.method = "GET"
+wrk.headers["Content-Type"] = "application/json"
+wrk.headers["Cookie"] = "email=a1133744a67e4ef3f080b144e52ef6c1; csrf=8f4e081af9774aba27489a5e68a1351f"
 
-    wrk.requests = 100000
+request = function()
+    return wrk.format(nil, "/api/email/30017", nil, nil)
+end
 ````
 В этом скрипте мы задаем тип запроса - GET, передаем в заголовке запроса email, который мы используем для авторизации, и устанавливаем ограничение в 10 одновременных подключений на один поток  
 Команда для запуска:  
