@@ -20,25 +20,19 @@ end
 
 wrk.method = "POST"
 wrk.headers["Content-Type"] = "application/json"
-wrk.headers["Cookie"] = "email=76c79a5058762eb6b8a4abd068ae2965e; csrf=e5996a98a36a54c852af49abb0989cf3"
-wrk.headers["X-CSRF-Token"] = "e5996a98a36a54c852af49abb0989cf3"
-wrk.headers["Origin"] = "https://giga-mail.ru"
-wrk.headers["Referer"] = "https://giga-mail.ru/mail"
+wrk.headers["Cookie"] = "email=4a070bdf28b1b7a38ff1d7283164fa18; csrf=e0e43a3881528791c0c4f546d438c952"
 wrk.headers["Accept"] = "application/json"
-wrk.headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-wrk.headers["Connection"] = "keep-alive"
 
 request = function()
     local current = counter()
-    if current > 100000 then
+    if current > 10 then
         return nil
     end
     
     local titleRand = randomString(10)
     local descriptionRand = randomString(200)
-    
-    return wrk.format("POST", wrk.path, wrk.headers, 
-        string.format('{"type":"email","parentID":0,"recipient":"sonya@giga-mail.ru","title":"%s","description":"%s"}',
+    return wrk.format(nil, "/api/email", nil,
+        string.format('{"type":"email","parentID":0,"recipient":"sonya2@giga-mail.ru","title":"%s","description":"%s"}',
             titleRand, descriptionRand))
 end
 
