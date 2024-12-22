@@ -59,3 +59,6 @@
 ``
     wrk -t5 -c100 -d1000s -s get.lua https://giga-mail.ru
 ``
+
+wrk -t3 -c10 -d20m -s post.lua https://giga-mail.ru/api/email
+wrk -t3 -c10 -d20m -s post.lua https://giga-mail.ru/api/email
