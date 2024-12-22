@@ -25,10 +25,10 @@ wrk.headers["Accept"] = "application/json"
 
 request = function()
     local current = counter()
-    if current > 10 then
+    if current > 100000 then
         return nil
     end
-    
+
     local titleRand = randomString(10)
     local descriptionRand = randomString(200)
     return wrk.format(nil, "/api/email", nil,
@@ -38,7 +38,4 @@ end
 
 wrk.thread = function()
     math.randomseed(os.time() + wrk.thread:get("id"))
-    wrk.delay = function()
-        return 10
-    end
 end
