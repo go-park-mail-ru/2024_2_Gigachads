@@ -19,16 +19,17 @@ wrk.method = "POST"
 wrk.headers["Content-Type"] = "application/json"
 wrk.headers["Cookie"] = "email=b7698ba355803ae8ac44993d9283e47;csrf=b12ca9de73d413ec524cfa80fbd9432c"
 
-wrk.requests = 100000
+wrk.requests = 10
 
 wrk.thread = function()
     local titleRand = randomString(10)
     local descriptionRand = randomString(200)
-    wrk.body = json.encode({
+    local body = json.encode({
        parentID = 0,
        recipient = "sonya@giga-mail.ru",
        title = titleRand,
        description = descriptionRand
     })
     wrk.connections = 10 -- Количество одновременных подключений на поток
+    return wrk.format(nil, "/api/email", nil, body)
 end
