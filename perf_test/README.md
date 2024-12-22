@@ -50,7 +50,7 @@ Running 10m test @ https://giga-mail.ru
   5 threads and 100 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
     Latency   110.65ms  332.35ms   2.00s    90.30%
-    Req/Sec   527.25      1.49k   12.53k    88.72%
+    Req/Sec    27.25      1.49k   12.53k    88.72%
   49584 requests in 10.00m, 49.58MB read
   Socket errors: connect 0, read 0, write 0, timeout 55
   Non-2xx or 3xx responses: 424
@@ -90,7 +90,7 @@ Running 10m test @ https://giga-mail.ru
   5 threads and 100 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
     Latency   176.19ms  404.66ms   2.00s    86.35%
-    Req/Sec   384.62      2.22k   27.85k    96.62%
+    Req/Sec    84.62      2.22k   27.85k    96.62%
   69972 requests in 10.00m, 50.19MB read
   Socket errors: connect 0, read 0, write 0, timeout 76
   Non-2xx or 3xx responses: 973
